@@ -7,10 +7,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
+import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
+import fi.tuni.lonelinessapp.ui.screens.profile.ProfileScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +26,38 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             LonelinessAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MainScreen()
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun MainScreen() {
+    // selectedTab is responsible for keeping
+    // track of which tab (bottom navigation) is selected.
+    var selectedTab by remember { mutableIntStateOf(0) }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LonelinessAppTheme {
-        Greeting("Android")
+    Scaffold(
+        bottomBar = {
+            BottomNavigation(
+                currentTab = selectedTab,
+                selectNewTab = {selectedTab = it}
+            )
+        }
+    ) { padding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Depending on the selected tab (selectedTab),
+            // display different composable functions.
+            when (selectedTab) {
+                0 -> HomeScreen()
+                1 -> AnalysisScreen()
+                2 -> ProfileScreen()
+            }
+        }
     }
 }
