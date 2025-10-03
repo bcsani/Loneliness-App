@@ -2,11 +2,11 @@ package fi.tuni.lonelinessapp.data.repository
 
 import kotlin.time.Duration
 
-interface QuestionRepositoryInterface {
+interface AllQuestionRepositoryInterface {
 
-    fun fetchQuestion(questionID: Int): Int
+    fun fetchPoint(timestamp: Duration): Int
 
-    fun fetchPoint(userID: Int, questionID: Int): Int
+    fun fetchWeekPoints(timestamp: Duration): Int
 
     fun fetchTimeStamp(userID: Int, questionID: Int): Duration
 }

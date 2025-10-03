@@ -1,4 +1,4 @@
-package fi.tuni.lonelinessapp.data.repository
+package fi.tuni.lonelinessapp.data.datasource
 
 class UserDataSource {
 
