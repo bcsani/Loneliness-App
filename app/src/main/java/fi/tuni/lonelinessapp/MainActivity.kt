@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
 import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
-import fi.tuni.lonelinessapp.ui.screens.profile.ProfileScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -56,7 +55,6 @@ fun MainScreen() {
             when (selectedTab) {
                 0 -> HomeScreen()
                 1 -> AnalysisScreen()
-                2 -> ProfileScreen()
             }
         }
     }
