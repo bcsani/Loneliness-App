@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.sp
 
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(modifier: Modifier = Modifier, homeScreenViewModel: HomeScreenViewModel) {
     // Variable for daily survey dialog
     var showDialog by remember { mutableStateOf(false) }
 
@@ -123,7 +123,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
     if(showDialog){
         SurveyDialog(
-            onDismiss = {showDialog = false}
+            onDismiss = {showDialog = false},
+            viewModel = homeScreenViewModel
         )
     }
 }

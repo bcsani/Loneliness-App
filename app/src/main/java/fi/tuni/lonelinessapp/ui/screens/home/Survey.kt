@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 @Composable
-fun SurveyDialog(onDismiss: () -> Unit) {
+fun SurveyDialog(onDismiss: () -> Unit, viewModel: HomeScreenViewModel) {
 
     var currentStep by remember { mutableIntStateOf(1) }
     var answers = remember { mutableStateListOf<String>() }
@@ -94,6 +94,7 @@ fun SurveyDialog(onDismiss: () -> Unit) {
                                 // ___________________
                                 onDismiss()
                             }
+
                         },
                         modifier = Modifier
                             .fillMaxWidth()

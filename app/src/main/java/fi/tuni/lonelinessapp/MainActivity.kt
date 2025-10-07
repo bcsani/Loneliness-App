@@ -14,11 +14,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import fi.tuni.lonelinessapp.data.datasource.AllQuestionDataSource
+import fi.tuni.lonelinessapp.data.repository.AllQuestionRepository
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
 import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
+import fi.tuni.lonelinessapp.ui.screens.home.HomeScreenViewModel
 import fi.tuni.lonelinessapp.ui.screens.profile.ProfileScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +38,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
+    // Create Data Source, Repository and View Model
+    val allQuestionDataSource = AllQuestionDataSource()
+    val allQuestionRepository = AllQuestionRepository(allQuestionDataSource)
+    val homeScreenViewModel = HomeScreenViewModel(allQuestionRepository)
+
     // selectedTab is responsible for keeping
     // track of which tab (bottom navigation) is selected.
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -54,7 +63,7 @@ fun MainScreen() {
             // Depending on the selected tab (selectedTab),
             // display different composable functions.
             when (selectedTab) {
-                0 -> HomeScreen()
+                0 -> HomeScreen(homeScreenViewModel=homeScreenViewModel)
                 1 -> AnalysisScreen()
                 2 -> ProfileScreen()
             }
