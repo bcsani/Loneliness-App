@@ -40,16 +40,5 @@ fun BottomNavigation(
             selected = currentTab == 1,
             onClick = { selectNewTab(1) }
         )
-
-        // Profile tab
-        NavigationBarItem(
-            icon = { Icon(
-                Icons.Filled.AccountCircle,
-                contentDescription = "Profile"
-            ) },
-            label = { Text("Profile") },
-            selected = currentTab == 2,
-            onClick = { selectNewTab(2) }
-        )
     }
 }

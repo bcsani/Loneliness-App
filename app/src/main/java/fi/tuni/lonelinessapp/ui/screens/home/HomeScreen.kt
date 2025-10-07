@@ -39,6 +39,8 @@ fun HomeScreen(modifier: Modifier = Modifier, homeScreenViewModel: HomeScreenVie
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+
+        // This is a temporary demo element
         item {
             Card(
                 modifier = modifier
@@ -64,7 +66,7 @@ fun HomeScreen(modifier: Modifier = Modifier, homeScreenViewModel: HomeScreenVie
             Card(
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(120.dp),
                 shape = MaterialTheme.shapes.medium
             ) {
                 Box(
@@ -117,6 +119,48 @@ fun HomeScreen(modifier: Modifier = Modifier, homeScreenViewModel: HomeScreenVie
                     text = "Fill Daily Survey",
                     fontSize = 24.sp
                 )
+            }
+        }
+
+        // This is a temporary demo element
+        item {
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                ){
+                    Text(
+                        text = "Loneliness Correlations",
+                        modifier = modifier.align(Alignment.Center),
+                        fontSize = 32.sp
+                    )
+                }
+            }
+        }
+
+        // This is a temporary demo element
+        item {
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                ){
+                    Text(
+                        text = "This Week",
+                        modifier = modifier.align(Alignment.Center),
+                        fontSize = 32.sp
+                    )
+                }
             }
         }
     }

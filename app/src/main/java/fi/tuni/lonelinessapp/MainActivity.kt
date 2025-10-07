@@ -65,7 +65,6 @@ fun MainScreen() {
             when (selectedTab) {
                 0 -> HomeScreen(homeScreenViewModel=homeScreenViewModel)
                 1 -> AnalysisScreen()
-                2 -> ProfileScreen()
             }
         }
     }
