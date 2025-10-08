@@ -16,9 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
+import fi.tuni.lonelinessapp.ui.navigation.TopBar
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
 import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
 import fi.tuni.lonelinessapp.ui.screens.home.SurveyDialog
+import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,16 +37,30 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
-    // selectedTab is responsible for keeping
-    // track of which tab (bottom navigation) is selected.
+    // Selected bottom tab
     var selectedTab by remember { mutableIntStateOf(0) }
+
+    // Survey dialog visibility
     var showSurvey by remember { mutableStateOf(false) }
 
+    // Settings screen visibility
+    var showSettings by remember { mutableStateOf(false) }
+
     Scaffold(
+        topBar = {
+            TopBar(
+                currentTab = selectedTab,
+                showSettingsScreen = showSettings,
+                onSettingsClick = {showSettings = !showSettings}
+            )
+        },
         bottomBar = {
             BottomNavigation(
                 currentTab = selectedTab,
-                selectNewTab = {selectedTab = it},
+                showSettingsScreen = showSettings,
+                selectNewTab = {
+                    selectedTab = it
+                    showSettings = false},
                 onSurveyButtonClick = { showSurvey = true }
             )
         }
@@ -54,13 +70,17 @@ fun MainScreen() {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Depending on the selected tab (selectedTab),
-            // display different composable functions.
-            when (selectedTab) {
-                0 -> HomeScreen()
-                1 -> AnalysisScreen()
+            // Show main content or settings
+            if (!showSettings) {
+                when (selectedTab) {
+                    0 -> HomeScreen()
+                    1 -> AnalysisScreen()
+                }
+            } else {
+                SettingsScreen()
             }
 
+            // Show survey dialog
             if (showSurvey) {
                 SurveyDialog(onDismiss = { showSurvey = false })
             }
