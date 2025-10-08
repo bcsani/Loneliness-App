@@ -19,19 +19,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import fi.tuni.lonelinessapp.MainViewModel
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(
+    mainViewModel: MainViewModel,
+    modifier: Modifier = Modifier,
+    homeViewModel: HomeViewModel = viewModel()
+) {
+
     // Variable for daily survey dialog
-    var showDialog by remember { mutableStateOf(false) }
+    val showDialog by mainViewModel.showSurvey
+
+    // Variable for streak count
+    val streakCount by homeViewModel.streakCount
 
     LazyColumn(
         modifier = modifier,
@@ -78,7 +84,6 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-
                         Icon(
                             imageVector = Icons.Filled.Star,
                             contentDescription = "Streak Icon",
@@ -90,7 +95,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "2", // Temporarily hardcoded value, to be replaced later
+                                text = streakCount.toString(),
                                 modifier = modifier,
                                 fontSize = 36.sp
                             )
@@ -109,7 +114,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         // Survey Button
         item {
             Button(
-                onClick = {showDialog = true},
+                onClick = {mainViewModel.openSurvey()},
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -167,7 +172,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
     if(showDialog){
         SurveyDialog(
-            onDismiss = {showDialog = false}
+            onDismiss = {mainViewModel.closeSurvey()}
         )
     }
 }

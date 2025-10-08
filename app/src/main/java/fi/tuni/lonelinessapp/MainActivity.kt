@@ -70,7 +70,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             // Show main content or settings
             if (!showSettings) {
                 when (selectedTab) {
-                    0 -> HomeScreen()
+                    0 -> HomeScreen(viewModel)
                     1 -> AnalysisScreen()
                 }
             } else {
