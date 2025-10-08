@@ -16,7 +16,7 @@ import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
 import fi.tuni.lonelinessapp.ui.navigation.TopBar
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
 import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
-import fi.tuni.lonelinessapp.ui.screens.home.SurveyDialog
+import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 

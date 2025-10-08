@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.MainViewModel
+import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 
 @Composable
 fun HomeScreen(
@@ -172,7 +173,7 @@ fun HomeScreen(
 
     if(showDialog){
         SurveyDialog(
-            onDismiss = {mainViewModel.closeSurvey()}
+            onDismiss = { mainViewModel.closeSurvey() }
         )
     }
 }
