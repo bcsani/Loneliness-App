@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -50,7 +49,7 @@ fun SurveyDialog(
                     text = "Daily Survey",
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .padding(12.dp)
+                        .padding(4.dp)
                 )
 
                 // Phase
@@ -58,15 +57,14 @@ fun SurveyDialog(
                     "Question $currentStep of 3",
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .padding(8.dp)
+                        .padding(4.dp)
                 )
 
                 // Question
                 Text(
                     text = question,
                     modifier = Modifier
-                        .padding(8.dp)
-                        .height(72.dp)
+                        .padding(vertical = 8.dp)
                 )
 
                 // Options
@@ -81,7 +79,6 @@ fun SurveyDialog(
                                     optionValues[index]
                                 )
                             }
-                            .padding(vertical = 4.dp)
                     ) {
                         RadioButton(
                             selected = currentAnswer == optionValues[index],
@@ -101,7 +98,9 @@ fun SurveyDialog(
 
                 // Buttons
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Back-button
