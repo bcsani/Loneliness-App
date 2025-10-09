@@ -2,6 +2,7 @@ package fi.tuni.lonelinessapp.ui.screens.survey
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 
 class SurveyViewModel : ViewModel() {
@@ -10,27 +11,53 @@ class SurveyViewModel : ViewModel() {
     private val _currentStep = mutableIntStateOf(1)
     val currentStep: State<Int> = _currentStep
 
-    private var answers = mutableListOf<Int>()
+    private val _answers = mutableStateListOf<Int?>(null, null, null)
 
-    fun addAnswer(value: Int) {
-        answers.add(value)
+    val questions = listOf(
+        "How often have you felt that you lack companionship during the past week?",
+        "How often have you felt left out during past week?",
+        "How often have you felt isolated from others during past week?"
+    )
+    val options = listOf("Often", "Sometimes", "Never")
+    val optionValues = listOf(1, 2, 3)
+
+    fun setAnswer(step: Int, value: Int) {
+        if (step in 1.._answers.size) {
+            _answers[step - 1] = value
+        }
     }
 
-    fun removeAnswer() {
-        answers.removeAt(answers.size - 1)
+    fun getAnswer(step: Int): Int? {
+        return _answers.getOrNull(step - 1)
+    }
+
+    fun removeAnswer(step: Int) {
+        if (step in 1.._answers.size) {
+            _answers[step - 1] = null
+        }
     }
 
     fun nextStep() {
-        _currentStep.intValue += 1
+        if (_currentStep.intValue < _answers.size) {
+            _currentStep.intValue += 1
+        }
     }
 
     fun previousStep() {
-        _currentStep.intValue -= 1
+        if (_currentStep.intValue > 1) {
+            _currentStep.intValue -= 1
+        }
     }
 
     fun resetSurvey() {
         _currentStep.intValue = 1
-        answers.clear()
+        _answers.clear()
+        repeat(questions.size) { _answers.add(null) }
     }
 
+    fun submitAnswers() {
+        // ___________________
+        // Process the answers
+        // ___________________
+    }
 }
