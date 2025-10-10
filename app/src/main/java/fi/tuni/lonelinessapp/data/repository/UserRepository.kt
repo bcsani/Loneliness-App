@@ -1,0 +1,16 @@
+package fi.tuni.lonelinessapp.data.repository
+
+import fi.tuni.lonelinessapp.data.datasource.UserDataSource
+
+class UserRepository (
+    private val userID: Int,
+    private val userDataSource: UserDataSource
+) : UserRepositoryInterface {
+    override fun fetchAge(userID: Int): Int {
+        return userDataSource.fetchAge(userID)
+    }
+
+    override fun fetchName(userID: Int): String {
+        return userDataSource.fetchName(userID)
+    }
+}
