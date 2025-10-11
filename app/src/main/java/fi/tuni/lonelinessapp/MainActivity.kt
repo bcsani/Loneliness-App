@@ -1,9 +1,14 @@
 package fi.tuni.lonelinessapp
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -11,17 +16,31 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fi.tuni.lonelinessapp.databinding.ActivityMainBinding
+import fi.tuni.lonelinessapp.service.StepForegroundService
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
 import fi.tuni.lonelinessapp.ui.navigation.TopBar
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
 import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
+import fi.tuni.lonelinessapp.ui.step.StepViewModel
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 
+class MainActivity : ComponentActivity () {
+    private lateinit var binding: ActivityMainBinding
+    private val stepViewModel: StepViewModel by viewModels()
 
-class MainActivity : ComponentActivity() {
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startStepService()
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -30,7 +49,29 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
             }
         }
+
+        requestPermissions()
     }
+
+    private fun requestPermissions() {
+
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACTIVITY_RECOGNITION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+        } else {
+            startStepService()
+        }
+    }
+
+    private fun startStepService() {
+        println("Hello")
+        val intent = Intent(this, StepForegroundService::class.java)
+        ContextCompat.startForegroundService(this, intent)
+    }
+
 }
 
 @Composable
