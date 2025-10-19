@@ -256,12 +256,40 @@ fun AnalysisScreen(
                                 valueTextSize = 12f
                                 valueTextColor = 0xFF1F2937.toInt()
                                 valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float): String =
-                                        "${value.toInt()}%"
+                                    override fun getFormattedValue(value: Float): String {
+                                        val totalMinutes = 420f
+                                        val minutes = (totalMinutes * (value / 100f))
+                                        val hoursPart = minutes.toInt() / 60
+                                        val minsPart = (minutes % 60).toInt()
+                                        return "%dh %02dmin".format(hoursPart, minsPart)
+                                    }
                                 }
                             }
                             data = PieData(set)
                             invalidate()
+                            // Näytä sovelluksen nimi Toastina kun viipaletta painetaan
+                            setOnChartValueSelectedListener(object :
+                                com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+                                override fun onValueSelected(
+                                    e: com.github.mikephil.charting.data.Entry?,
+                                    h: com.github.mikephil.charting.highlight.Highlight?
+                                ) {
+                                    if (e is PieEntry) {
+                                        val label = e.label          // Sovelluksen nimi (esim. "WhatsApp")
+                                        val value = e.value          // Käyttöaika minuutteina (float)
+                                        val hours = value.toInt() / 60
+                                        val mins = (value % 60).toInt()
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "$label – %dh %02dmin".format(hours, mins),
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+
+                                override fun onNothingSelected() {}
+                            })
+
                         }
                     }
                 )
