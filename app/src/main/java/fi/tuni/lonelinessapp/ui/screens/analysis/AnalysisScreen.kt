@@ -44,10 +44,10 @@ fun AnalysisScreen(
     val nightMinutes = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
 
     // Testidata puhelimen käyttö yöllä.
-    val dayMinutes   = listOf(165f, 150f, 180f, 140f, 172f, 210f, 185f)
+    val dayMinutes   = listOf(165f, 150f, 180f, 140f, 172f, 210f, 580f)
 
     // Testidata askeleet.
-    val steps = listOf(8000f, 9000f, 7500f, 10000f, 8200f, 13000f, 11000f)
+    val steps = listOf(8000f, 9000f, 7500f, 10000f, 8200f, 20000f, 11000f)
 
     // Testidata sovellusten käyttö: prosenttiosuuksina.
     val commApps = linkedMapOf(
@@ -57,9 +57,6 @@ fun AnalysisScreen(
         "Signal" to 10f,
         "Telegram" to 7f
     )
-
-    // Kytkin: näytetäänkö puhelimen käyttö tunneissa?
-    val showHours = true
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -112,11 +109,11 @@ fun AnalysisScreen(
 
         // Taulukko 2: Night phone usage (bar chart) – tunneissa
         item {
-            val values = if (showHours) nightMinutes.map { it / 60f } else nightMinutes
-            val unit = if (showHours) "h" else "min"
-            ChartCard(title = "Night Phone Usage (${if (showHours) "hours" else "minutes"})") {
+            ChartCard(title = "Night Phone Usage (hours)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
                     factory = { ctx ->
                         BarChart(ctx).apply {
                             description = Description().apply { text = "" }
@@ -124,25 +121,40 @@ fun AnalysisScreen(
                             legend.isEnabled = false
                             setTouchEnabled(true)
 
+                            // X-akseli
                             xAxis.position = XAxis.XAxisPosition.BOTTOM
                             xAxis.valueFormatter = IndexAxisValueFormatter(days)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f,10f,0f)
+                            xAxis.enableGridDashedLine(10f, 10f, 0f)
 
-                            axisLeft.axisMinimum = 0f
-                            axisLeft.setDrawGridLines(true)
-                            axisLeft.enableGridDashedLine(10f,10f,0f)
+                            // MINUUTIT -> TUNNIT ja mukautuva akseli
+                            val hours = nightMinutes.map { it / 60f }
+                            val maxH  = (hours.maxOrNull() ?: 0f).coerceAtLeast(0f)
+                            val step  = hourStepFor(maxH)
+                            val axisMax = niceCeil(maxH * 1.15f, step)
 
-                            val entries = values.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
+                            axisLeft.apply {
+                                axisMinimum = 0f
+                                axisMaximum = axisMax
+                                granularity = step
+                                setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
+                                setDrawGridLines(true)
+                                enableGridDashedLine(10f, 10f, 0f)
+                            }
+
+                            val entries = hours.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
                             val set = BarDataSet(entries, "Night usage").apply {
                                 color = 0xFF2563EB.toInt()
                                 valueTextColor = 0xFF1F2937.toInt()
                                 valueTextSize = 10f
-                                // näytä 1 desimaali jos tunnit, muuten kokonaisminuutit
-                                valueFormatter = UnitValueFormatter(unit, if (showHours) 1 else 0)
+                                valueFormatter = object : ValueFormatter() {
+                                    override fun getBarLabel(e: BarEntry?): String =
+                                        if (e == null) "" else String.format("%.1f h", e.y)
+                                }
                             }
                             data = BarData(set).apply { barWidth = 0.5f }
+
                             invalidate()
                         }
                     }
@@ -150,13 +162,14 @@ fun AnalysisScreen(
             }
         }
 
-        // Taulukko 3: Daytime phone usage (bar chart) – tunneissa
+
+        // Taulukko 3: Daytime phone usage (bar chart) – tunneissa.
         item {
-            val values = if (showHours) dayMinutes.map { it / 60f } else dayMinutes
-            val unit = if (showHours) "h" else "min"
-            ChartCard(title = "Daytime Phone Usage (6am–10pm, ${if (showHours) "hours" else "minutes"})") {
+            ChartCard(title = "Daytime Phone Usage (6am–10pm, hours)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
                     factory = { ctx ->
                         BarChart(ctx).apply {
                             description = Description().apply { text = "" }
@@ -168,32 +181,52 @@ fun AnalysisScreen(
                             xAxis.valueFormatter = IndexAxisValueFormatter(days)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f,10f,0f)
+                            xAxis.enableGridDashedLine(10f, 10f, 0f)
 
-                            axisLeft.axisMinimum = 0f
-                            axisLeft.setDrawGridLines(true)
-                            axisLeft.enableGridDashedLine(10f,10f,0f)
+                            // MINUUTIT -> TUNNIT ja mukautuva akseli
+                            val hours = dayMinutes.map { it / 60f }
+                            val maxH  = (hours.maxOrNull() ?: 0f).coerceAtLeast(0f)
+                            val step  = hourStepFor(maxH)
+                            val axisMax = niceCeil(maxH * 1.15f, step)
 
-                            val entries = values.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
+                            axisLeft.apply {
+                                axisMinimum = 0f
+                                axisMaximum = axisMax
+                                granularity = step
+                                setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
+                                setDrawGridLines(true)
+                                enableGridDashedLine(10f, 10f, 0f)
+                            }
+
+                            val entries = hours.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
                             val set = BarDataSet(entries, "Daytime usage").apply {
                                 color = 0xFF2563EB.toInt()
                                 valueTextColor = 0xFF1F2937.toInt()
                                 valueTextSize = 10f
-                                valueFormatter = UnitValueFormatter(unit, if (showHours) 1 else 0)
+                                valueFormatter = object : ValueFormatter() {
+                                    override fun getBarLabel(e: BarEntry?): String =
+                                        if (e == null) "" else String.format("%.1f h", e.y)
+                                }
                             }
                             data = BarData(set).apply { barWidth = 0.5f }
+
                             invalidate()
                         }
                     }
                 )
             }
         }
+
+
+
 
         // Taulukko 4: Exercise (bar chart).
         item {
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
                     factory = { ctx ->
                         BarChart(ctx).apply {
                             description = Description().apply { text = "" }
@@ -205,26 +238,41 @@ fun AnalysisScreen(
                             xAxis.valueFormatter = IndexAxisValueFormatter(days)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f,10f,0f)
+                            xAxis.enableGridDashedLine(10f, 10f, 0f)
 
-                            axisLeft.axisMinimum = 0f
-                            axisLeft.setDrawGridLines(true)
-                            axisLeft.enableGridDashedLine(10f,10f,0f)
+                            // Mukautuva Y-akseli askelille
+                            val maxSteps = (steps.maxOrNull() ?: 0f).coerceAtLeast(0f)
+                            val stepS    = stepStepFor(maxSteps)
+                            val axisMaxS = niceCeil(maxSteps * 1.15f, stepS)
+
+                            axisLeft.apply {
+                                axisMinimum = 0f
+                                axisMaximum = axisMaxS
+                                granularity = stepS
+                                setLabelCount(((axisMaxS / stepS).toInt() + 1).coerceAtMost(10), true)
+                                setDrawGridLines(true)
+                                enableGridDashedLine(10f, 10f, 0f)
+                            }
 
                             val entries = steps.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
                             val set = BarDataSet(entries, "Steps").apply {
                                 color = 0xFF2563EB.toInt()
                                 valueTextColor = 0xFF1F2937.toInt()
                                 valueTextSize = 10f
-                                valueFormatter = UnitValueFormatter("", 0) // ei yksikköä
+                                valueFormatter = object : ValueFormatter() {
+                                    override fun getBarLabel(e: BarEntry?): String =
+                                        if (e == null) "" else "%,d".format(e.y.toInt())
+                                }
                             }
                             data = BarData(set).apply { barWidth = 0.5f }
+
                             invalidate()
                         }
                     }
                 )
             }
         }
+
 
         // Taulukko 5 Communication Apps Usage (pie chart).
         item {
@@ -328,6 +376,33 @@ private class UnitValueFormatter(
         val v = barEntry?.y ?: return ""
         return if (decimals == 0) "${v.toInt()}${if (unit.isNotEmpty()) " $unit" else ""}"
         else "%.${decimals}f %s".format(v, unit).trim()
+    }
+}
+
+// Pyöristää ylärajan nätisti ylöspäin lähimpään 'step' kerrannaiseen
+private fun niceCeil(value: Float, step: Float): Float {
+    if (step <= 0f) return value
+    val k = kotlin.math.ceil(value / step)
+    return (k * step)
+}
+
+// Valitsee järkevän stepin tunneille max-arvon perusteella
+private fun hourStepFor(maxVal: Float): Float =
+    when {
+        maxVal <= 2f  -> 0.25f   // 15 min välein
+        maxVal <= 4f  -> 0.5f    // 30 min
+        maxVal <= 8f  -> 1f      // 1 h
+        else          -> 2f      // 2 h
+    }
+
+// Valitsee järkevän stepin askelille
+private fun stepStepFor(maxVal: Float): Float {
+    // “kaunis” tuhansien väli: 500, 1000, 2000 jne.
+    return when {
+        maxVal <= 4_000f  -> 500f
+        maxVal <= 12_000f -> 1_000f
+        maxVal <= 20_000f -> 2_000f
+        else              -> 5_000f
     }
 }
 
