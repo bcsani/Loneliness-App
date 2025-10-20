@@ -4,8 +4,15 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import fi.tuni.lonelinessapp.data.entity.AllQuestionEntity
+import fi.tuni.lonelinessapp.data.repository.AllQuestionRepository
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
-class SurveyViewModel : ViewModel() {
+class SurveyViewModel(
+    private val allQuestionRepository: AllQuestionRepository
+) : ViewModel() {
 
     // Variable for current step of the survey dialog
     private val _currentStep = mutableIntStateOf(1)
@@ -59,5 +66,12 @@ class SurveyViewModel : ViewModel() {
         // ___________________
         // Process the answers
         // ___________________
+        val date = LocalDate.now()
+        val totalPoints = _answers.sumOf{it ?: 0}
+        val newAllQuestionEntity = AllQuestionEntity(date=date, totalPoints = totalPoints)
+
+        viewModelScope.launch {
+            allQuestionRepository.addQuestion(newAllQuestionEntity)
+        }
     }
 }

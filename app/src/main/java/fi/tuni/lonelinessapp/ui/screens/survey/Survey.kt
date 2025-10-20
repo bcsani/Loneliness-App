@@ -24,7 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun SurveyDialog(
     onDismiss: () -> Unit,
-    surveyViewModel: SurveyViewModel = viewModel()
+    surveyViewModel: SurveyViewModel
 ) {
     val currentStep = surveyViewModel.currentStep.value
     val currentAnswer = surveyViewModel.getAnswer(currentStep)
