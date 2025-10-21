@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,13 +21,24 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlin.math.ceil
+
+// Värit on nyt kovakoodattuina. Myöhemmin siirretään teeman alle.
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
+private val PIE_COLORS = listOf(
+    0xFF2563EB.toInt(), // blue
+    0xFFF59E0B.toInt(), // amber
+    0xFF10B981.toInt(), // emerald
+    0xFFA855F7.toInt(), // violet
+    0xFFEF4444.toInt()  // red
+)
 
 // 1) Loneliness Level (line)
-// 2) Night Phone Usage (bar)  -> tunneissa (1 desimaali)
-// 3) Daytime Phone Usage (bar)-> tunneissa (1 desimaali)
+// 2) Night Phone Usage (bar)
+// 3) Daytime Phone Usage (bar)
 // 4) Exercise (steps) (bar)
 // 5) Communication Apps Usage (pie)
-
 @Composable
 fun AnalysisScreen(
     modifier: Modifier = Modifier,
@@ -34,29 +46,26 @@ fun AnalysisScreen(
     // Kytketään myöhemmin oikeaan dataan.
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
-    // Testidata.
-    val days = listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+    // Haetaan viikon demodata ViewModelista.
+    val week = remember { analysisViewModel.loadCurrentWeek() }
 
-    // Testidata kyselyn tulokset.
-    val loneliness = listOf(2.4f, 1.8f, 2.1f, 1.5f, 1.2f, 1.0f, 1.4f)
+    // List<LinePoint>
+    val lonelinessPts = remember { analysisViewModel.lonelinessLine(week) }
 
-    // Testidata puhelimen käyttö yöllä.
-    val nightMinutes = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
+    // List<BarPoint> (h)
+    val nightPts      = remember { analysisViewModel.nightUsageBarsHours(week) }
 
-    // Testidata puhelimen käyttö yöllä.
-    val dayMinutes   = listOf(165f, 150f, 180f, 140f, 172f, 210f, 580f)
+    // List<BarPoint> (h)
+    val dayPts        = remember { analysisViewModel.dayUsageBarsHours(week) }
 
-    // Testidata askeleet.
-    val steps = listOf(8000f, 9000f, 7500f, 10000f, 8200f, 20000f, 11000f)
+    // List<BarPoint>
+    val stepsPts      = remember { analysisViewModel.stepsBars(week) }
 
-    // Testidata sovellusten käyttö: prosenttiosuuksina.
-    val commApps = linkedMapOf(
-        "WhatsApp" to 39f,
-        "Messages" to 28f,
-        "Calls" to 16f,
-        "Signal" to 10f,
-        "Telegram" to 7f
-    )
+    // List<PieSlice>
+    val commPie       = remember { analysisViewModel.communicationPieHours() }
+
+    // Mon/Tue/ jne.
+    val dayLabels     = remember { lonelinessPts.map { it.xLabel } }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -64,6 +73,7 @@ fun AnalysisScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         // Taulukko 1: Loneliness LeveL (line chart)
         item {
             ChartCard(title = "Loneliness Level (This Week)") {
@@ -78,7 +88,7 @@ fun AnalysisScreen(
                             setPinchZoom(false)
 
                             xAxis.position = XAxis.XAxisPosition.BOTTOM
-                            xAxis.valueFormatter = IndexAxisValueFormatter(days)
+                            xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
                             xAxis.enableGridDashedLine(10f,10f,0f)
@@ -90,10 +100,11 @@ fun AnalysisScreen(
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
-                            val entries = loneliness.mapIndexed { i, v -> Entry(i.toFloat(), v) }
+                            val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
+
                             val set = LineDataSet(entries, "Loneliness").apply {
-                                color = 0xFF2563EB.toInt()
-                                setCircleColor(0xFF2563EB.toInt())
+                                color = COLOR_PRIMARY_HEX
+                                setCircleColor(COLOR_PRIMARY_HEX)
                                 lineWidth = 3f
                                 circleRadius = 5f
                                 mode = LineDataSet.Mode.CUBIC_BEZIER
@@ -115,47 +126,23 @@ fun AnalysisScreen(
                         .fillMaxWidth()
                         .height(240.dp),
                     factory = { ctx ->
-                        BarChart(ctx).apply {
-                            description = Description().apply { text = "" }
-                            axisRight.isEnabled = false
-                            legend.isEnabled = false
-                            setTouchEnabled(true)
+                        BarChart(ctx).apply { // Konfiguroidaan pylväskaavio.
+                            applyBarDefaults(dayLabels) // Aja yhteiset perusasetukset (x-akseli alas, ruudukko).
 
-                            // X-akseli
-                            xAxis.position = XAxis.XAxisPosition.BOTTOM
-                            xAxis.valueFormatter = IndexAxisValueFormatter(days)
-                            xAxis.granularity = 1f
-                            xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f, 10f, 0f)
+                            val hours = nightPts.map { it.y } // Ota y-arvot (tunnit) listaksi.
+                            applyNiceYAxis(hours, ::hourStepFor) // Säädä vasen Y-akseli järkeviin pykäliin (0.25/0.5/1/2h).
 
-                            // MINUUTIT -> TUNNIT ja mukautuva akseli
-                            val hours = nightMinutes.map { it / 60f }
-                            val maxH  = (hours.maxOrNull() ?: 0f).coerceAtLeast(0f)
-                            val step  = hourStepFor(maxH)
-                            val axisMax = niceCeil(maxH * 1.15f, step)
-
-                            axisLeft.apply {
-                                axisMinimum = 0f
-                                axisMaximum = axisMax
-                                granularity = step
-                                setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
-                                setDrawGridLines(true)
-                                enableGridDashedLine(10f, 10f, 0f)
-                            }
-
-                            val entries = hours.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
-                            val set = BarDataSet(entries, "Night usage").apply {
-                                color = 0xFF2563EB.toInt()
-                                valueTextColor = 0xFF1F2937.toInt()
-                                valueTextSize = 10f
-                                valueFormatter = object : ValueFormatter() {
+                            val set = makeBarDataSet( // Luo yhtenäinen pylvässarja ulkoasuineen.
+                                label = "Night usage", // Sarjan nimi (ei näy kun legend piilossa, mutta hyvä debuggaukseen).
+                                entries = toBarEntries(nightPts), // Muunna pisteet BarEntryiksi.
+                                valueFormatter = object : ValueFormatter() { // Muotoile pylvään yläpuolella näkyvä teksti.
                                     override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else String.format("%.1f h", e.y)
+                                        if (e == null) "" else String.format("%.1f h", e.y) // Näytä esim. “1.5 h”.
                                 }
-                            }
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            )
 
-                            invalidate()
+                            data = BarData(set).apply { barWidth = 0.5f } // Aseta data ja pylväiden leveys.
+                            invalidate() // Piirrä kaavio.
                         }
                     }
                 )
@@ -171,46 +158,23 @@ fun AnalysisScreen(
                         .fillMaxWidth()
                         .height(240.dp),
                     factory = { ctx ->
-                        BarChart(ctx).apply {
-                            description = Description().apply { text = "" }
-                            axisRight.isEnabled = false
-                            legend.isEnabled = false
-                            setTouchEnabled(true)
+                        BarChart(ctx).apply { // Konfiguroidaan pylväskaavio.
+                            applyBarDefaults(dayLabels) // Yhteiset perusasetukset.
 
-                            xAxis.position = XAxis.XAxisPosition.BOTTOM
-                            xAxis.valueFormatter = IndexAxisValueFormatter(days)
-                            xAxis.granularity = 1f
-                            xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f, 10f, 0f)
+                            val hours = dayPts.map { it.y } // Ota y-arvot (tunnit) listaksi.
+                            applyNiceYAxis(hours, ::hourStepFor) // Valitse pykäläko’oiksi tunnille sopivat stepit.
 
-                            // MINUUTIT -> TUNNIT ja mukautuva akseli
-                            val hours = dayMinutes.map { it / 60f }
-                            val maxH  = (hours.maxOrNull() ?: 0f).coerceAtLeast(0f)
-                            val step  = hourStepFor(maxH)
-                            val axisMax = niceCeil(maxH * 1.15f, step)
-
-                            axisLeft.apply {
-                                axisMinimum = 0f
-                                axisMaximum = axisMax
-                                granularity = step
-                                setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
-                                setDrawGridLines(true)
-                                enableGridDashedLine(10f, 10f, 0f)
-                            }
-
-                            val entries = hours.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
-                            val set = BarDataSet(entries, "Daytime usage").apply {
-                                color = 0xFF2563EB.toInt()
-                                valueTextColor = 0xFF1F2937.toInt()
-                                valueTextSize = 10f
-                                valueFormatter = object : ValueFormatter() {
+                            val set = makeBarDataSet( // Yhtenäinen datasets.
+                                label = "Daytime usage", // Sarjan nimi.
+                                entries = toBarEntries(dayPts), // Pisteet BarEntryiksi.
+                                valueFormatter = object : ValueFormatter() { // Teksti pylvään päälle.
                                     override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else String.format("%.1f h", e.y)
+                                        if (e == null) "" else String.format("%.1f h", e.y) // Näytä “x.x h”.
                                 }
-                            }
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            )
 
-                            invalidate()
+                            data = BarData(set).apply { barWidth = 0.5f } // Aseta data ja leveys.
+                            invalidate() // Piirrä.
                         }
                     }
                 )
@@ -227,46 +191,24 @@ fun AnalysisScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp),
-                    factory = { ctx ->
-                        BarChart(ctx).apply {
-                            description = Description().apply { text = "" }
-                            axisRight.isEnabled = false
-                            legend.isEnabled = false
-                            setTouchEnabled(true)
+                    factory = { ctx -> // Luo BarChart.
+                        BarChart(ctx).apply { // Konfigurointi.
+                            applyBarDefaults(dayLabels) // Yhteiset perusasetukset.
 
-                            xAxis.position = XAxis.XAxisPosition.BOTTOM
-                            xAxis.valueFormatter = IndexAxisValueFormatter(days)
-                            xAxis.granularity = 1f
-                            xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f, 10f, 0f)
+                            val values = stepsPts.map { it.y } // Ota askelarvot.
+                            applyNiceYAxis(values, ::stepStepFor) // Pykälävalinta askelille (500/1000/2000/5000).
 
-                            // Mukautuva Y-akseli askelille
-                            val maxSteps = (steps.maxOrNull() ?: 0f).coerceAtLeast(0f)
-                            val stepS    = stepStepFor(maxSteps)
-                            val axisMaxS = niceCeil(maxSteps * 1.15f, stepS)
-
-                            axisLeft.apply {
-                                axisMinimum = 0f
-                                axisMaximum = axisMaxS
-                                granularity = stepS
-                                setLabelCount(((axisMaxS / stepS).toInt() + 1).coerceAtMost(10), true)
-                                setDrawGridLines(true)
-                                enableGridDashedLine(10f, 10f, 0f)
-                            }
-
-                            val entries = steps.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
-                            val set = BarDataSet(entries, "Steps").apply {
-                                color = 0xFF2563EB.toInt()
-                                valueTextColor = 0xFF1F2937.toInt()
-                                valueTextSize = 10f
-                                valueFormatter = object : ValueFormatter() {
+                            val set = makeBarDataSet( // Luo datasets.
+                                label = "Steps", // Nimi.
+                                entries = toBarEntries(stepsPts), // Pisteet BarEntryiksi.
+                                valueFormatter = object : ValueFormatter() { // Muotoile pylvään arvo.
                                     override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else "%,d".format(e.y.toInt())
+                                        if (e == null) "" else "%,d".format(e.y.toInt()) // Tuhaterotin (esim. 10,500).
                                 }
-                            }
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            )
 
-                            invalidate()
+                            data = BarData(set).apply { barWidth = 0.5f } // Aseta data ja leveys.
+                            invalidate() // Piirrä.
                         }
                     }
                 )
@@ -276,46 +218,33 @@ fun AnalysisScreen(
 
         // Taulukko 5 Communication Apps Usage (pie chart).
         item {
-            ChartCard(title = "Communication Apps Usage") {
+            ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
                     modifier = Modifier.fillMaxWidth().height(280.dp),
                     factory = { ctx ->
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
                             legend.isEnabled = true
-                            setUsePercentValues(true)
+                            setUsePercentValues(false) // EI prosentteja
                             setDrawEntryLabels(false)
+                            isRotationEnabled = false // Estää pyörimisen
+                            rotationAngle = 0f        // Aloitus ylös
+                            animateY(0)               // Ei animaatiota
 
-                            val entries = commApps.map { PieEntry(it.value, it.key) }
+                            val entries = commPie.map { PieEntry(it.value, it.label) }
                             val set = PieDataSet(entries, "").apply {
-                                // yksinkertainen väripaletti (voit vaihtaa brändiin)
-                                colors = listOf(
-                                    // blue.
-                                    0xFF2563EB.toInt(),
-                                    // amber.
-                                    0xFFF59E0B.toInt(),
-                                    // emerald.
-                                    0xFF10B981.toInt(),
-                                    // violet.
-                                    0xFFA855F7.toInt(),
-                                    // red.
-                                    0xFFEF4444.toInt()
-                                )
+                                colors = PIE_COLORS
                                 valueTextSize = 12f
-                                valueTextColor = 0xFF1F2937.toInt()
+                                valueTextColor = COLOR_TEXT_HEX
                                 valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float): String {
-                                        val totalMinutes = 420f
-                                        val minutes = (totalMinutes * (value / 100f))
-                                        val hoursPart = minutes.toInt() / 60
-                                        val minsPart = (minutes % 60).toInt()
-                                        return "%dh %02dmin".format(hoursPart, minsPart)
-                                    }
+                                    override fun getFormattedValue(value: Float): String =
+                                        String.format("%.1f h", value)
                                 }
                             }
                             data = PieData(set)
                             invalidate()
-                            // Näytä sovelluksen nimi Toastina kun viipaletta painetaan
+
+                            // Näytä sovelluksen nimi ja tuntimäärä Toastina
                             setOnChartValueSelectedListener(object :
                                 com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                                 override fun onValueSelected(
@@ -323,30 +252,28 @@ fun AnalysisScreen(
                                     h: com.github.mikephil.charting.highlight.Highlight?
                                 ) {
                                     if (e is PieEntry) {
-                                        val label = e.label          // Sovelluksen nimi (esim. "WhatsApp")
-                                        val value = e.value          // Käyttöaika minuutteina (float)
-                                        val hours = value.toInt() / 60
-                                        val mins = (value % 60).toInt()
+                                        val label = e.label
+                                        val hours = e.value
                                         android.widget.Toast.makeText(
                                             context,
-                                            "$label – %dh %02dmin".format(hours, mins),
-                                            android.widget.Toast.LENGTH_LONG
+                                            "$label – %.1f h".format(hours),
+                                            android.widget.Toast.LENGTH_SHORT
                                         ).show()
                                     }
                                 }
-
                                 override fun onNothingSelected() {}
                             })
-
                         }
                     }
                 )
             }
         }
+
     }
 }
 
 // Funktio 'Chartcard' luo yhtenäisen korttipohjan graafeille.
+// Themes?
 @Composable
 private fun ChartCard(
     title: String? = null,
@@ -367,6 +294,54 @@ private fun ChartCard(
     }
 }
 
+private fun BarChart.applyBarDefaults(xLabels: List<String>) { // Yhteiset asetukset kaikille pylväskaavioille.
+    description = Description().apply { text = "" } // Ei description-tekstiä.
+    axisRight.isEnabled = false // Oikea Y-akseli pois.
+    legend.isEnabled = false // Legend piiloon (ei tarvita).
+    setTouchEnabled(true) // Salli kosketus/scroll.
+
+    xAxis.position = XAxis.XAxisPosition.BOTTOM // X-akseli alareunaan.
+    xAxis.valueFormatter = IndexAxisValueFormatter(xLabels) // X-akselille annetut labelit järjestyksessä.
+    xAxis.granularity = 1f // Väli yksi indeksi kerrallaan.
+    xAxis.setDrawGridLines(true) // Piirrä pystysuorat apuviivat.
+    xAxis.enableGridDashedLine(10f, 10f, 0f) // Apuviivoihin katkoviiva.
+
+    axisLeft.setDrawGridLines(true) // Piirrä vaaka-apuviivat.
+    axisLeft.enableGridDashedLine(10f, 10f, 0f) // Vaaka-apuviivoihin katkoviiva.
+}
+
+
+private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) { // Säädä vasen Y-akseli arvojen mukaan.
+    val maxVal = (values.maxOrNull() ?: 0f).coerceAtLeast(0f) // Suurin arvo tai 0.
+    val step   = stepFn(maxVal) // Valitse järkevä pykälä (tunti/askel-logiikalla).
+    val axisMax = niceCeil(maxVal * 1.15f, step) // Lisää 15% “päähän” ja pyöristä ylös pykälään.
+
+    axisLeft.apply { // Aseta vasen Y-akseli.
+        axisMinimum = 0f // Ala aina nollasta.
+        axisMaximum = axisMax // Yläraja lasketun mukaan.
+        granularity = step // Pykäläkoon väli.
+        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true) // Rajoita labelien määrä max 10.
+    }
+}
+
+
+private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntry> = // Muunna BarPoint → BarEntry.
+    points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) } // X = indeksi, Y = arvo.
+
+
+private fun makeBarDataSet( // Luo yhtenäinen BarDataSet saman ulkoasun mukaan.
+    label: String, // Sarjan nimi (hyödyllinen debuggauksessa).
+    entries: List<BarEntry>, // Pylväspisteet.
+    valueFormatter: ValueFormatter? = null // Valinnainen arvoformatoija pylvään yläpuolelle.
+): BarDataSet = BarDataSet(entries, label).apply { // Palauta konfiguroitu dataset.
+    color = COLOR_PRIMARY_HEX // Pylvään väri (pidetään kovakoodattuna nyt).
+    valueTextColor = COLOR_TEXT_HEX // Pylvään päällä näkyvän tekstin väri.
+    valueTextSize = 10f // Pylvään päällä näkyvän tekstin fonttikoko.
+    if (valueFormatter != null) setValueFormatter(valueFormatter) // Jos formatti annettu, käytä sitä.
+}
+
+
+
 // 'UnitValueFormatter' muotoilee pylvään arvot yksiköllä ja desimaalimäärällä.
 private class UnitValueFormatter(
     private val unit: String,
@@ -379,25 +354,29 @@ private class UnitValueFormatter(
     }
 }
 
-// Pyöristää ylärajan nätisti ylöspäin lähimpään 'step' kerrannaiseen
+// Pyöristetään yläraja ylöspäin lähimpään 'step' kerrannaiseen
 private fun niceCeil(value: Float, step: Float): Float {
     if (step <= 0f) return value
     val k = kotlin.math.ceil(value / step)
     return (k * step)
 }
 
-// Valitsee järkevän stepin tunneille max-arvon perusteella
+// Valitaan järkevän väli tunneille max-arvon perusteella
 private fun hourStepFor(maxVal: Float): Float =
     when {
-        maxVal <= 2f  -> 0.25f   // 15 min välein
-        maxVal <= 4f  -> 0.5f    // 30 min
-        maxVal <= 8f  -> 1f      // 1 h
-        else          -> 2f      // 2 h
+        // 15 min välein
+        maxVal <= 2f  -> 0.25f
+        // 30 min
+        maxVal <= 4f  -> 0.5f
+        // 1 h
+        maxVal <= 8f  -> 1f
+        // 2 h
+        else          -> 2f
     }
 
-// Valitsee järkevän stepin askelille
+// Valitaan järkevä väli askelille.
 private fun stepStepFor(maxVal: Float): Float {
-    // “kaunis” tuhansien väli: 500, 1000, 2000 jne.
+    // Selkeä tuhansien väli: 500, 1000, 2000 jne.
     return when {
         maxVal <= 4_000f  -> 500f
         maxVal <= 12_000f -> 1_000f
