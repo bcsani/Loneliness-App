@@ -19,11 +19,26 @@ import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
+import fi.tuni.lonelinessapp.data.source.local.AppDatabase
+import fi.tuni.lonelinessapp.data.source.local.ioThread
+import fi.tuni.lonelinessapp.data.repository.SurveyRepo
+import java.time.LocalDate
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val db: AppDatabase = AppDatabase.getInstance(applicationContext)
+        var str = "Database contents:\n";
+
+        ioThread {
+            val surveyRepo = SurveyRepo(db.surveyDao())
+            surveyRepo.addSurveyResponse(5)
+            val responses = surveyRepo.readAllData
+            responses.forEach {e -> str += LocalDate.ofEpochDay(e.date).toString() + ": " + e.score.toString() + "\n"}
+        }
+
         enableEdgeToEdge()
         setContent {
             LonelinessAppTheme {
