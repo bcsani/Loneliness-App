@@ -23,7 +23,7 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import kotlin.math.ceil
 
-// Värit on nyt kovakoodattuina. Myöhemmin siirretään teeman alle.
+// The colors are now hardcoded. Later we will move them under the theme.
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 private val PIE_COLORS = listOf(
@@ -43,10 +43,10 @@ private val PIE_COLORS = listOf(
 fun AnalysisScreen(
     modifier: Modifier = Modifier,
 
-    // Kytketään myöhemmin oikeaan dataan.
+    // Will be connected to the correct data later.
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
-    // Haetaan viikon demodata ViewModelista.
+    // Retrieve the week's demo data from the ViewModel.
     val week = remember { analysisViewModel.loadCurrentWeek() }
 
     // List<LinePoint>
@@ -64,7 +64,7 @@ fun AnalysisScreen(
     // List<PieSlice>
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
-    // Mon/Tue/ jne.
+    // Mon/Tue..
     val dayLabels     = remember { lonelinessPts.map { it.xLabel } }
 
     LazyColumn(
@@ -74,7 +74,7 @@ fun AnalysisScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Taulukko 1: Loneliness LeveL (line chart)
+        // Chart 1: Loneliness LeveL (line chart)
         item {
             ChartCard(title = "Loneliness Level (This Week)") {
                 AndroidView(
@@ -84,6 +84,7 @@ fun AnalysisScreen(
                             description = Description().apply { text = "" }
                             axisRight.isEnabled = false
                             legend.isEnabled = false
+
                             setTouchEnabled(true)
                             setPinchZoom(false)
 
@@ -94,7 +95,7 @@ fun AnalysisScreen(
                             xAxis.enableGridDashedLine(10f,10f,0f)
 
                             axisLeft.axisMinimum = 0f
-                            axisLeft.axisMaximum = 3f
+                            axisLeft.axisMaximum = 9f
                             axisLeft.granularity = 0.5f
                             axisLeft.setLabelCount(7, true)
                             axisLeft.setDrawGridLines(true)
@@ -118,7 +119,7 @@ fun AnalysisScreen(
             }
         }
 
-        // Taulukko 2: Night phone usage (bar chart) – tunneissa
+        // Chart 2: Night phone usage (bar chart) – hours.
         item {
             ChartCard(title = "Night Phone Usage (hours)") {
                 AndroidView(
@@ -126,23 +127,41 @@ fun AnalysisScreen(
                         .fillMaxWidth()
                         .height(240.dp),
                     factory = { ctx ->
-                        BarChart(ctx).apply { // Konfiguroidaan pylväskaavio.
-                            applyBarDefaults(dayLabels) // Aja yhteiset perusasetukset (x-akseli alas, ruudukko).
 
-                            val hours = nightPts.map { it.y } // Ota y-arvot (tunnit) listaksi.
-                            applyNiceYAxis(hours, ::hourStepFor) // Säädä vasen Y-akseli järkeviin pykäliin (0.25/0.5/1/2h).
+                        // Configure the bar chart.
+                        BarChart(ctx).apply {
+                            // Run common basic settings (x-axis down, grid).
+                            applyBarDefaults(dayLabels)
 
-                            val set = makeBarDataSet( // Luo yhtenäinen pylvässarja ulkoasuineen.
-                                label = "Night usage", // Sarjan nimi (ei näy kun legend piilossa, mutta hyvä debuggaukseen).
-                                entries = toBarEntries(nightPts), // Muunna pisteet BarEntryiksi.
-                                valueFormatter = object : ValueFormatter() { // Muotoile pylvään yläpuolella näkyvä teksti.
+                            // Get the y-values (hours) as a list.
+                            val hours = nightPts.map { it.y }
+
+                            // Adjust the left Y-axis to reasonable increments (0.25/0.5/1/2h).
+                            applyNiceYAxis(hours, ::hourStepFor)
+
+                            // Create a unified set of columns with their appearance.
+                            val set = makeBarDataSet(
+
+                                // Series name (not visible when legend is hidden, but good for debugging).
+                                label = "Night usage",
+
+                                // Convert points to BarEntry.
+                                entries = toBarEntries(nightPts),
+
+                                // Format the text above the column.
+                                valueFormatter = object : ValueFormatter() {
                                     override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else String.format("%.1f h", e.y) // Näytä esim. “1.5 h”.
+
+                                        // Display e.g. “1.5 h”.
+                                        if (e == null) "" else String.format("%.1f h", e.y)
                                 }
                             )
 
-                            data = BarData(set).apply { barWidth = 0.5f } // Aseta data ja pylväiden leveys.
-                            invalidate() // Piirrä kaavio.
+                            // Set the data and column width.
+                            data = BarData(set).apply { barWidth = 0.5f }
+
+                            // Draw the graph.
+                            invalidate()
                         }
                     }
                 )
@@ -150,7 +169,7 @@ fun AnalysisScreen(
         }
 
 
-        // Taulukko 3: Daytime phone usage (bar chart) – tunneissa.
+        // Chart 3: Daytime phone usage (bar chart) – hours.
         item {
             ChartCard(title = "Daytime Phone Usage (6am–10pm, hours)") {
                 AndroidView(
@@ -158,23 +177,42 @@ fun AnalysisScreen(
                         .fillMaxWidth()
                         .height(240.dp),
                     factory = { ctx ->
-                        BarChart(ctx).apply { // Konfiguroidaan pylväskaavio.
-                            applyBarDefaults(dayLabels) // Yhteiset perusasetukset.
 
-                            val hours = dayPts.map { it.y } // Ota y-arvot (tunnit) listaksi.
-                            applyNiceYAxis(hours, ::hourStepFor) // Valitse pykäläko’oiksi tunnille sopivat stepit.
+                        // Creating a bar chart.
+                        BarChart(ctx).apply {
 
-                            val set = makeBarDataSet( // Yhtenäinen datasets.
-                                label = "Daytime usage", // Sarjan nimi.
-                                entries = toBarEntries(dayPts), // Pisteet BarEntryiksi.
-                                valueFormatter = object : ValueFormatter() { // Teksti pylvään päälle.
+                            // Common basic settings.
+                            applyBarDefaults(dayLabels)
+
+                            // Take the y-values (hours) as a list.
+                            val hours = dayPts.map { it.y }
+
+                            // Set suitable steps.
+                            applyNiceYAxis(hours, ::hourStepFor)
+
+                            // Uniform datasets.
+                            val set = makeBarDataSet(
+
+                                // Series name.
+                                label = "Daytime usage",
+
+                                // Points to BarEntry.
+                                entries = toBarEntries(dayPts),
+
+                                // Text on top of the column.
+                                valueFormatter = object : ValueFormatter() {
                                     override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else String.format("%.1f h", e.y) // Näytä “x.x h”.
+
+                                        // Display “x.x h”.
+                                        if (e == null) "" else String.format("%.1f h", e.y)
                                 }
                             )
 
-                            data = BarData(set).apply { barWidth = 0.5f } // Aseta data ja leveys.
-                            invalidate() // Piirrä.
+                            // Set the data and width.
+                            data = BarData(set).apply { barWidth = 0.5f }
+
+                            // Draw the graph.
+                            invalidate()
                         }
                     }
                 )
@@ -184,31 +222,49 @@ fun AnalysisScreen(
 
 
 
-        // Taulukko 4: Exercise (bar chart).
+        // Chart 4: Exercise (bar chart).
         item {
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp),
-                    factory = { ctx -> // Luo BarChart.
-                        BarChart(ctx).apply { // Konfigurointi.
-                            applyBarDefaults(dayLabels) // Yhteiset perusasetukset.
 
-                            val values = stepsPts.map { it.y } // Ota askelarvot.
-                            applyNiceYAxis(values, ::stepStepFor) // Pykälävalinta askelille (500/1000/2000/5000).
+                    // Creating a BarChart.
+                    factory = { ctx ->
 
-                            val set = makeBarDataSet( // Luo datasets.
-                                label = "Steps", // Nimi.
-                                entries = toBarEntries(stepsPts), // Pisteet BarEntryiksi.
-                                valueFormatter = object : ValueFormatter() { // Muotoile pylvään arvo.
+                        // Configuration.
+                        BarChart(ctx).apply {
+
+                            // Common basic settings.
+                            applyBarDefaults(dayLabels)
+
+                            // Get the step values.
+                            val values = stepsPts.map { it.y }
+
+                            // Step selection for steps (500/1000/2000/5000).
+                            applyNiceYAxis(values, ::stepStepFor)
+
+                            // Create datasets.
+                            val set = makeBarDataSet(
+                                // name
+                                label = "Steps",
+
+                                // Points to BarEntry.
+                                entries = toBarEntries(stepsPts),
+
+                                // Format the column value.
+                                valueFormatter = object : ValueFormatter() {
                                     override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else "%,d".format(e.y.toInt()) // Tuhaterotin (esim. 10,500).
+                                        if (e == null) "" else "%,d".format(e.y.toInt())
                                 }
                             )
 
-                            data = BarData(set).apply { barWidth = 0.5f } // Aseta data ja leveys.
-                            invalidate() // Piirrä.
+                            // Set the data and width.
+                            data = BarData(set).apply { barWidth = 0.5f }
+
+                            // Draw the graph.
+                            invalidate()
                         }
                     }
                 )
@@ -216,7 +272,7 @@ fun AnalysisScreen(
         }
 
 
-        // Taulukko 5 Communication Apps Usage (pie chart).
+        // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
@@ -225,11 +281,19 @@ fun AnalysisScreen(
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
                             legend.isEnabled = true
-                            setUsePercentValues(false) // EI prosentteja
+
+                            // No percentages.
+                            setUsePercentValues(false)
                             setDrawEntryLabels(false)
-                            isRotationEnabled = false // Estää pyörimisen
-                            rotationAngle = 0f        // Aloitus ylös
-                            animateY(0)               // Ei animaatiota
+
+                            // Prevents rotation.
+                            isRotationEnabled = false
+
+                            // Start up.
+                            rotationAngle = 0f
+
+                            // No animations.
+                            animateY(0)
 
                             val entries = commPie.map { PieEntry(it.value, it.label) }
                             val set = PieDataSet(entries, "").apply {
@@ -244,7 +308,7 @@ fun AnalysisScreen(
                             data = PieData(set)
                             invalidate()
 
-                            // Näytä sovelluksen nimi ja tuntimäärä Toastina
+                            // Display the application name and number of hours as a Toast.
                             setOnChartValueSelectedListener(object :
                                 com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                                 override fun onValueSelected(
@@ -272,8 +336,7 @@ fun AnalysisScreen(
     }
 }
 
-// Funktio 'Chartcard' luo yhtenäisen korttipohjan graafeille.
-// Themes?
+// The 'Chartcard' function creates a uniform card template for graphs.
 @Composable
 private fun ChartCard(
     title: String? = null,
@@ -294,27 +357,49 @@ private fun ChartCard(
     }
 }
 
-private fun BarChart.applyBarDefaults(xLabels: List<String>) { // Yhteiset asetukset kaikille pylväskaavioille.
-    description = Description().apply { text = "" } // Ei description-tekstiä.
-    axisRight.isEnabled = false // Oikea Y-akseli pois.
-    legend.isEnabled = false // Legend piiloon (ei tarvita).
-    setTouchEnabled(true) // Salli kosketus/scroll.
+// Common settings for all bar charts.
+private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
-    xAxis.position = XAxis.XAxisPosition.BOTTOM // X-akseli alareunaan.
-    xAxis.valueFormatter = IndexAxisValueFormatter(xLabels) // X-akselille annetut labelit järjestyksessä.
-    xAxis.granularity = 1f // Väli yksi indeksi kerrallaan.
-    xAxis.setDrawGridLines(true) // Piirrä pystysuorat apuviivat.
+    // No description text.
+    description = Description().apply { text = "" }
+
+    // Right Y-axis off.
+    axisRight.isEnabled = false
+    legend.isEnabled = false
+
+    // Allow touch/scroll.
+    setTouchEnabled(true)
+
+    // X-axis to the bottom.
+    xAxis.position = XAxis.XAxisPosition.BOTTOM
+    xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
+
+    // Labels given to the X-axis in order.
+    // Space one index at a time.
+    xAxis.granularity = 1f
+
+    // Draw vertical guides.
+    xAxis.setDrawGridLines(true)
+
     xAxis.enableGridDashedLine(10f, 10f, 0f) // Apuviivoihin katkoviiva.
 
-    axisLeft.setDrawGridLines(true) // Piirrä vaaka-apuviivat.
-    axisLeft.enableGridDashedLine(10f, 10f, 0f) // Vaaka-apuviivoihin katkoviiva.
+    // Draw vertical guides.
+    axisLeft.setDrawGridLines(true)
+
+    // Vaaka-apuviivoihin katkoviiva, OR DO WE WANT?
+    axisLeft.enableGridDashedLine(10f, 10f, 0f)
 }
 
+// Adjust the left Y-axis according to the values.
+private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
 
-private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) { // Säädä vasen Y-akseli arvojen mukaan.
-    val maxVal = (values.maxOrNull() ?: 0f).coerceAtLeast(0f) // Suurin arvo tai 0.
-    val step   = stepFn(maxVal) // Valitse järkevä pykälä (tunti/askel-logiikalla).
-    val axisMax = niceCeil(maxVal * 1.15f, step) // Lisää 15% “päähän” ja pyöristä ylös pykälään.
+    val maxVal = (values.maxOrNull() ?: 0f).coerceAtLeast(0f)
+
+    // Choose  section (using hour/step logic).
+    val step   = stepFn(maxVal)
+
+    // Add 15% to the “top” and round up to the next highest number.
+    val axisMax = niceCeil(maxVal * 1.15f, step)
 
     axisLeft.apply { // Aseta vasen Y-akseli.
         axisMinimum = 0f // Ala aina nollasta.

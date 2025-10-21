@@ -69,7 +69,7 @@ class AnalysisViewModel : ViewModel() {
         // Esimerkkidata.
         val lon = listOf(2.4f, 1.8f, 2.1f, 1.5f, 1.2f, 1.0f, 1.4f)
         val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
-        val day   = listOf(165f,150f,180f,140f,172f,210f,580f)
+        val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
         val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
 
 
