@@ -2,6 +2,8 @@ package fi.tuni.lonelinessapp.data.repository
 
 import fi.tuni.lonelinessapp.data.datasource.AllQuestionDataSource
 import fi.tuni.lonelinessapp.data.entity.AllQuestionEntity
+import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 class AllQuestionRepository (
     private val allQuestionDataSource: AllQuestionDataSource
@@ -9,6 +11,9 @@ class AllQuestionRepository (
     suspend fun addQuestion(allQuestion: AllQuestionEntity) =
         allQuestionDataSource.addQuestion(allQuestion)
 
-    fun getAllQuestionPoints(): List<AllQuestionEntity> =
+    fun getAllQuestionPoints(): Flow<List<AllQuestionEntity>> =
         allQuestionDataSource.getAllQuestionPoints()
+
+    fun getQuestionPointsByDate(date: LocalDate): Flow<AllQuestionEntity?> =
+        allQuestionDataSource.getQuestionPointsByDate(date)
 }
