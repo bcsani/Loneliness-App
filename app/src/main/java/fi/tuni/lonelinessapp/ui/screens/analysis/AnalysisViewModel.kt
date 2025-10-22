@@ -4,76 +4,74 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.time.LocalDate
-import kotlin.math.max
 import kotlin.math.round
-import kotlin.math.sqrt
 
 class AnalysisViewModel : ViewModel() {
 
-    // Näytön (UI) tila (laajennataan kun data kytketään).
+    // Display (UI) state (expanded when data is connected).
     data class UiState(
 
-        // näytetäänkö paikkamerkit.
+        // Show placeholders.
         val isLoading: Boolean = false,
 
-        // virheviesti, jos haku epäonnistuu.
+        // Error message if the search fails.
         val error: String? = null
     )
 
-    // 'ui' on muokattava tila, jota ViewModel voi päivittää.
+    // 'ui' is editable state that can be updated by the ViewModel.
     private val _ui = MutableStateFlow(UiState())
 
-    // 'ui' on vain luettava versio, jota käyttöliittymä voi seurata
+    // 'ui' is a read-only version that the UI can follow.
     val ui: StateFlow<UiState> = _ui
 
-    // Datan rakenteet.
+    // Data structures.
 
-    // Yhden päivän tiedot (pvm, kyselyn tulos, puhelimen käyttö, askeleet).
+    // One day's data (date, survey result, phone usage, steps).
     data class DaySample(
 
-        // Päivämäärä.
+        // Date.
         val date: LocalDate,
 
-        // Kyselyn tulos (UCLA 0–9).
-        val loneliness: Float,
+        // Query result (UCLA 0–9).
+        val loneliness: Int,
 
-        // Puhelimen käyttö yöllä (minuutteina).
-        // MAHDOLLINEN MUUTOS? Riippuen missä muodossa tulokset tulevat.
+        // Phone usage at night (in minutes).
+        // POSSIBLE CHANGE? Depending on the format of the results.
         val nightMinutes: Float,
 
-        // Puhelimen käyttö päivällä (minuutteina).
-        // MAHDOLLINEN MUUTOS? Riippuen missä muodossa tulokset tulevat.
+        // Phone usage per day (in minutes).
+        // POSSIBLE CHANGE? Depending on the format in which the results come.
         val dayMinutes: Float,
 
-        // Askeleet.
+        // Steps.
         val steps: Float
     )
 
-    // Yhden pisteen tiedot viivakaavioon.
+    // Single point data to line chart.
     data class LinePoint(val xLabel: String, val y: Float)
 
-    // Yhden pisteen tiedot pylväskaavioon.
+    // Single point data for a bar chart.
     data class BarPoint (val xLabel: String, val y: Float)
 
-    // Yhden viipaleen tiedot piirakkakaavioon.
+    // Single slice data for pie chart.
     data class PieSlice (val label: String, val value: Float)
 
-    // Testidata (korvataan myöhemmin oikealla datalla).
+    // Test data (will be replaced with real data later).
 
-    // Luo 7 päivän esimerkkidatan.
+    // Create 7 days of sample data.
     fun loadCurrentWeek(): List<DaySample> {
 
-        // Aloituspäivä 6 päivää sitten
+        // Start date 6 days ago.
         val start = java.time.LocalDate.now().minusDays(6)
 
-        // Esimerkkidata.
-        val lon = listOf(2.4f, 1.8f, 2.1f, 1.5f, 1.2f, 1.0f, 1.4f)
+        // Example data.
+        val lon = listOf(3, 1, 4, 5, 3, 6, 5)
         val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
         val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
         val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
 
 
-        // Palautetaan lista, jossa jokaiselle päivälle omat tiedot.
+        // Return a list with data for each day.
         return (0..6).map { i ->
             DaySample(
                 date = start.plusDays(i.toLong()),
@@ -84,25 +82,25 @@ class AnalysisViewModel : ViewModel() {
             )
         }
     }
-    // Tehdään uunnokset kaavioita varten.
 
-    // Muuntaa päivän datan viivakaavioon sopivaksi (päivän nimi + arvo).
+    // Let's do the conversions for charts.
+    // Convert the day's data to fit a line chart (date + value).
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
-        data.map { d -> LinePoint(d.date.dayOfWeek.name.take(3), d.loneliness) }
+        data.map { d -> LinePoint(d.date.dayOfWeek.name.take(3), d.loneliness.toFloat()) }
 
-    // Muuntaa yöminuutit tunneiksi pylväskaaviota varten.
+    // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes)) }
 
-    // Muuntaa päiväminuutit tunneiksi pylväskaaviota varten.
+    // Convert day minutes to hours for the bar chart.
     fun dayUsageBarsHours(data: List<DaySample>): List<BarPoint> =
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.dayMinutes)) }
 
-    // Luo askeleiden datan sellaisenaan (ei muutosta yksiköissä).
+    // Create the steps data as is (no change in units).
     fun stepsBars(data: List<DaySample>): List<BarPoint> =
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps) }
 
-    // Luo viestintäsovellusten tunnit piirakkakaaviolle.
+    // Create the communication application hours for the pie chart.
     fun communicationPieHours(): List<PieSlice> = listOf(
         PieSlice("WhatsApp", 2.3f),
         PieSlice("Messages", 1.7f),
@@ -111,15 +109,15 @@ class AnalysisViewModel : ViewModel() {
         PieSlice("Telegram",  0.5f)
     )
 
-    // Apufunktiot.
+    // Helper functions.
 
-    // Muuntaa minuutit tunneiksi.
+    // Convert minutes to hours.
     private fun minutesToHours(mins: Float): Float = mins / 60f
 
-    // Pyöristää luvun yhteen desimaaliin.
+    // Rounds a number to one decimal place.
     private fun round1(v: Float) = (round(v * 10f) / 10f)
 
-    // Pyöristää lähimpään kokonaislukuun.
+    // Rounds to the nearest integer.
     private fun round0(v: Float) = round(v)
 
 

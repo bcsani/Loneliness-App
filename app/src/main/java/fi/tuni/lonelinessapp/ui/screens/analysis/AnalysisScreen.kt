@@ -21,12 +21,12 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
-import kotlin.math.ceil
 
-// The colors are now hardcoded. Later we will move them under the theme.
+// The colors are now hardcoded. Later we will move under the theme?
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 private val PIE_COLORS = listOf(
+
     0xFF2563EB.toInt(), // blue
     0xFFF59E0B.toInt(), // amber
     0xFF10B981.toInt(), // emerald
@@ -85,7 +85,8 @@ fun AnalysisScreen(
                             axisRight.isEnabled = false
                             legend.isEnabled = false
 
-                            setTouchEnabled(true)
+                            // MUOKATTU
+                            setTouchEnabled(false)
                             setPinchZoom(false)
 
                             xAxis.position = XAxis.XAxisPosition.BOTTOM
@@ -130,6 +131,7 @@ fun AnalysisScreen(
 
                         // Configure the bar chart.
                         BarChart(ctx).apply {
+
                             // Run common basic settings (x-axis down, grid).
                             applyBarDefaults(dayLabels)
 
@@ -167,7 +169,6 @@ fun AnalysisScreen(
                 )
             }
         }
-
 
         // Chart 3: Daytime phone usage (bar chart) – hours.
         item {
@@ -218,9 +219,6 @@ fun AnalysisScreen(
                 )
             }
         }
-
-
-
 
         // Chart 4: Exercise (bar chart).
         item {
@@ -368,7 +366,12 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     legend.isEnabled = false
 
     // Allow touch/scroll.
-    setTouchEnabled(true)
+    // MUOKATTU
+    setTouchEnabled(false)
+
+    // Removing the dark blue highlight.
+    setHighlightPerTapEnabled(false)
+
 
     // X-axis to the bottom.
     xAxis.position = XAxis.XAxisPosition.BOTTOM
@@ -381,7 +384,8 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     // Draw vertical guides.
     xAxis.setDrawGridLines(true)
 
-    xAxis.enableGridDashedLine(10f, 10f, 0f) // Apuviivoihin katkoviiva.
+    // Apuviivoihin katkoviiva. OR DO WE WANT?
+    xAxis.enableGridDashedLine(10f, 10f, 0f)
 
     // Draw vertical guides.
     axisLeft.setDrawGridLines(true)
@@ -401,33 +405,60 @@ private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Floa
     // Add 15% to the “top” and round up to the next highest number.
     val axisMax = niceCeil(maxVal * 1.15f, step)
 
-    axisLeft.apply { // Aseta vasen Y-akseli.
-        axisMinimum = 0f // Ala aina nollasta.
-        axisMaximum = axisMax // Yläraja lasketun mukaan.
-        granularity = step // Pykäläkoon väli.
-        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true) // Rajoita labelien määrä max 10.
+    // Set the left Y-axis.
+    axisLeft.apply {
+
+        // Always start from zero.
+        axisMinimum = 0f
+
+        // Upper limit as calculated.
+        axisMaximum = axisMax
+
+        // Pitch 'step'.
+        granularity = step
+
+        // Limit the number of labels to max 10.
+        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
     }
 }
 
+// Convert BarPoint → BarEntry.
+private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntry> =
 
-private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntry> = // Muunna BarPoint → BarEntry.
-    points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) } // X = indeksi, Y = arvo.
+    // X = index, Y = value.
+    points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) }
 
+// Create a unified BarDataSet with the same layout.
+private fun makeBarDataSet(
 
-private fun makeBarDataSet( // Luo yhtenäinen BarDataSet saman ulkoasun mukaan.
-    label: String, // Sarjan nimi (hyödyllinen debuggauksessa).
-    entries: List<BarEntry>, // Pylväspisteet.
-    valueFormatter: ValueFormatter? = null // Valinnainen arvoformatoija pylvään yläpuolelle.
-): BarDataSet = BarDataSet(entries, label).apply { // Palauta konfiguroitu dataset.
-    color = COLOR_PRIMARY_HEX // Pylvään väri (pidetään kovakoodattuna nyt).
-    valueTextColor = COLOR_TEXT_HEX // Pylvään päällä näkyvän tekstin väri.
-    valueTextSize = 10f // Pylvään päällä näkyvän tekstin fonttikoko.
-    if (valueFormatter != null) setValueFormatter(valueFormatter) // Jos formatti annettu, käytä sitä.
+    // 'Series' name.
+    label: String,
+
+    // Column points.
+    entries: List<BarEntry>,
+
+    // Optional value formatter for the top of the column.
+    valueFormatter: ValueFormatter? = null
+
+    // Return the configured dataset.
+): BarDataSet = BarDataSet(entries, label).apply {
+
+    // Column color.
+    color = COLOR_PRIMARY_HEX
+
+    // The color of the text displayed on top of the column.
+    valueTextColor = COLOR_TEXT_HEX
+
+    // Font size of the text displayed at the top of the column.
+    valueTextSize = 10f
+
+    // If format given, use it.
+    if (valueFormatter != null) setValueFormatter(valueFormatter)
 }
 
 
 
-// 'UnitValueFormatter' muotoilee pylvään arvot yksiköllä ja desimaalimäärällä.
+// 'UnitValueFormatter' formats column values ​​with a unit and decimal number.
 private class UnitValueFormatter(
     private val unit: String,
     private val decimals: Int
@@ -439,29 +470,33 @@ private class UnitValueFormatter(
     }
 }
 
-// Pyöristetään yläraja ylöspäin lähimpään 'step' kerrannaiseen
+// Round the upper limit up to the nearest multiple of 'step'.
 private fun niceCeil(value: Float, step: Float): Float {
     if (step <= 0f) return value
     val k = kotlin.math.ceil(value / step)
     return (k * step)
 }
 
-// Valitaan järkevän väli tunneille max-arvon perusteella
+// Choose interval for hours based on the max value.
 private fun hourStepFor(maxVal: Float): Float =
     when {
-        // 15 min välein
+        // Every 15 minutes.
         maxVal <= 2f  -> 0.25f
-        // 30 min
+
+        // 30 minutes.
         maxVal <= 4f  -> 0.5f
-        // 1 h
+
+        // 1 h.
         maxVal <= 8f  -> 1f
-        // 2 h
+
+        // 2 h.
         else          -> 2f
     }
 
-// Valitaan järkevä väli askelille.
+// Choose a  interval for the steps.
 private fun stepStepFor(maxVal: Float): Float {
-    // Selkeä tuhansien väli: 500, 1000, 2000 jne.
+
+    // Clear thousands separator: 500, 1000, 2000, etc. MUTTA onko selkeä?
     return when {
         maxVal <= 4_000f  -> 500f
         maxVal <= 12_000f -> 1_000f
