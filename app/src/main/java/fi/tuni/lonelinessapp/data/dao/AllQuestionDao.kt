@@ -18,4 +18,7 @@ interface AllQuestionDao {
 
     @Query("SELECT * FROM allQuestion WHERE date = :date")
     fun getQuestionPointsByDate(date: LocalDate): Flow<AllQuestionEntity?>
+
+    @Query("SELECT * FROM allQuestion WHERE date >= :startDate ORDER BY date ASC")
+    fun getQuestionPointsFromDate(startDate: LocalDate): Flow<List<AllQuestionEntity>>
 }

@@ -25,6 +25,7 @@ import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.AllQuestionDataSource
 import fi.tuni.lonelinessapp.data.repository.AllQuestionRepository
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,18 +40,22 @@ class MainActivity : ComponentActivity() {
         val allQuestionDataSource = AllQuestionDataSource(database.allQuestionDao())
         val allQuestionRepository = AllQuestionRepository(allQuestionDataSource)
         val surveyViewModel = SurveyViewModel(allQuestionRepository)
+        val analysisViewModel = AnalysisViewModel(allQuestionRepository)
 
         enableEdgeToEdge()
         setContent {
             LonelinessAppTheme {
-                MainScreen(surveyViewModel=surveyViewModel)
+                MainScreen(
+                    surveyViewModel=surveyViewModel,
+                    analysisViewModel=analysisViewModel
+                )
             }
         }
     }
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyViewModel) {
+fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyViewModel, analysisViewModel: AnalysisViewModel) {
 
     // Selected bottom tab
     val selectedTab by viewModel.selectedTab
@@ -87,7 +92,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyVi
             if (!showSettings) {
                 when (selectedTab) {
                     0 -> HomeScreen(viewModel, surveyViewModel=surveyViewModel)
-                    1 -> AnalysisScreen()
+                    1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
                 SettingsScreen()

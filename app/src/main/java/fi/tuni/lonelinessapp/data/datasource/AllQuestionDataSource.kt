@@ -11,6 +11,6 @@ class AllQuestionDataSource (
 ) {
     suspend fun addQuestion(allQuestion: AllQuestionEntity) = allQuestionDao.insertAllQuestionPoint(allQuestion)
     fun getAllQuestionPoints(): Flow<List<AllQuestionEntity>> = allQuestionDao.getAllQuestionPoints()
-
     fun getQuestionPointsByDate(date: LocalDate): Flow<AllQuestionEntity?> = allQuestionDao.getQuestionPointsByDate(date)
+    fun getQuestionPointsFromDate(startDate: LocalDate): Flow<List<AllQuestionEntity>> = allQuestionDao.getQuestionPointsFromDate(startDate)
 }

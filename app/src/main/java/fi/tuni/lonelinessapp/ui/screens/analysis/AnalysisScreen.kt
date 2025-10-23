@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +23,7 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 
 // The colors are now hardcoded. Later we will move under the theme?
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
@@ -47,7 +50,21 @@ fun AnalysisScreen(
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
     // Retrieve the week's demo data from the ViewModel.
-    val week = remember { analysisViewModel.loadCurrentWeek() }
+    val lon by analysisViewModel.lon.collectAsState()
+
+    fun loadCurrentWeek(): List<DaySample> {
+        // Return a list with data for each day.
+        return (0..6).map { i ->
+            DaySample(
+                date = analysisViewModel.start.plusDays(i.toLong()),
+                loneliness = lon[i].totalPoints,
+                nightMinutes = analysisViewModel.night[i],
+                dayMinutes = analysisViewModel.day[i],
+                steps = analysisViewModel.steps[i]
+            )
+        }
+    }
+    val week = loadCurrentWeek()
 
     // List<LinePoint>
     val lonelinessPts = remember { analysisViewModel.lonelinessLine(week) }

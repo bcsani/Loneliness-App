@@ -1,12 +1,23 @@
 package fi.tuni.lonelinessapp.ui.screens.analysis
 
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import fi.tuni.lonelinessapp.data.entity.AllQuestionEntity
+import fi.tuni.lonelinessapp.data.repository.AllQuestionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.round
 
-class AnalysisViewModel : ViewModel() {
+class AnalysisViewModel (
+    private val allQuestionRepository: AllQuestionRepository
+) : ViewModel() {
 
     // Display (UI) state (expanded when data is connected).
     data class UiState(
@@ -58,30 +69,15 @@ class AnalysisViewModel : ViewModel() {
 
     // Test data (will be replaced with real data later).
 
-    // Create 7 days of sample data.
-    fun loadCurrentWeek(): List<DaySample> {
+    // Start date 6 days ago.
+    val start = java.time.LocalDate.now().minusDays(6)
 
-        // Start date 6 days ago.
-        val start = java.time.LocalDate.now().minusDays(6)
-
-        // Example data.
-        val lon = listOf(3, 1, 4, 5, 3, 6, 5)
-        val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
-        val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
-        val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
-
-
-        // Return a list with data for each day.
-        return (0..6).map { i ->
-            DaySample(
-                date = start.plusDays(i.toLong()),
-                loneliness = lon[i],
-                nightMinutes = night[i],
-                dayMinutes = day[i],
-                steps = steps[i]
-            )
-        }
-    }
+    // Example data.
+    val lon : StateFlow<List<AllQuestionEntity>> = allQuestionRepository.getQuestionPointsFromDate(start)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
+    val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
+    val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).

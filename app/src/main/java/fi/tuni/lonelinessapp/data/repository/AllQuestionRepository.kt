@@ -16,4 +16,7 @@ class AllQuestionRepository (
 
     fun getQuestionPointsByDate(date: LocalDate): Flow<AllQuestionEntity?> =
         allQuestionDataSource.getQuestionPointsByDate(date)
+
+    fun getQuestionPointsFromDate(startDate: LocalDate): Flow<List<AllQuestionEntity>> =
+        allQuestionDataSource.getQuestionPointsFromDate(startDate)
 }
