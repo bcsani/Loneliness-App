@@ -69,9 +69,7 @@ class SurveyViewModel(
         val loneliness = _answers.sumOf{it ?: 0}
 
         viewModelScope.launch {
-            println("date" + date)
-            println("loneliness" + loneliness)
-            dayRepository.updateLoneliness(date, loneliness)
+            dayRepository.saveLoneliness(date, loneliness)
         }
     }
 }

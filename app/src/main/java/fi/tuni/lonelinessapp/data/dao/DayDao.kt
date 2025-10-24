@@ -29,11 +29,11 @@ interface DayDao {
     suspend fun updateSteps(date: LocalDate, steps: Int)
 
     @Query("SELECT * FROM dayTable ORDER BY date ASC")
-    fun getAllDays(): Flow<List<DayEntity>>
+    fun getAllDays(): Flow<List<DayEntity>?>
 
     @Query("SELECT * FROM dayTable WHERE date = :date")
-    fun getDayByDate(date: LocalDate): Flow<DayEntity>
+    fun getDayByDate(date: LocalDate): Flow<DayEntity?>
 
     @Query("SELECT * FROM daytable WHERE date >= :startDate ORDER BY date ASC")
-    fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>>
+    fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?>
 }

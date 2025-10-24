@@ -67,7 +67,7 @@ class AnalysisViewModel (
     val start = java.time.LocalDate.now().minusDays(6)
 
     // Example data.
-    val daysEntity : StateFlow<List<DayEntity>> = dayRepository.getDaysFromDate(start)
+    val daysEntity : StateFlow<List<DayEntity>?> = dayRepository.getDaysFromDate(start)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Let's do the conversions for charts.

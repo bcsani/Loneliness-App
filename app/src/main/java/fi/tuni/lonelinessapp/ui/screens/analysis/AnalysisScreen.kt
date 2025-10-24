@@ -53,16 +53,17 @@ fun AnalysisScreen(
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
     fun loadCurrentWeek(): List<DaySample> {
-        // Return a list with data for each day.
-        return (0..6).map { i ->
-            DaySample(
-                date = analysisViewModel.start.plusDays(i.toLong()),
-                loneliness = daysEntity[i].loneliness,
-                nightMinutes = daysEntity[i].nightMinutes,
-                dayMinutes = daysEntity[i].dayMinutes,
-                steps = daysEntity[i].steps
-            )
-        }
+        return daysEntity?.let { entities ->
+            (0..6).map { i ->
+                DaySample(
+                    date = analysisViewModel.start.plusDays(i.toLong()),
+                    loneliness = entities[i].loneliness,
+                    nightMinutes = entities[i].nightMinutes,
+                    dayMinutes = entities[i].dayMinutes,
+                    steps = entities[i].steps
+                )
+            }
+        } ?: emptyList()
     }
     val week = loadCurrentWeek()
 
