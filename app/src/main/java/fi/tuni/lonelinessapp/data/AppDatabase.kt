@@ -14,6 +14,7 @@ import java.util.concurrent.Executors
 
 private val IO_EXECUTOR = Executors.newSingleThreadExecutor()
 
+// This is a single thread executor to execute Room Database code
 fun ioThread(f : () -> Unit) {
     IO_EXECUTOR.execute(f)
 }
@@ -24,19 +25,26 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dayDao(): DayDao
 
     companion object {
+        // PREPOPULATE_DATA contains all data in DayEntity within a year
         private val PREPOPULATE_DATA: List<DayEntity> by lazy {
             PrepopulateDataGenerator.generateData()
         }
 
+        // Single source Instance of AppDatabase
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        // This will return AppDatabase Instance if it already exists or build a new one
         fun getInstance(context: Context): AppDatabase = INSTANCE ?: synchronized(this) {
             INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
         }
 
+        /*
+        The database will be built with name "day_db".
+        All the data will be inserted immediately while creating the database
+        */
         private fun buildDatabase(context: Context) =
-            Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "day6_db")
+            Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "day_db")
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)

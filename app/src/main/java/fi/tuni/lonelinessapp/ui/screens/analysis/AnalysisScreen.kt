@@ -52,8 +52,6 @@ fun AnalysisScreen(
     // Retrieve the week's demo data from the ViewModel.
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
-//    val lon by analysisViewModel.lon.collectAsState()
-
     fun loadCurrentWeek(): List<DaySample> {
         // Return a list with data for each day.
         return (0..6).map { i ->

@@ -5,6 +5,10 @@ import java.time.LocalDate
 import kotlin.random.Random
 
 object PrepopulateDataGenerator {
+    /*
+    This object is used to generate data DayEntity within a year to drawn in charts.
+    This will be used to prepopulate the day_db when AppDatabase is initialized
+     */
     fun generateData(): List<DayEntity> {
         val data = mutableListOf<DayEntity>()
         val year = LocalDate.now().year
