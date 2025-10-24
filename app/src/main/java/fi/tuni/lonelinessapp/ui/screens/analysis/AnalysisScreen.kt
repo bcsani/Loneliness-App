@@ -50,17 +50,19 @@ fun AnalysisScreen(
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
     // Retrieve the week's demo data from the ViewModel.
-    val lon by analysisViewModel.lon.collectAsState()
+    val daysEntity by analysisViewModel.daysEntity.collectAsState()
+
+//    val lon by analysisViewModel.lon.collectAsState()
 
     fun loadCurrentWeek(): List<DaySample> {
         // Return a list with data for each day.
         return (0..6).map { i ->
             DaySample(
                 date = analysisViewModel.start.plusDays(i.toLong()),
-                loneliness = lon[i].totalPoints,
-                nightMinutes = analysisViewModel.night[i],
-                dayMinutes = analysisViewModel.day[i],
-                steps = analysisViewModel.steps[i]
+                loneliness = daysEntity[i].loneliness,
+                nightMinutes = daysEntity[i].nightMinutes,
+                dayMinutes = daysEntity[i].dayMinutes,
+                steps = daysEntity[i].steps
             )
         }
     }

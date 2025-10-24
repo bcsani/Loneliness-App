@@ -1,22 +1,18 @@
 package fi.tuni.lonelinessapp.ui.screens.analysis
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import fi.tuni.lonelinessapp.data.entity.AllQuestionEntity
-import fi.tuni.lonelinessapp.data.repository.AllQuestionRepository
+import fi.tuni.lonelinessapp.data.entity.DayEntity
+import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.WhileSubscribed
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.round
 
 class AnalysisViewModel (
-    private val allQuestionRepository: AllQuestionRepository
+    private val dayRepository: DayRepository
 ) : ViewModel() {
 
     // Display (UI) state (expanded when data is connected).
@@ -48,14 +44,14 @@ class AnalysisViewModel (
 
         // Phone usage at night (in minutes).
         // POSSIBLE CHANGE? Depending on the format of the results.
-        val nightMinutes: Float,
+        val nightMinutes: Int,
 
         // Phone usage per day (in minutes).
         // POSSIBLE CHANGE? Depending on the format in which the results come.
-        val dayMinutes: Float,
+        val dayMinutes: Int,
 
         // Steps.
-        val steps: Float
+        val steps: Int
     )
 
     // Single point data to line chart.
@@ -73,11 +69,13 @@ class AnalysisViewModel (
     val start = java.time.LocalDate.now().minusDays(6)
 
     // Example data.
-    val lon : StateFlow<List<AllQuestionEntity>> = allQuestionRepository.getQuestionPointsFromDate(start)
+    val daysEntity : StateFlow<List<DayEntity>> = dayRepository.getDaysFromDate(start)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
-    val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
-    val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
+//    val lon : StateFlow<List<AllQuestionEntity>> = allQuestionRepository.getQuestionPointsFromDate(start)
+//        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+//    val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
+//    val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
+//    val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
@@ -86,15 +84,15 @@ class AnalysisViewModel (
 
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes)) }
+        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
 
     // Convert day minutes to hours for the bar chart.
     fun dayUsageBarsHours(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.dayMinutes)) }
+        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.dayMinutes.toFloat())) }
 
     // Create the steps data as is (no change in units).
     fun stepsBars(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps) }
+        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps.toFloat()) }
 
     // Create the communication application hours for the pie chart.
     fun communicationPieHours(): List<PieSlice> = listOf(

@@ -1,7 +1,6 @@
 package fi.tuni.lonelinessapp
 
 import android.os.Bundle
-import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Room
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
 import fi.tuni.lonelinessapp.ui.navigation.TopBar
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
@@ -22,25 +20,23 @@ import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
-import fi.tuni.lonelinessapp.data.AppDatabase
-import fi.tuni.lonelinessapp.data.datasource.AllQuestionDataSource
-import fi.tuni.lonelinessapp.data.repository.AllQuestionRepository
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
+import fi.tuni.lonelinessapp.data.AppDatabase
+import fi.tuni.lonelinessapp.data.datasource.DayDataSource
+import fi.tuni.lonelinessapp.data.repository.DayRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val database = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "all_question_db"
-        ).build()
+        val database = AppDatabase.getInstance(applicationContext)
 
-        val allQuestionDataSource = AllQuestionDataSource(database.allQuestionDao())
-        val allQuestionRepository = AllQuestionRepository(allQuestionDataSource)
-        val surveyViewModel = SurveyViewModel(allQuestionRepository)
-        val analysisViewModel = AnalysisViewModel(allQuestionRepository)
+        val dayDataSource = DayDataSource(database.dayDao())
+        val dayRepository = DayRepository(dayDataSource)
+        val surveyViewModel = SurveyViewModel(dayRepository)
+        val analysisViewModel = AnalysisViewModel(dayRepository)
+
+
 
         enableEdgeToEdge()
         setContent {

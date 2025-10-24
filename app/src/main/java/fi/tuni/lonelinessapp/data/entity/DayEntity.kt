@@ -4,8 +4,13 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 
-@Entity(tableName = "allQuestion")
-data class AllQuestionEntity(
+@Entity(tableName = "dayTable")
+data class DayEntity(
     @PrimaryKey val date: LocalDate,
-    val totalPoints: Int,
+    val loneliness: Int,
+    val nightMinutes: Int,
+    val dayMinutes: Int,
+    val steps: Int,
 )
+
+
