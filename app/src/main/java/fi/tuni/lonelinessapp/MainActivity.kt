@@ -19,22 +19,39 @@ import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
-
+import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
+import fi.tuni.lonelinessapp.data.AppDatabase
+import fi.tuni.lonelinessapp.data.datasource.DayDataSource
+import fi.tuni.lonelinessapp.data.repository.DayRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val database = AppDatabase.getInstance(applicationContext)
+
+        val dayDataSource = DayDataSource(database.dayDao())
+        val dayRepository = DayRepository(dayDataSource)
+        val surveyViewModel = SurveyViewModel(dayRepository)
+        val analysisViewModel = AnalysisViewModel(dayRepository)
+
+
+
         enableEdgeToEdge()
         setContent {
             LonelinessAppTheme {
-                MainScreen()
+                MainScreen(
+                    surveyViewModel=surveyViewModel,
+                    analysisViewModel=analysisViewModel
+                )
             }
         }
     }
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel()) {
+fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyViewModel, analysisViewModel: AnalysisViewModel) {
 
     // Selected bottom tab
     val selectedTab by viewModel.selectedTab
@@ -70,8 +87,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             // Show main content or settings
             if (!showSettings) {
                 when (selectedTab) {
-                    0 -> HomeScreen(viewModel)
-                    1 -> AnalysisScreen()
+                    0 -> HomeScreen(viewModel, surveyViewModel=surveyViewModel)
+                    1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
                 SettingsScreen()
@@ -79,7 +96,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
             // Show survey dialog
             if (showSurvey) {
-                SurveyDialog(onDismiss = { viewModel.closeSurvey() })
+                SurveyDialog(onDismiss = { viewModel.closeSurvey()}, surveyViewModel=surveyViewModel)
             }
         }
     }

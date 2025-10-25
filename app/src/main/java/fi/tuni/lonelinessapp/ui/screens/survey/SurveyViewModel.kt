@@ -4,8 +4,14 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import fi.tuni.lonelinessapp.data.repository.DayRepository
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
-class SurveyViewModel : ViewModel() {
+class SurveyViewModel(
+    private val dayRepository: DayRepository
+) : ViewModel() {
 
     // Variable for current step of the survey dialog
     private val _currentStep = mutableIntStateOf(1)
@@ -59,5 +65,11 @@ class SurveyViewModel : ViewModel() {
         // ___________________
         // Process the answers
         // ___________________
+        val date = LocalDate.now()
+        val loneliness = _answers.sumOf{it ?: 0}
+
+        viewModelScope.launch {
+            dayRepository.saveLoneliness(date, loneliness)
+        }
     }
 }

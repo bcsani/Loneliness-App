@@ -19,12 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun SurveyDialog(
     onDismiss: () -> Unit,
-    surveyViewModel: SurveyViewModel = viewModel()
+    surveyViewModel: SurveyViewModel
 ) {
     val currentStep = surveyViewModel.currentStep.value
     val currentAnswer = surveyViewModel.getAnswer(currentStep)
