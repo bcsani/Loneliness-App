@@ -66,10 +66,10 @@ class AnalysisViewModel : ViewModel() {
 
         // Example data.
         //val lon = listOf(3, 1, 4, 5, 3, 6, 5)
-        val lon = listOf(3, 1, 4, 5, 3, 6, 5)
+        val lon = listOf(3, 1, 0, 0, 3, 6, 5)
         val night = listOf(38f, 29f, 47f, 22f, 35f, 54f, 31f)
         val day   = listOf(165f,150f,180f,140f,172f,200f,200f)
-        val steps = listOf(8000f,9000f,7500f,10000f,8200f,20000f,11000f)
+        val steps = listOf(8037f,9000f,7500f,1034f,8200f,20000f,11000f)
 
 
         // Return a list with data for each day.

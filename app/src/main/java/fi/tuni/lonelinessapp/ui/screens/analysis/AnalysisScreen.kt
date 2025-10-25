@@ -21,6 +21,7 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlin.math.roundToInt
 
 // The colors are now hardcoded. Later we will move under the theme?
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
@@ -85,7 +86,8 @@ fun AnalysisScreen(
                             axisRight.isEnabled = false
                             legend.isEnabled = false
 
-                            // MUOKATTU
+                            axisLeft.textSize = 12f
+                            xAxis.textSize = 12f
                             setTouchEnabled(false)
                             setPinchZoom(false)
 
@@ -95,10 +97,12 @@ fun AnalysisScreen(
                             xAxis.setDrawGridLines(true)
                             xAxis.enableGridDashedLine(10f,10f,0f)
 
+
                             axisLeft.axisMinimum = 0f
-                            axisLeft.axisMaximum = 9f
-                            axisLeft.granularity = 0.5f
-                            axisLeft.setLabelCount(7, true)
+                            axisLeft.axisMaximum = 6f
+                            axisLeft.granularity = 1f
+                            axisLeft.spaceTop = 0f
+                            //axisLeft.setLabelCount(7, true)
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
@@ -107,9 +111,11 @@ fun AnalysisScreen(
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
                                 setCircleColor(COLOR_PRIMARY_HEX)
+
                                 lineWidth = 3f
                                 circleRadius = 5f
-                                mode = LineDataSet.Mode.CUBIC_BEZIER
+                                mode = LineDataSet.Mode.HORIZONTAL_BEZIER
+
                                 setDrawValues(false)
                             }
                             data = LineData(set)
@@ -134,6 +140,8 @@ fun AnalysisScreen(
 
                             // Run common basic settings (x-axis down, grid).
                             applyBarDefaults(dayLabels)
+                            setTouchEnabled(false)
+                            setPinchZoom(false)
 
                             // Get the y-values (hours) as a list.
                             val hours = nightPts.map { it.y }
@@ -160,7 +168,7 @@ fun AnalysisScreen(
                             )
 
                             // Set the data and column width.
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            data = BarData(set).apply { barWidth = 0.7f }
 
                             // Draw the graph.
                             invalidate()
@@ -184,6 +192,8 @@ fun AnalysisScreen(
 
                             // Common basic settings.
                             applyBarDefaults(dayLabels)
+                            setTouchEnabled(false)
+                            setPinchZoom(false)
 
                             // Take the y-values (hours) as a list.
                             val hours = dayPts.map { it.y }
@@ -210,7 +220,7 @@ fun AnalysisScreen(
                             )
 
                             // Set the data and width.
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            data = BarData(set).apply { barWidth = 0.7f }
 
                             // Draw the graph.
                             invalidate()
@@ -221,12 +231,12 @@ fun AnalysisScreen(
         }
 
         // Chart 4: Exercise (bar chart).
+
         item {
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
+                        .fillMaxWidth().height(240.dp),
 
                     // Creating a BarChart.
                     factory = { ctx ->
@@ -236,12 +246,28 @@ fun AnalysisScreen(
 
                             // Common basic settings.
                             applyBarDefaults(dayLabels)
+                            setTouchEnabled(false)
+                            setPinchZoom(false)
 
-                            // Get the step values.
-                            val values = stepsPts.map { it.y }
 
-                            // Step selection for steps (500/1000/2000/5000).
-                            applyNiceYAxis(values, ::stepStepFor)
+
+
+                            //  Asetetaan Y-akselin alkamaan nollasta.
+                            axisLeft.axisMinimum = 0f
+
+                            // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
+                            axisLeft.granularity = 1000f
+
+                            // --- MUOKKAUSTEN LOPPU ---
+
+                            // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
+                            axisLeft.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
+                                    if (value == 0f) return "0"
+                                    return "%,d".format(value.roundToInt())
+                                }
+                            }
 
                             // Create datasets.
                             val set = makeBarDataSet(
@@ -259,7 +285,7 @@ fun AnalysisScreen(
                             )
 
                             // Set the data and width.
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            data = BarData(set).apply { barWidth = 0.7f }
 
                             // Draw the graph.
                             invalidate()
@@ -270,15 +296,34 @@ fun AnalysisScreen(
         }
 
 
+
         // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(280.dp),
+                    modifier = Modifier.fillMaxWidth().height(340.dp),
                     factory = { ctx ->
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
-                            legend.isEnabled = true
+
+
+                            legend.apply {
+                                // Asetetaan selitteen tekstikoko reilusti isommaksi.
+                                textSize = 16f
+
+                                // Sallitaan tekstin rivittyminen.
+                                isWordWrapEnabled = true
+                                // Asetetaan selitteen maksimileveys 80%:iin kaavion leveydestä, // mikä pakottaa rivityksen usein kahdelle riville.
+                                setMaxSizePercent(0.80f)
+
+
+                                // Määritellään, mihin muotoon selite asetetaan.
+                                // Nämä asetukset yleensä toimivat hyvin yhdessä rivityksen kanssa.
+                                verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                setDrawInside(false) // Varmistetaan, että selite on kaavion ulkopuolella.
+                            }
 
                             // No percentages.
                             setUsePercentValues(false)
@@ -296,7 +341,7 @@ fun AnalysisScreen(
                             val entries = commPie.map { PieEntry(it.value, it.label) }
                             val set = PieDataSet(entries, "").apply {
                                 colors = PIE_COLORS
-                                valueTextSize = 12f
+                                valueTextSize = 14f
                                 valueTextColor = COLOR_TEXT_HEX
                                 valueFormatter = object : ValueFormatter() {
                                     override fun getFormattedValue(value: Float): String =
@@ -356,6 +401,7 @@ private fun ChartCard(
 }
 
 // Common settings for all bar charts.
+// Common settings for all bar charts.
 private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
     // No description text.
@@ -366,16 +412,17 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     legend.isEnabled = false
 
     // Allow touch/scroll.
-    // MUOKATTU
-    setTouchEnabled(false)
+    setTouchEnabled(true) // MUOKATTU aiemmin, pidetään näin
 
     // Removing the dark blue highlight.
     setHighlightPerTapEnabled(false)
 
+    isHighlightPerDragEnabled = false
 
     // X-axis to the bottom.
     xAxis.position = XAxis.XAxisPosition.BOTTOM
     xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
+    xAxis.textSize = 12f // <-- UUSI: Suurennetaan X-akselin tekstejä
 
     // Labels given to the X-axis in order.
     // Space one index at a time.
@@ -389,10 +436,12 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
     // Draw vertical guides.
     axisLeft.setDrawGridLines(true)
+    axisLeft.textSize = 12f
 
     // Vaaka-apuviivoihin katkoviiva, OR DO WE WANT?
     axisLeft.enableGridDashedLine(10f, 10f, 0f)
 }
+
 
 // Adjust the left Y-axis according to the values.
 private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
@@ -429,6 +478,7 @@ private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntr
     points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) }
 
 // Create a unified BarDataSet with the same layout.
+// Create a unified BarDataSet with the same layout.
 private fun makeBarDataSet(
 
     // 'Series' name.
@@ -440,20 +490,16 @@ private fun makeBarDataSet(
     // Optional value formatter for the top of the column.
     valueFormatter: ValueFormatter? = null
 
-    // Return the configured dataset.
+// Return the configured dataset.
 ): BarDataSet = BarDataSet(entries, label).apply {
 
     // Column color.
     color = COLOR_PRIMARY_HEX
 
-    // The color of the text displayed on top of the column.
+    // Set the text size for values on top of bars.
+    this.valueFormatter = valueFormatter
+    valueTextSize = 12f // <-- UUSI: Suurennetaan arvojen tekstejä
     valueTextColor = COLOR_TEXT_HEX
-
-    // Font size of the text displayed at the top of the column.
-    valueTextSize = 10f
-
-    // If format given, use it.
-    if (valueFormatter != null) setValueFormatter(valueFormatter)
 }
 
 
