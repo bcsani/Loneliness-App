@@ -12,13 +12,6 @@ import fi.tuni.lonelinessapp.data.utils.Converters
 import fi.tuni.lonelinessapp.data.utils.PrepopulateDataGenerator
 import java.util.concurrent.Executors
 
-private val IO_EXECUTOR = Executors.newSingleThreadExecutor()
-
-// This is a single thread executor to execute Room Database code
-fun ioThread(f : () -> Unit) {
-    IO_EXECUTOR.execute(f)
-}
-
 @Database(entities= [DayEntity::class], version = 1)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -48,10 +41,11 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        ioThread {
-                            val dayDao = getInstance(context).dayDao()
-                            dayDao.insertAllDays(PREPOPULATE_DATA)
-                        }
+                        val ioExecutor = Executors.newSingleThreadExecutor()
+                        ioExecutor.execute({
+                            getInstance(context).dayDao().insertAllDays(PREPOPULATE_DATA)
+                        })
+                        ioExecutor.shutdown()
                     }
                 })
                 .build()
