@@ -95,7 +95,7 @@ fun AnalysisScreen(
                             xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f,10f,0f)
+                            xAxis.enableGridDashedLine(10f, 10f, 0f)
 
 
                             axisLeft.axisMinimum = 0f
@@ -106,7 +106,8 @@ fun AnalysisScreen(
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
-                            val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
+                            val entries =
+                                lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
 
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
@@ -250,8 +251,6 @@ fun AnalysisScreen(
                             setPinchZoom(false)
 
 
-
-
                             //  Asetetaan Y-akselin alkamaan nollasta.
                             axisLeft.axisMinimum = 0f
 
@@ -295,7 +294,7 @@ fun AnalysisScreen(
         }
 
 
-
+        // Chart 5: Communication Apps Usage (pie chart).
         // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
@@ -305,52 +304,65 @@ fun AnalysisScreen(
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
 
+                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
+                            legend.isEnabled = false
 
-                            legend.apply {
-                                // Asetetaan selitteen tekstikoko reilusti isommaksi.
-                                textSize = 16f
-
-                                // Sallitaan tekstin rivittyminen.
-                                isWordWrapEnabled = true
-                                // Asetetaan selitteen maksimileveys 80%:iin kaavion leveydestä, // mikä pakottaa rivityksen usein kahdelle riville.
-                                setMaxSizePercent(0.80f)
-
-
-                                // Määritellään, mihin muotoon selite asetetaan.
-                                // Nämä asetukset yleensä toimivat hyvin yhdessä rivityksen kanssa.
-                                verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
-                                horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
-                                orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
-                                setDrawInside(false) // Varmistetaan, että selite on kaavion ulkopuolella.
-                            }
-
-                            // No percentages.
+                            // Yleiset asetukset, jotka ovat aina voimassa
                             setUsePercentValues(false)
                             setDrawEntryLabels(false)
-
-                            // Prevents rotation.
                             isRotationEnabled = false
-
-                            // Start up.
                             rotationAngle = 0f
-
-                            // No animations.
                             animateY(0)
+                            holeRadius = 45f // Kaavion keskellä olevan reiän koko
+                            val entries = commPie
+                                .filter { it.value > 0f }
+                                .map { PieEntry(it.value, it.label) }
 
-                            val entries = commPie.map { PieEntry(it.value, it.label) }
-                            val set = PieDataSet(entries, "").apply {
-                                colors = PIE_COLORS
-                                valueTextSize = 14f
-                                valueTextColor = COLOR_TEXT_HEX
-                                valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float): String =
-                                        String.format("%.1f h", value)
+                            // MUOKKAUS: Tarkistetaan, onko dataa.
+                            if (entries.sumOf { it.value.toDouble() } == 0.0) {
+                                // --- KUN DATA ON NOLLA ---
+                                // Näytetään keskellä viesti ja tyhjennetään data.
+                                centerText = "No chart data available"
+                                setCenterTextSize(16f)
+                                setCenterTextColor(android.graphics.Color.BLACK) // Muutettu suoraan mustaksi
+
+                                // MUOKKAUS: Aseta tyhjä PieData-objekti nullin sijaan.
+                                data = PieData(PieDataSet(emptyList(), "")) // <-- TÄMÄ ON
+
+                            } else {
+                                // --- KUN DATA EI OLE NOLLA ---
+                                // Otetaan selite takaisin käyttöön ja muotoillaan se.
+                                legend.isEnabled = true
+                                legend.apply {
+                                    textSize = 16f
+                                    isWordWrapEnabled = true
+                                    setMaxSizePercent(0.80f)
+                                    verticalAlignment =
+                                        com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                    horizontalAlignment =
+                                        com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                    orientation =
+                                        com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                    setDrawInside(false)
                                 }
-                            }
-                            data = PieData(set)
-                            invalidate()
 
-                            // Display the application name and number of hours as a Toast.
+                                // Luodaan ja asetetaan datajoukko normaalisti.
+                                val set = PieDataSet(entries, "").apply {
+                                    colors = PIE_COLORS
+                                    sliceSpace = 2f
+                                    valueTextSize = 14f
+                                    valueTextColor = COLOR_TEXT_HEX
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getFormattedValue(value: Float): String =
+                                            String.format("%.1f h", value)
+                                    }
+                                }
+                                data = PieData(set)
+                            }
+
+                            invalidate() // Piirretään kaavio uudelleen
+
+                            // Toast-ilmoituksen logiikka pysyy samana.
                             setOnChartValueSelectedListener(object :
                                 com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                                 override fun onValueSelected(
@@ -367,6 +379,7 @@ fun AnalysisScreen(
                                         ).show()
                                     }
                                 }
+
                                 override fun onNothingSelected() {}
                             })
                         }
@@ -374,11 +387,10 @@ fun AnalysisScreen(
                 )
             }
         }
-
     }
 }
 
-// The 'Chartcard' function creates a uniform card template for graphs.
+        // The 'Chartcard' function creates a uniform card template for graphs.
 @Composable
 private fun ChartCard(
     title: String? = null,
