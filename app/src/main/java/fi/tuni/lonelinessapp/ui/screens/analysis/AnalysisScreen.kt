@@ -115,6 +115,7 @@ fun AnalysisScreen(
                             xAxis.setDrawGridLines(true)
                             xAxis.enableGridDashedLine(10f,10f,0f)
 
+
                             axisLeft.axisMinimum = 0f
                             axisLeft.axisMaximum = 9f
                             axisLeft.granularity = 0.5f
@@ -127,6 +128,7 @@ fun AnalysisScreen(
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
                                 setCircleColor(COLOR_PRIMARY_HEX)
+
                                 lineWidth = 3f
                                 circleRadius = 5f
                                 mode = LineDataSet.Mode.CUBIC_BEZIER
@@ -245,6 +247,7 @@ fun AnalysisScreen(
         }
 
         // Chart 4: Exercise (bar chart).
+
         item {
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
@@ -310,6 +313,7 @@ fun AnalysisScreen(
         }
 
 
+
         // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
@@ -319,16 +323,8 @@ fun AnalysisScreen(
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
 
-
-                            legend.apply {
-                                // Asetetaan selitteen tekstikoko reilusti isommaksi.
-                                textSize = 16f
-
-                                // Sallitaan tekstin rivittyminen.
-                                isWordWrapEnabled = true
-                                // Asetetaan selitteen maksimileveys 80%:iin kaavion leveydestä, // mikä pakottaa rivityksen usein kahdelle riville.
-                                setMaxSizePercent(0.80f)
-
+                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
+                            legend.isEnabled = false
 
                                 // Määritellään, mihin muotoon selite asetetaan.
                                 // Nämä asetukset yleensä toimivat hyvin yhdessä rivityksen kanssa.
@@ -350,21 +346,56 @@ fun AnalysisScreen(
 
                             // No animations.
                             animateY(0)
+                            holeRadius = 45f // Kaavion keskellä olevan reiän koko
+                            val entries = commPie
+                                .filter { it.value > 0f }
+                                .map { PieEntry(it.value, it.label) }
 
-                            val entries = commPie.map { PieEntry(it.value, it.label) }
-                            val set = PieDataSet(entries, "").apply {
-                                colors = PIE_COLORS
-                                valueTextSize = 14f
-                                valueTextColor = COLOR_TEXT_HEX
-                                valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float): String =
-                                        String.format("%.1f h", value)
+                            // MUOKKAUS: Tarkistetaan, onko dataa.
+                            if (entries.sumOf { it.value.toDouble() } == 0.0) {
+                                // --- KUN DATA ON NOLLA ---
+                                // Näytetään keskellä viesti ja tyhjennetään data.
+                                centerText = "No chart data available"
+                                setCenterTextSize(16f)
+                                setCenterTextColor(android.graphics.Color.BLACK) // Muutettu suoraan mustaksi
+
+                                // MUOKKAUS: Aseta tyhjä PieData-objekti nullin sijaan.
+                                data = PieData(PieDataSet(emptyList(), "")) // <-- TÄMÄ ON
+
+                            } else {
+                                // --- KUN DATA EI OLE NOLLA ---
+                                // Otetaan selite takaisin käyttöön ja muotoillaan se.
+                                legend.isEnabled = true
+                                legend.apply {
+                                    textSize = 16f
+                                    isWordWrapEnabled = true
+                                    setMaxSizePercent(0.80f)
+                                    verticalAlignment =
+                                        com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                    horizontalAlignment =
+                                        com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                    orientation =
+                                        com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                    setDrawInside(false)
                                 }
-                            }
-                            data = PieData(set)
-                            invalidate()
 
-                            // Display the application name and number of hours as a Toast.
+                                // Luodaan ja asetetaan datajoukko normaalisti.
+                                val set = PieDataSet(entries, "").apply {
+                                    colors = PIE_COLORS
+                                    sliceSpace = 2f
+                                    valueTextSize = 14f
+                                    valueTextColor = COLOR_TEXT_HEX
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getFormattedValue(value: Float): String =
+                                            String.format("%.1f h", value)
+                                    }
+                                }
+                                data = PieData(set)
+                            }
+
+                            invalidate() // Piirretään kaavio uudelleen
+
+                            // Toast-ilmoituksen logiikka pysyy samana.
                             setOnChartValueSelectedListener(object :
                                 com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                                 override fun onValueSelected(
@@ -414,6 +445,7 @@ private fun ChartCard(
 }
 
 // Common settings for all bar charts.
+// Common settings for all bar charts.
 private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
     // No description text.
@@ -454,6 +486,7 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     axisLeft.enableGridDashedLine(10f, 10f, 0f)
 }
 
+
 // Adjust the left Y-axis according to the values.
 private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
 
@@ -489,6 +522,7 @@ private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntr
     points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) }
 
 // Create a unified BarDataSet with the same layout.
+// Create a unified BarDataSet with the same layout.
 private fun makeBarDataSet(
 
     // 'Series' name.
@@ -500,7 +534,7 @@ private fun makeBarDataSet(
     // Optional value formatter for the top of the column.
     valueFormatter: ValueFormatter? = null
 
-    // Return the configured dataset.
+// Return the configured dataset.
 ): BarDataSet = BarDataSet(entries, label).apply {
 
     // Column color.
