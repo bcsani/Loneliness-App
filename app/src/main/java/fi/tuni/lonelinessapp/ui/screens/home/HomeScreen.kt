@@ -23,8 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
 import fi.tuni.lonelinessapp.MainViewModel
+import fi.tuni.lonelinessapp.ui.screens.analysis.ChartCard
+import fi.tuni.lonelinessapp.ui.screens.analysis.applyBarDefaults
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
 
@@ -41,6 +47,10 @@ fun HomeScreen(
 
     // Variable for streak count
     val streakCount by homeViewModel.streakCount
+
+    // Values for correlation chart
+    val labels = homeViewModel.labels
+    val entries = homeViewModel.entries
 
     LazyColumn(
         modifier = modifier,
@@ -130,45 +140,48 @@ fun HomeScreen(
             }
         }
 
-        // This is a temporary demo element
+        // Correlation chart
         item {
-            Card(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(300.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Box(
-                    modifier = modifier
-                        .fillMaxSize()
-                ){
-                    Text(
-                        text = "Loneliness Correlations",
-                        modifier = modifier.align(Alignment.Center),
-                        fontSize = 32.sp
-                    )
-                }
-            }
-        }
+            ChartCard(title = "Loneliness correlations") {
+                AndroidView(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
+                    factory = { context ->
 
-        // This is a temporary demo element
-        item {
-            Card(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Box(
-                    modifier = modifier
-                        .fillMaxSize()
-                ){
-                    Text(
-                        text = "This Week",
-                        modifier = modifier.align(Alignment.Center),
-                        fontSize = 32.sp
-                    )
-                }
+                        // Creating a bar chart.
+                        BarChart(context).apply {
+
+                            // Common basic settings.
+                            applyBarDefaults(labels)
+
+                            axisLeft.apply {
+                                // Left Y-axis limits
+                                axisMinimum = -1f
+                                axisMaximum = 1f
+
+                                // Step
+                                granularity = 0.5f
+
+                                textSize = 14f
+                            }
+
+                            val dataSet = BarDataSet(entries, "Correlation").apply {
+                                setDrawValues(false)
+                                color = 0xFF4169E1.toInt()
+                            }
+
+                            // Set the data and width.
+                            data = BarData(dataSet).apply {
+                                xAxis.textSize = 14f
+                                barWidth = 0.8f
+                            }
+
+                            // Draw the graph.
+                            invalidate()
+                        }
+                    }
+                )
             }
         }
     }
