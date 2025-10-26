@@ -33,7 +33,7 @@ class AnalysisViewModel : ViewModel() {
         val date: LocalDate,
 
         // Query result (UCLA 0–9).
-        val loneliness: Int,
+        val loneliness: Float,
 
         // Phone usage at night (in minutes).
         // POSSIBLE CHANGE? Depending on the format of the results.
@@ -76,7 +76,7 @@ class AnalysisViewModel : ViewModel() {
         return (0..6).map { i ->
             DaySample(
                 date = start.plusDays(i.toLong()),
-                loneliness = lon[i],
+                loneliness = lon[i].toFloat(),
                 nightMinutes = night[i],
                 dayMinutes = day[i],
                 steps = steps[i]

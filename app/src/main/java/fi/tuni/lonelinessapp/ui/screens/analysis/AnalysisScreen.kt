@@ -258,7 +258,6 @@ fun AnalysisScreen(
                             // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
                             axisLeft.granularity = 1000f
 
-                            // --- MUOKKAUSTEN LOPPU ---
 
                             // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
                             axisLeft.valueFormatter = object : ValueFormatter() {
