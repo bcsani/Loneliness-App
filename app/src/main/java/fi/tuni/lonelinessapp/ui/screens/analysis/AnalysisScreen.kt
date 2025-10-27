@@ -99,10 +99,10 @@ fun AnalysisScreen(
 
 
                             axisLeft.axisMinimum = 0f
-                            axisLeft.axisMaximum = 6f
+                            axisLeft.axisMaximum = 9f
                             axisLeft.granularity = 1f
                             axisLeft.spaceTop = 0f
-                            //axisLeft.setLabelCount(7, true)
+                            axisLeft.setLabelCount(10, true)
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
