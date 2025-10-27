@@ -25,6 +25,8 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.mapimport kotlinx.coroutines.flow.filterNotNull
+
 
 // The colors are now hardcoded. Later we will move under the theme?
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
@@ -117,10 +119,10 @@ fun AnalysisScreen(
 
 
                             axisLeft.axisMinimum = 0f
-                            axisLeft.axisMaximum = 6f
+                            axisLeft.axisMaximum = 9f
                             axisLeft.granularity = 1f
                             axisLeft.spaceTop = 0f
-                            //axisLeft.setLabelCount(7, true)
+                            axisLeft.setLabelCount(10, true)
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
@@ -328,12 +330,7 @@ fun AnalysisScreen(
                             legend.isEnabled = false
 
                                 // Määritellään, mihin muotoon selite asetetaan.
-                                // Nämä asetukset yleensä toimivat hyvin yhdessä rivityksen kanssa.
-                                verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
-                                horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
-                                orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
-                                setDrawInside(false) // Varmistetaan, että selite on kaavion ulkopuolella.
-                            }
+
 
                             // No percentages.
                             setUsePercentValues(false)
