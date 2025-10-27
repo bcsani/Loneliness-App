@@ -117,9 +117,10 @@ fun AnalysisScreen(
 
 
                             axisLeft.axisMinimum = 0f
-                            axisLeft.axisMaximum = 9f
-                            axisLeft.granularity = 0.5f
-                            axisLeft.setLabelCount(7, true)
+                            axisLeft.axisMaximum = 6f
+                            axisLeft.granularity = 1f
+                            axisLeft.spaceTop = 0f
+                            //axisLeft.setLabelCount(7, true)
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
@@ -313,7 +314,7 @@ fun AnalysisScreen(
         }
 
 
-
+        // Chart 5: Communication Apps Usage (pie chart).
         // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
@@ -412,6 +413,7 @@ fun AnalysisScreen(
                                         ).show()
                                     }
                                 }
+
                                 override fun onNothingSelected() {}
                             })
                         }
@@ -419,11 +421,10 @@ fun AnalysisScreen(
                 )
             }
         }
-
     }
 }
 
-// The 'Chartcard' function creates a uniform card template for graphs.
+        // The 'Chartcard' function creates a uniform card template for graphs.
 @Composable
 private fun ChartCard(
     title: String? = null,
@@ -456,7 +457,7 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     legend.isEnabled = false
 
     // Allow touch/scroll.
-    setTouchEnabled(false)
+    setTouchEnabled(true) // MUOKATTU aiemmin, pidetään näin
 
     // Removing the dark blue highlight.
     setHighlightPerTapEnabled(false)
