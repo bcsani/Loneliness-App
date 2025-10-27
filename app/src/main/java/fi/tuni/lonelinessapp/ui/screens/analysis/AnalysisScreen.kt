@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+
+
 // MPAndroidChart
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
@@ -26,6 +28,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.roundToInt
+
 
 
 // The colors are now hardcoded. Later we will move under the theme?
@@ -52,6 +55,7 @@ fun AnalysisScreen(
     // Will be connected to the correct data later.
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
+
     // Retrieve the week's demo data from the ViewModel.
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
@@ -87,6 +91,8 @@ fun AnalysisScreen(
 
     // Mon/Tue..
     val dayLabels     = remember { lonelinessPts.map { it.xLabel } }
+
+
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
