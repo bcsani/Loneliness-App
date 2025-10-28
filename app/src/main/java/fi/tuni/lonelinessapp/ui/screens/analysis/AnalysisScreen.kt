@@ -9,12 +9,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.ui.graphics.Color
 
 // MPAndroidChart
 import com.github.mikephil.charting.charts.BarChart
@@ -25,18 +24,19 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+
 import kotlin.math.roundToInt
-import fi.tuni.lonelinessapp.R
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
-import kotlin.math.roundToInt
-
-
+import fi.tuni.lonelinessapp.data.entity.DayEntity
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale
 
 // The colors are now hardcoded. Later we will move under the theme?
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 private val PIE_COLORS = listOf(
-
     0xFF2563EB.toInt(), // blue
     0xFFF59E0B.toInt(), // amber
     0xFF10B981.toInt(), // emerald
@@ -44,6 +44,8 @@ private val PIE_COLORS = listOf(
     0xFFEF4444.toInt()  // red
 )
 
+// Time range
+enum class TimeRange { Week, Month, ThreeMonths, Year, All }
 // 1) Loneliness Level (line)
 // 2) Night Phone Usage (bar)
 // 3) Daytime Phone Usage (bar)
@@ -54,48 +56,54 @@ private val PIE_COLORS = listOf(
 @Composable
 fun AnalysisScreen(
     modifier: Modifier = Modifier,
-
-    // Will be connected to the correct data later.
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
+    // Default: Week
+    var selectedRange by remember { mutableStateOf(TimeRange.Week) }
 
-    // Retrieve the week's demo data from the ViewModel.
+    // Data connection?
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
-    fun loadCurrentWeek(): List<DaySample> {
-        return daysEntity?.let { entities ->
-            (0..6).map { i ->
-                DaySample(
-                    date = analysisViewModel.start.plusDays(i.toLong()),
-                    loneliness = entities[i].loneliness,
-                    nightMinutes = entities[i].nightMinutes,
-                    dayMinutes = entities[i].dayMinutes,
-                    steps = entities[i].steps
-                )
-            }
-        } ?: emptyList()
+    // Päivänäytteet valitulle valitusti (ei repo/VM-muutoksia)
+    val samples: List<DaySample> = remember(daysEntity, selectedRange, analysisViewModel.start) {
+        buildSamplesForRange(daysEntity, analysisViewModel.start, selectedRange)
     }
-    val week = loadCurrentWeek()
 
-    // List<LinePoint>
-    val lonelinessPts = remember { analysisViewModel.lonelinessLine(week) }
+    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
 
-    // List<BarPoint> (h)
-    val nightPts      = remember { analysisViewModel.nightUsageBarsHours(week) }
-
-    // List<BarPoint> (h)
-    val dayPts        = remember { analysisViewModel.dayUsageBarsHours(week) }
-
-    // List<BarPoint>
-    val stepsPts      = remember { analysisViewModel.stepsBars(week) }
-
-    // List<PieSlice>
+    // Piirakka demodatalle
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
-    // Mon/Tue..
-    val dayLabels     = remember { lonelinessPts.map { it.xLabel } }
+    // X-akselin labelit päivätasolle
+    val dayLabels = remember(samples, selectedRange) {
+        if (selectedRange == TimeRange.Week)
+            samples.map { it.date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { c -> c.uppercase() } }
+        else
+            samples.map { it.date.dayOfMonth.toString() } // 1..30/31
+    }
 
+    // Kuukausi-aggregaatti (vain 3 kk / 1 v / All)
+    val monthlyAgg = remember(samples, selectedRange) {
+        if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) emptyList()
+        else aggregateMonthly(samples)
+    }
+    val monthLabels  = remember(monthlyAgg) { monthlyAgg.map { it.label } }
+    val lonMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.lonAvg } }
+    val nightMonthly = remember(monthlyAgg) { monthlyAgg.map { it.nightH } }
+    val dayMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.dayH } }
+    val stepsMonthly = remember(monthlyAgg) { monthlyAgg.map { it.stepsAvg } }
 
+    // Otsikoihin pieni lisäteksti
+    val periodSuffix = when (selectedRange) {
+        TimeRange.Week  -> " (This Week)"
+        TimeRange.Month -> " (This Month)"
+        TimeRange.ThreeMonths -> " (Last 3 Months)"
+        TimeRange.Year -> " (This Year)"
+        TimeRange.All -> " (All Time)"
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -113,9 +121,7 @@ fun AnalysisScreen(
             // We want to occupy the full width, so we wrap it in a Box
             // with a Modifier that aligns the menu to the end.
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 8.dp), // Some padding from the edge
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 ExposedDropdownMenuBox(
@@ -124,9 +130,7 @@ fun AnalysisScreen(
                 ) {
                     TextField(
                         // The `menuAnchor` modifier must be passed to the text field for correctness.
-                        modifier = Modifier
-                            .menuAnchor()
-                            .width(150.dp),
+                        modifier = Modifier.menuAnchor().width(150.dp),
                         readOnly = true,
                         value = selectedOptionText,
                         onValueChange = {},
@@ -134,7 +138,8 @@ fun AnalysisScreen(
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color.White,),
+                            disabledContainerColor = Color.White,
+                        ),
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -145,6 +150,13 @@ fun AnalysisScreen(
                                 text = { Text(selectionOption) },
                                 onClick = {
                                     selectedOptionText = selectionOption
+                                    selectedRange = when (selectionOption) {
+                                        "Week"      -> TimeRange.Week
+                                        "1 Month"   -> TimeRange.Month
+                                        "3 Months"  -> TimeRange.ThreeMonths
+                                        "1 Year"    -> TimeRange.Year
+                                        else        -> TimeRange.All
+                                    }
                                     expanded = false
                                 },
                                 contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
@@ -155,349 +167,476 @@ fun AnalysisScreen(
             }
         }
 
+        if (samples.isEmpty()) {
+            item {
+                ChartCard(title = "No data for the selected range") {
+                    Text("Add some entries and come back – I’ll draw you a masterpiece.")
+                }
+            }
+        } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
+            // ===================== VIikko & 1 KUUKAUSI = PÄIVITTÄISET KAAVIOT =====================
 
-        // Chart 1: Loneliness LeveL (line chart)
-        item {
-            ChartCard(title = "Loneliness Level (This Week)") {
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    factory = { ctx ->
-                        LineChart(ctx).apply {
-                            description = Description().apply { text = "" }
-                            axisRight.isEnabled = false
-                            legend.isEnabled = false
+            // 1) Loneliness (line)
+            item {
+                ChartCard(title = "Loneliness Level$periodSuffix") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
+                            LineChart(ctx).apply {
+                                description = Description().apply { text = "" }
+                                axisRight.isEnabled = false
+                                legend.isEnabled = false
 
-                            axisLeft.textSize = 14f
-                            xAxis.textSize = 14f
-                            setTouchEnabled(false)
-                            setPinchZoom(false)
+                                axisLeft.textSize = 14f
+                                xAxis.textSize = 14f
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
 
-                            xAxis.position = XAxis.XAxisPosition.BOTTOM
-                            xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
-                            xAxis.granularity = 1f
-                            xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f, 10f, 0f)
+                                xAxis.position = XAxis.XAxisPosition.BOTTOM
+                                xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                                xAxis.granularity = 1f
+                                xAxis.setDrawGridLines(true)
+                                xAxis.enableGridDashedLine(10f, 10f, 0f)
 
+                                axisLeft.axisMinimum = 0f
+                                axisLeft.axisMaximum = 9f
+                                axisLeft.granularity = 1f
+                                axisLeft.setLabelCount(10, true)
+                                axisLeft.setDrawGridLines(true)
+                                axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
-                            axisLeft.axisMinimum = 0f
-                            axisLeft.axisMaximum = 9f
-                            axisLeft.granularity = 1f
-                            axisLeft.spaceTop = 0f
-                            axisLeft.setLabelCount(10, true)
-                            axisLeft.setDrawGridLines(true)
-                            axisLeft.enableGridDashedLine(10f, 10f, 0f)
-
-                            val entries =
-                                lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
-
-                            val set = LineDataSet(entries, "Loneliness").apply {
-                                color = COLOR_PRIMARY_HEX
-                                setCircleColor(COLOR_PRIMARY_HEX)
-                                lineWidth = 3f
-                                circleRadius = 5f
-                                mode = LineDataSet.Mode.CUBIC_BEZIER
-                                setDrawValues(false)
+                                val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
+                                val set = LineDataSet(entries, "Loneliness").apply {
+                                    color = COLOR_PRIMARY_HEX
+                                    setCircleColor(COLOR_PRIMARY_HEX)
+                                    lineWidth = 3f
+                                    circleRadius = 5f
+                                    mode = LineDataSet.Mode.CUBIC_BEZIER
+                                    setDrawValues(false)
+                                }
+                                data = LineData(set)
+                                invalidate()
                             }
-                            data = LineData(set)
-                            invalidate()
                         }
-                    }
-                )
+                    )
+                }
             }
-        }
 
-        // Chart 2: Night phone usage (bar chart) – hours.
-        item {
-            ChartCard(title = "Night Phone Usage (hours)") {
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    factory = { ctx ->
+            // 2) Night usage (bar)
+            item {
+                ChartCard(title = "Night Phone Usage (hours)$periodSuffix") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
+                            BarChart(ctx).apply {
+                                applyBarDefaults(dayLabels)
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
 
-                        // Configure the bar chart.
-                        BarChart(ctx).apply {
+                                val hours = nightPts.map { it.y }
+                                applyNiceYAxis(hours, ::hourStepFor)
 
-                            // Run common basic settings (x-axis down, grid).
-                            applyBarDefaults(dayLabels)
-                            setTouchEnabled(false)
-                            setPinchZoom(false)
+                                val set = makeBarDataSet(
+                                    label = "Night usage",
+                                    entries = toBarEntries(nightPts),
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getBarLabel(e: BarEntry?): String =
+                                            // Display e.g. “1.5 h”.
+                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                    }
+                                )
+                                // Set the data and column width.
+                                data = BarData(set).apply { barWidth = 0.7f }
 
-                            // Get the y-values (hours) as a list.
-                            val hours = nightPts.map { it.y }
-
-                            // Adjust the left Y-axis to reasonable increments (0.25/0.5/1/2h).
-                            applyNiceYAxis(hours, ::hourStepFor)
-
-                            // Create a unified set of columns with their appearance.
-                            val set = makeBarDataSet(
-
-                                // Series name (not visible when legend is hidden, but good for debugging).
-                                label = "Night usage",
-
-                                // Convert points to BarEntry.
-                                entries = toBarEntries(nightPts),
-
-                                // Format the text above the column.
-                                valueFormatter = object : ValueFormatter() {
-                                    override fun getBarLabel(e: BarEntry?): String =
-
-                                        // Display e.g. “1.5 h”.
-                                        if (e == null) "" else String.format("%.1f h", e.y)
-                                }
-                            )
-
-                            // Set the data and column width.
-                            data = BarData(set).apply { barWidth = 0.7f }
-
-                            // Draw the graph.
-                            invalidate()
-                        }
-                    }
-                )
-            }
-        }
-
-        // Chart 3: Daytime phone usage (bar chart) – hours.
-        item {
-            ChartCard(title = "Daytime Phone Usage (6am–10pm, hours)") {
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    factory = { ctx ->
-
-                        // Creating a bar chart.
-                        BarChart(ctx).apply {
-
-                            // Common basic settings.
-                            applyBarDefaults(dayLabels)
-                            setTouchEnabled(false)
-                            setPinchZoom(false)
-
-                            // Take the y-values (hours) as a list.
-                            val hours = dayPts.map { it.y }
-
-                            // Set suitable steps.
-                            applyNiceYAxis(hours, ::hourStepFor)
-
-                            // Uniform datasets.
-                            val set = makeBarDataSet(
-
-                                // Series name.
-                                label = "Daytime usage",
-
-                                // Points to BarEntry.
-                                entries = toBarEntries(dayPts),
-
-                                // Text on top of the column.
-                                valueFormatter = object : ValueFormatter() {
-                                    override fun getBarLabel(e: BarEntry?): String =
-
-                                        // Display “x.x h”.
-                                        if (e == null) "" else String.format("%.1f h", e.y)
-                                }
-                            )
-
-                            // Set the data and width.
-                            data = BarData(set).apply { barWidth = 0.7f }
-
-                            // Draw the graph.
-                            invalidate()
-                        }
-                    }
-                )
-            }
-        }
-
-        // Chart 4: Exercise (bar chart).
-        item {
-            ChartCard(title = "Exercise (steps)") {
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-
-                    // Creating a BarChart.
-                    factory = { ctx ->
-
-                        // Configuration.
-                        BarChart(ctx).apply {
-
-                            // Common basic settings.
-                            applyBarDefaults(dayLabels)
-                            setTouchEnabled(false)
-                            setPinchZoom(false)
-
-
-                            //  Asetetaan Y-akselin alkamaan nollasta.
-                            axisLeft.axisMinimum = 0f
-
-                            // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
-                            axisLeft.granularity = 1000f
-
-
-                            // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
-                            axisLeft.valueFormatter = object : ValueFormatter() {
-                                override fun getFormattedValue(value: Float): String {
-                                    // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
-                                    if (value == 0f) return "0"
-                                    return "%,d".format(value.roundToInt())
-                                }
+                                // Draw the graph.
+                                invalidate()
                             }
-
-                            //  Asetetaan Y-akselin alkamaan nollasta.
-                            axisLeft.axisMinimum = 0f
-
-                            // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
-                            axisLeft.granularity = 1000f
-
-
-                            // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
-                            axisLeft.valueFormatter = object : ValueFormatter() {
-                                override fun getFormattedValue(value: Float): String {
-                                    // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
-                                    if (value == 0f) return "0"
-                                    return "%,d".format(value.roundToInt())
-                                }
-                            }
-
-                            // Create datasets.
-                            val set = makeBarDataSet(
-                                // name
-                                label = "Steps",
-
-                                // Points to BarEntry.
-                                entries = toBarEntries(stepsPts),
-
-                                // Format the column value.
-                                valueFormatter = object : ValueFormatter() {
-                                    override fun getBarLabel(e: BarEntry?): String =
-                                        if (e == null) "" else "%,d".format(e.y.toInt())
-                                }
-                            )
-
-                            // Set the data and width.
-                            data = BarData(set).apply { barWidth = 0.7f }
-
-                            // Draw the graph.
-                            invalidate()
                         }
-                    }
-                )
+                    )
+                }
             }
-        }
 
+            // Chart 3: Daytime phone usage (bar chart) – hours.
+            item {
+                ChartCard(title = "Daytime Phone Usage (6am–10pm, hours)$periodSuffix") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
 
-        // Chart 5: Communication Apps Usage (pie chart).
-        // Chart 5: Communication Apps Usage (pie chart).
-        item {
-            ChartCard(title = "Communication Apps Usage (hours)") {
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(340.dp),
-                    factory = { ctx ->
-                        PieChart(ctx).apply {
-                            description = Description().apply { text = "" }
+                            // Creating a bar chart.
+                            BarChart(ctx).apply {
 
-                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
-                            legend.isEnabled = false
+                                // Common basic settings.
+                                applyBarDefaults(dayLabels)
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
 
+                                // Take the y-values (hours) as a list.
+                                val hours = dayPts.map { it.y }
+
+                                // Set suitable steps.
+                                applyNiceYAxis(hours, ::hourStepFor)
+
+                                // Uniform datasets.
+                                val set = makeBarDataSet(
+                                    // Series name.
+                                    label = "Daytime usage",
+
+                                    // Points to BarEntry.
+                                    entries = toBarEntries(dayPts),
+
+                                    // Text on top of the column.
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getBarLabel(e: BarEntry?): String =
+
+                                            // Display “x.x h”.
+                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                    }
+                                )
+
+                                // Set the data and width.
+                                data = BarData(set).apply { barWidth = 0.7f }
+
+                                // Draw the graph.
+                                invalidate()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // 4) Steps (bar)
+            item {
+                ChartCard(title = "Exercise (steps)$periodSuffix") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+
+                        // Creating a BarChart.
+                        factory = { ctx ->
+
+                            // Configuration.
+                            BarChart(ctx).apply {
+
+                                // Common basic settings.
+                                applyBarDefaults(dayLabels)
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
+
+                                //  Asetetaan Y-akselin alkamaan nollasta.
+                                axisLeft.axisMinimum = 0f
+
+                                // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
+                                axisLeft.granularity = 1000f
+
+                                // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
+                                axisLeft.valueFormatter = object : ValueFormatter() {
+                                    override fun getFormattedValue(value: Float): String {
+                                        // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
+                                        return if (value == 0f) "0" else "%,d".format(value.roundToInt())
+                                    }
+                                }
+
+                                // Create datasets.
+                                val set = makeBarDataSet(
+                                    label = "Steps",
+
+                                    // Points to BarEntry.
+                                    entries = toBarEntries(stepsPts),
+
+                                    // Format the column value.
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getBarLabel(e: BarEntry?): String =
+                                            if (e == null) "" else "%,d".format(e.y.toInt())
+                                    }
+                                )
+
+                                // Set the data and width.
+                                data = BarData(set).apply { barWidth = 0.7f }
+
+                                // Draw the graph.
+                                invalidate()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Chart 5: Communication Apps Usage (pie chart).
+            item {
+                ChartCard(title = "Communication Apps Usage$periodSuffix") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                        factory = { ctx ->
+                            PieChart(ctx).apply {
+                                description = Description().apply { text = "" }
+                                // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
+                                legend.isEnabled = false
                                 // Määritellään, mihin muotoon selite asetetaan.
 
+                                // Yleiset asetukset, jotka ovat aina voimassa.
+                                setUsePercentValues(false)
+                                setDrawEntryLabels(false)
 
-                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
-                            legend.isEnabled = false
+                                // Prevents rotation.
+                                isRotationEnabled = false
 
-                            // Yleiset asetukset, jotka ovat aina voimassa
-                            setUsePercentValues(false)
-                            setDrawEntryLabels(false)
+                                // Start up.
+                                rotationAngle = 0f
 
-                            // Prevents rotation.
-                            isRotationEnabled = false
+                                // No animations.
+                                animateY(0)
 
-                            // Start up.
-                            rotationAngle = 0f
+                                // Kaavion keskellä olevan reiän koko
+                                holeRadius = 45f
 
-                            // No animations.
-                            animateY(0)
-                            holeRadius = 45f // Kaavion keskellä olevan reiän koko
-                            val entries = commPie
-                                .filter { it.value > 0f }
-                                .map { PieEntry(it.value, it.label) }
+                                val entries = commPie
+                                    .filter { it.value > 0f }
+                                    .map { PieEntry(it.value, it.label) }
 
-                            // MUOKKAUS: Tarkistetaan, onko dataa.
-                            if (entries.sumOf { it.value.toDouble() } == 0.0) {
-                                // --- KUN DATA ON NOLLA ---
-                                // Näytetään keskellä viesti ja tyhjennetään data.
-                                centerText = "No chart data available"
-                                setCenterTextSize(16f)
-                                setCenterTextColor(android.graphics.Color.BLACK) // Muutettu suoraan mustaksi
+                                // MUOKKAUS: Tarkistetaan, onko dataa.
+                                if (entries.isEmpty()) {
 
-                                // MUOKKAUS: Aseta tyhjä PieData-objekti nullin sijaan.
-                                data = PieData(PieDataSet(emptyList(), "")) // <-- TÄMÄ ON
+                                    // --- KUN DATA ON NOLLA ---
+                                    // Näytetään keskellä viesti ja tyhjennetään data.
+                                    centerText = "No chart data available"
+                                    setCenterTextSize(16f)
+                                    setCenterTextColor(android.graphics.Color.BLACK)
 
-                            } else {
-                                // --- KUN DATA EI OLE NOLLA ---
-                                // Otetaan selite takaisin käyttöön ja muotoillaan se.
-                                legend.isEnabled = true
-                                legend.apply {
-                                    textSize = 16f
-                                    isWordWrapEnabled = true
-                                    setMaxSizePercent(0.80f)
-                                    verticalAlignment =
-                                        com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
-                                    horizontalAlignment =
-                                        com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
-                                    orientation =
-                                        com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
-                                    setDrawInside(false)
-                                }
-
-                                // Luodaan ja asetetaan datajoukko normaalisti.
-                                val set = PieDataSet(entries, "").apply {
-                                    colors = PIE_COLORS
-                                    sliceSpace = 2f
-                                    valueTextSize = 14f
-                                    valueTextColor = COLOR_TEXT_HEX
-                                    valueFormatter = object : ValueFormatter() {
-                                        override fun getFormattedValue(value: Float): String =
-                                            String.format("%.1f h", value)
+                                    // MUOKKAUS: Aseta tyhjä PieData-objekti nullin sijaan.
+                                    data = PieData(PieDataSet(emptyList(), ""))
+                                } else {
+                                    // --- KUN DATA EI OLE NOLLA ---
+                                    // Otetaan selite takaisin käyttöön ja muotoillaan se.
+                                    legend.isEnabled = true
+                                    legend.apply {
+                                        textSize = 16f
+                                        isWordWrapEnabled = true
+                                        setMaxSizePercent(0.80f)
+                                        verticalAlignment =
+                                            com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                        horizontalAlignment =
+                                            com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                        orientation =
+                                            com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                        setDrawInside(false)
                                     }
+
+                                    // Luodaan ja asetetaan datajoukko normaalisti.
+                                    val set = PieDataSet(entries, "").apply {
+                                        colors = PIE_COLORS
+                                        sliceSpace = 2f
+                                        valueTextSize = 14f
+                                        valueTextColor = COLOR_TEXT_HEX
+                                        valueFormatter = object : ValueFormatter() {
+                                            override fun getFormattedValue(value: Float): String =
+                                                String.format("%.1f h", value)
+                                        }
+                                    }
+                                    data = PieData(set)
                                 }
-                                data = PieData(set)
+
+                                // Piirretään kaavio uudelleen
+                                invalidate()
                             }
-
-                            invalidate() // Piirretään kaavio uudelleen
-
-                            // Toast-ilmoituksen logiikka pysyy samana.
-                            setOnChartValueSelectedListener(object :
-                                com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-                                override fun onValueSelected(
-                                    e: com.github.mikephil.charting.data.Entry?,
-                                    h: com.github.mikephil.charting.highlight.Highlight?
-                                ) {
-                                    if (e is PieEntry) {
-                                        val label = e.label
-                                        val hours = e.value
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "$label – %.1f h".format(hours),
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
-                                override fun onNothingSelected() {}
-                            })
                         }
-                    }
-                )
+                    )
+                }
+            }
+        } else {
+            // ===================== 3 KK / 1 V / ALL = KUUKAUSI-AGGREGAATIT =====================
+
+            // UCLA Loneliness (monthly avg)
+            item {
+                ChartCard(title = "UCLA Loneliness Scale") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
+                            LineChart(ctx).apply {
+                                description = Description().apply { text = "" }
+                                axisRight.isEnabled = false
+                                legend.isEnabled = false
+
+                                axisLeft.textSize = 14f
+                                xAxis.textSize = 14f
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
+
+                                xAxis.position = XAxis.XAxisPosition.BOTTOM
+                                xAxis.valueFormatter = IndexAxisValueFormatter(monthLabels)
+                                xAxis.granularity = 1f
+                                xAxis.setDrawGridLines(true)
+                                xAxis.enableGridDashedLine(10f, 10f, 0f)
+
+                                axisLeft.axisMinimum = 0f
+                                axisLeft.axisMaximum = 9f
+                                axisLeft.granularity = 1f
+                                axisLeft.setLabelCount(10, true)
+                                axisLeft.setDrawGridLines(true)
+                                axisLeft.enableGridDashedLine(10f, 10f, 0f)
+
+                                val entries = lonMonthly.mapIndexed { i, v -> Entry(i.toFloat(), v) }
+                                val set = LineDataSet(entries, "Loneliness").apply {
+                                    color = COLOR_PRIMARY_HEX
+                                    setCircleColor(COLOR_PRIMARY_HEX)
+                                    lineWidth = 3f
+                                    circleRadius = 5f
+                                    mode = LineDataSet.Mode.CUBIC_BEZIER
+                                    setDrawValues(false)
+                                }
+                                data = LineData(set)
+                                invalidate()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Night Usage (monthly avg hours)
+            item {
+                ChartCard(title = "Night Usage (hours)") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
+                            BarChart(ctx).apply {
+                                applyBarDefaults(monthLabels)
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
+
+                                applyNiceYAxis(nightMonthly, ::hourStepFor)
+                                val set = makeBarDataSet(
+                                    label = "Night usage",
+                                    entries = toBarEntriesFromFloats(nightMonthly),
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getBarLabel(e: BarEntry?): String =
+                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                    }
+                                )
+                                data = BarData(set).apply { barWidth = 0.7f }
+                                invalidate()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Day Usage (monthly avg hours)
+            item {
+                ChartCard(title = "Day Usage (hours)") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
+                            BarChart(ctx).apply {
+                                applyBarDefaults(monthLabels)
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
+
+                                applyNiceYAxis(dayMonthly, ::hourStepFor)
+                                val set = makeBarDataSet(
+                                    label = "Day usage",
+                                    entries = toBarEntriesFromFloats(dayMonthly),
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getBarLabel(e: BarEntry?): String =
+                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                    }
+                                )
+                                data = BarData(set).apply { barWidth = 0.7f }
+                                invalidate()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Exercise (monthly avg steps)
+            item {
+                ChartCard(title = "Exercise (steps)") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        factory = { ctx ->
+                            BarChart(ctx).apply {
+                                applyBarDefaults(monthLabels)
+                                setTouchEnabled(false)
+                                setPinchZoom(false)
+
+                                applyNiceYAxis(stepsMonthly, ::stepStepFor)
+                                axisLeft.valueFormatter = object : ValueFormatter() {
+                                    override fun getFormattedValue(value: Float): String =
+                                        if (value == 0f) "0" else "%,d".format(value.roundToInt())
+                                }
+                                val set = makeBarDataSet(
+                                    label = "Steps",
+                                    entries = toBarEntriesFromFloats(stepsMonthly),
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getBarLabel(e: BarEntry?): String =
+                                            if (e == null) "" else "%,d".format(e.y.toInt())
+                                    }
+                                )
+                                data = BarData(set).apply { barWidth = 0.7f }
+                                invalidate()
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Communications (donut)
+            item {
+                ChartCard(title = "Communication Apps Usage") {
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                        factory = { ctx ->
+                            PieChart(ctx).apply {
+                                description = Description().apply { text = "" }
+                                legend.isEnabled = false
+                                setUsePercentValues(false)
+                                setDrawEntryLabels(false)
+                                isRotationEnabled = false
+                                rotationAngle = 0f
+                                animateY(0)
+                                holeRadius = 45f
+
+                                val entries = commPie
+                                    .filter { it.value > 0f }
+                                    .map { PieEntry(it.value, it.label) }
+
+                                if (entries.isEmpty()) {
+                                    centerText = "No chart data available"
+                                    setCenterTextSize(16f)
+                                    setCenterTextColor(android.graphics.Color.BLACK)
+                                    data = PieData(PieDataSet(emptyList(), ""))
+                                } else {
+                                    legend.isEnabled = true
+                                    legend.apply {
+                                        textSize = 16f
+                                        isWordWrapEnabled = true
+                                        setMaxSizePercent(0.80f)
+                                        verticalAlignment =
+                                            com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                        horizontalAlignment =
+                                            com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                        orientation =
+                                            com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                        setDrawInside(false)
+                                    }
+                                    val set = PieDataSet(entries, "").apply {
+                                        colors = PIE_COLORS
+                                        sliceSpace = 2f
+                                        valueTextSize = 14f
+                                        valueTextColor = COLOR_TEXT_HEX
+                                        valueFormatter = object : ValueFormatter() {
+                                            override fun getFormattedValue(value: Float): String =
+                                                String.format("%.1f h", value)
+                                        }
+                                    }
+                                    data = PieData(set)
+                                }
+                                invalidate()
+                            }
+                        }
+                    )
+                }
             }
         }
-
     }
 }
 
@@ -512,9 +651,7 @@ private fun ChartCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(Modifier
-            .fillMaxWidth()
-            .padding(16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp)) {
             if (title != null) {
                 Text(title, style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(8.dp))
@@ -535,17 +672,16 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     legend.isEnabled = false
 
     // Allow touch/scroll.
-    setTouchEnabled(true) // MUOKATTU aiemmin, pidetään näin
+    setTouchEnabled(true)  // MUOKATTU aiemmin, pidetään näin
 
     // Removing the dark blue highlight.
     setHighlightPerTapEnabled(false)
-
     isHighlightPerDragEnabled = false
 
     // X-axis to the bottom.
     xAxis.position = XAxis.XAxisPosition.BOTTOM
     xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
-    xAxis.textSize = 12f // <-- UUSI: Suurennetaan X-akselin tekstejä
+    xAxis.textSize = 12f// <-- UUSI: Suurennetaan X-akselin tekstejä
 
     // Labels given to the X-axis in order.
     // Space one index at a time.
@@ -567,7 +703,6 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
 // Adjust the left Y-axis according to the values.
 private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
-
     val maxVal = (values.maxOrNull() ?: 0f).coerceAtLeast(0f)
 
     // Choose  section (using hour/step logic).
@@ -599,6 +734,9 @@ private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntr
     // X = index, Y = value.
     points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) }
 
+private fun toBarEntriesFromFloats(values: List<Float>): List<BarEntry> =
+    values.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
+
 // Create a unified BarDataSet with the same layout.
 private fun makeBarDataSet(
 
@@ -619,17 +757,12 @@ private fun makeBarDataSet(
 
     // Set the text size for values on top of bars.
     this.valueFormatter = valueFormatter
-    valueTextSize = 12f // <-- UUSI: Suurennetaan arvojen tekstejä
-    valueTextColor = COLOR_TEXT_HEX
-
-    // Font size of the text displayed at the top of the column.
-    valueTextSize = 10f
+    valueTextSize = 12f  // <-- UUSI: Suurennetaan arvojen tekstejä.
 
     // If format given, use it.
+    valueTextColor = COLOR_TEXT_HEX
     if (valueFormatter != null) setValueFormatter(valueFormatter)
 }
-
-
 
 // 'UnitValueFormatter' formats column values ​​with a unit and decimal number.
 private class UnitValueFormatter(
@@ -667,14 +800,59 @@ private fun hourStepFor(maxVal: Float): Float =
     }
 
 // Choose a  interval for the steps.
-private fun stepStepFor(maxVal: Float): Float {
-
-    // Clear thousands separator: 500, 1000, 2000, etc. MUTTA onko selkeä?
-    return when {
+private fun stepStepFor(maxVal: Float): Float =
+    when {
         maxVal <= 4_000f  -> 500f
         maxVal <= 12_000f -> 1_000f
         maxVal <= 20_000f -> 2_000f
         else              -> 5_000f
     }
+
+// --- Agregaatiot & datan koonti ---
+
+private data class MonthBucket(
+    val label: String,
+    val lonAvg: Float,
+    val nightH: Float,
+    val dayH: Float,
+    val stepsAvg: Float
+)
+
+private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
+    if (samples.isEmpty()) return emptyList()
+    val byMonth = samples.groupBy { YearMonth.from(it.date) }.toSortedMap()
+    return byMonth.map { (ym, days) ->
+        val label = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        val lon   = days.map { it.loneliness.toDouble() }.average().toFloat()
+        val night = days.map { it.nightMinutes / 60f }.map { it.toDouble() }.average().toFloat()
+        val day   = days.map { it.dayMinutes / 60f }.map { it.toDouble() }.average().toFloat()
+        val steps = days.map { it.steps.toFloat() }.map { it.toDouble() }.average().toFloat()
+        MonthBucket(label, lon, night, day, steps)
+    }
 }
 
+private fun buildSamplesForRange(
+    daysEntity: List<DayEntity>?,
+    start: LocalDate,
+    range: TimeRange
+): List<DaySample> {
+    val entities = daysEntity ?: return emptyList()
+    val want = when (range) {
+        TimeRange.Week        -> 7
+        TimeRange.Month       -> 30      // 1 month = päivätason 30 (tai 31) viime päivää
+        TimeRange.ThreeMonths -> 90      // 3 kk → kuukausi-aggregaatti (yllä)
+        TimeRange.Year        -> 365     // 1 v  → kuukausi-aggregaatti (yllä)
+        TimeRange.All         -> entities.size
+    }
+    val n = minOf(want, entities.size)
+    return (0 until n).map { i ->
+        val e = entities[i]
+        DaySample(
+            date = start.plusDays(i.toLong()),
+            loneliness = e.loneliness,
+            nightMinutes = e.nightMinutes,
+            dayMinutes = e.dayMinutes,
+            steps = e.steps
+        )
+    }
+}
