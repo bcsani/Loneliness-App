@@ -4,17 +4,17 @@ package fi.tuni.lonelinessapp.ui.screens.analysis
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
-
-
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.graphics.Color
 
 // MPAndroidChart
 import com.github.mikephil.charting.charts.BarChart
@@ -26,6 +26,7 @@ import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import kotlin.math.roundToInt
+import fi.tuni.lonelinessapp.R
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.roundToInt
 
@@ -48,6 +49,8 @@ private val PIE_COLORS = listOf(
 // 3) Daytime Phone Usage (bar)
 // 4) Exercise (steps) (bar)
 // 5) Communication Apps Usage (pie)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(
     modifier: Modifier = Modifier,
@@ -101,11 +104,65 @@ fun AnalysisScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+        // Dropdown box
+        item {
+            var expanded by remember { mutableStateOf(false) }
+            val options = listOf("Week", "1 Month", "3 Months", "1 Year", "All Time")
+            var selectedOptionText by remember { mutableStateOf(options[0]) }
+
+            // We want to occupy the full width, so we wrap it in a Box
+            // with a Modifier that aligns the menu to the end.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp), // Some padding from the edge
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                ) {
+                    TextField(
+                        // The `menuAnchor` modifier must be passed to the text field for correctness.
+                        modifier = Modifier
+                            .menuAnchor()
+                            .width(150.dp),
+                        readOnly = true,
+                        value = selectedOptionText,
+                        onValueChange = {},
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            disabledContainerColor = Color.White,),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                    ) {
+                        options.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text(selectionOption) },
+                                onClick = {
+                                    selectedOptionText = selectionOption
+                                    expanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+
         // Chart 1: Loneliness LeveL (line chart)
         item {
             ChartCard(title = "Loneliness Level (This Week)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
                     factory = { ctx ->
                         LineChart(ctx).apply {
                             description = Description().apply { text = "" }
@@ -260,7 +317,8 @@ fun AnalysisScreen(
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
                     modifier = Modifier
-                        .fillMaxWidth().height(240.dp),
+                        .fillMaxWidth()
+                        .height(240.dp),
 
                     // Creating a BarChart.
                     factory = { ctx ->
@@ -338,7 +396,9 @@ fun AnalysisScreen(
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(340.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(340.dp),
                     factory = { ctx ->
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
@@ -452,7 +512,9 @@ private fun ChartCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
             if (title != null) {
                 Text(title, style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(8.dp))
