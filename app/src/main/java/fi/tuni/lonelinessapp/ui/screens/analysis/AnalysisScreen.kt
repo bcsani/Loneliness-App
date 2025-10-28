@@ -23,9 +23,9 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.mapimport kotlinx.coroutines.flow.filterNotNull
 
 
 // The colors are now hardcoded. Later we will move under the theme?
@@ -115,7 +115,7 @@ fun AnalysisScreen(
                             xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f,10f,0f)
+                            xAxis.enableGridDashedLine(10f, 10f, 0f)
 
 
                             axisLeft.axisMinimum = 0f
@@ -126,12 +126,12 @@ fun AnalysisScreen(
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
-                            val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
+                            val entries =
+                                lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
 
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
                                 setCircleColor(COLOR_PRIMARY_HEX)
-
                                 lineWidth = 3f
                                 circleRadius = 5f
                                 mode = LineDataSet.Mode.CUBIC_BEZIER
@@ -250,7 +250,6 @@ fun AnalysisScreen(
         }
 
         // Chart 4: Exercise (bar chart).
-
         item {
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
@@ -269,9 +268,21 @@ fun AnalysisScreen(
                             setPinchZoom(false)
 
 
-                            // Get the step values.
-                            val values = stepsPts.map { it.y }
+                            //  Asetetaan Y-akselin alkamaan nollasta.
+                            axisLeft.axisMinimum = 0f
 
+                            // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
+                            axisLeft.granularity = 1000f
+
+
+                            // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
+                            axisLeft.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
+                                    if (value == 0f) return "0"
+                                    return "%,d".format(value.roundToInt())
+                                }
+                            }
 
                             //  Asetetaan Y-akselin alkamaan nollasta.
                             axisLeft.axisMinimum = 0f
@@ -332,7 +343,10 @@ fun AnalysisScreen(
                                 // Määritellään, mihin muotoon selite asetetaan.
 
 
-                            // No percentages.
+                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
+                            legend.isEnabled = false
+
+                            // Yleiset asetukset, jotka ovat aina voimassa
                             setUsePercentValues(false)
                             setDrawEntryLabels(false)
 
@@ -410,7 +424,6 @@ fun AnalysisScreen(
                                         ).show()
                                     }
                                 }
-
                                 override fun onNothingSelected() {}
                             })
                         }
@@ -418,10 +431,11 @@ fun AnalysisScreen(
                 )
             }
         }
+
     }
 }
 
-        // The 'Chartcard' function creates a uniform card template for graphs.
+// The 'Chartcard' function creates a uniform card template for graphs.
 @Composable
 private fun ChartCard(
     title: String? = null,
@@ -442,7 +456,6 @@ private fun ChartCard(
     }
 }
 
-// Common settings for all bar charts.
 // Common settings for all bar charts.
 private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
@@ -484,7 +497,6 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     axisLeft.enableGridDashedLine(10f, 10f, 0f)
 }
 
-
 // Adjust the left Y-axis according to the values.
 private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
 
@@ -520,7 +532,6 @@ private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntr
     points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) }
 
 // Create a unified BarDataSet with the same layout.
-// Create a unified BarDataSet with the same layout.
 private fun makeBarDataSet(
 
     // 'Series' name.
@@ -532,7 +543,7 @@ private fun makeBarDataSet(
     // Optional value formatter for the top of the column.
     valueFormatter: ValueFormatter? = null
 
-// Return the configured dataset.
+    // Return the configured dataset.
 ): BarDataSet = BarDataSet(entries, label).apply {
 
     // Column color.
