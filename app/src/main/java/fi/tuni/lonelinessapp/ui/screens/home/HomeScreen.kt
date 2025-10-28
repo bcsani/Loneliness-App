@@ -60,7 +60,7 @@ fun HomeScreen(
                 Box(
                     modifier = modifier
                         .fillMaxSize()
-                ){
+                ) {
                     Text(
                         text = "Home Screen",
                         modifier = modifier.align(Alignment.Center),
@@ -81,7 +81,7 @@ fun HomeScreen(
                 Box(
                     modifier = modifier
                         .fillMaxSize()
-                ){
+                ) {
                     Row(
                         modifier = modifier.align(Alignment.Center),
                         verticalAlignment = Alignment.CenterVertically,
@@ -117,7 +117,7 @@ fun HomeScreen(
         // Survey Button
         item {
             Button(
-                onClick = {mainViewModel.openSurvey()},
+                onClick = { mainViewModel.openSurvey() },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -141,7 +141,7 @@ fun HomeScreen(
                 Box(
                     modifier = modifier
                         .fillMaxSize()
-                ){
+                ) {
                     Text(
                         text = "Loneliness Correlations",
                         modifier = modifier.align(Alignment.Center),
@@ -151,29 +151,14 @@ fun HomeScreen(
             }
         }
 
-        // This is a temporary demo element
+        // CORRECTED SECTION: The if-statement is now inside an item block.
         item {
-            Card(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Box(
-                    modifier = modifier
-                        .fillMaxSize()
-                ){
-                    Text(
-                        text = "This Week",
-                        modifier = modifier.align(Alignment.Center),
-                        fontSize = 32.sp
-                    )
-                }
+            if (showDialog) {
+                SurveyDialog(
+                    onDismiss = { mainViewModel.closeSurvey() },
+                    surveyViewModel = surveyViewModel
+                )
             }
         }
-    }
-
-    if(showDialog){
-        SurveyDialog( onDismiss = { mainViewModel.closeSurvey()}, surveyViewModel = surveyViewModel)
     }
 }
