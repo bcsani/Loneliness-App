@@ -1,6 +1,7 @@
 package fi.tuni.lonelinessapp.ui.screens.analysis
 
 // Compose
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -239,11 +240,19 @@ fun AnalysisScreen(
                                 val set = makeBarDataSet(
                                     label = "Night usage",
                                     entries = toBarEntries(nightPts),
+                                    // ...
                                     valueFormatter = object : ValueFormatter() {
-                                        override fun getBarLabel(e: BarEntry?): String =
-                                            // Display e.g. “1.5 h”.
-                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                        @SuppressLint("DefaultLocale")
+                                        override fun getBarLabel(e: BarEntry?): String {
+                                            // ÄLÄ NÄYTÄ ARVOJA, JOS AIKAVÄLI ON KUUKAUSI TAI PIDEMPI
+                                            if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
+                                                return ""
+                                            }
+                                            return if (e == null) "" else String.format("%.1f h", e.y)
+                                        }
                                     }
+// ...
+
                                 )
                                 // Set the data and column width.
                                 data = BarData(set).apply { barWidth = 0.7f }
@@ -286,12 +295,19 @@ fun AnalysisScreen(
                                     entries = toBarEntries(dayPts),
 
                                     // Text on top of the column.
+                                    // ...
                                     valueFormatter = object : ValueFormatter() {
-                                        override fun getBarLabel(e: BarEntry?): String =
-
-                                            // Display “x.x h”.
-                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                        @SuppressLint("DefaultLocale")
+                                        override fun getBarLabel(e: BarEntry?): String {
+                                            // ÄLÄ NÄYTÄ ARVOJA, JOS AIKAVÄLI ON KUUKAUSI TAI PIDEMPI
+                                            if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
+                                                return ""
+                                            }
+                                            return if (e == null) "" else String.format("%.1f h", e.y)
+                                        }
                                     }
+// ...
+
                                 )
 
                                 // Set the data and width.
@@ -344,10 +360,19 @@ fun AnalysisScreen(
                                     entries = toBarEntries(stepsPts),
 
                                     // Format the column value.
+                                    // ...
                                     valueFormatter = object : ValueFormatter() {
-                                        override fun getBarLabel(e: BarEntry?): String =
-                                            if (e == null) "" else "%,d".format(e.y.toInt())
+                                        @SuppressLint("DefaultLocale")
+                                        override fun getBarLabel(e: BarEntry?): String {
+                                            // ÄLÄ NÄYTÄ ARVOJA, JOS AIKAVÄLI ON KUUKAUSI TAI PIDEMPI
+                                            if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
+                                                return ""
+                                            }
+                                            return if (e == null) "" else String.format("%.1f h", e.y)
+                                        }
                                     }
+// ...
+
                                 )
 
                                 // Set the data and width.
@@ -411,7 +436,7 @@ fun AnalysisScreen(
                                     legend.apply {
                                         textSize = 16f
                                         isWordWrapEnabled = true
-                                        setMaxSizePercent(0.80f)
+                                        maxSizePercent = 0.80f
                                         verticalAlignment =
                                             com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
                                         horizontalAlignment =
@@ -428,6 +453,7 @@ fun AnalysisScreen(
                                         valueTextSize = 14f
                                         valueTextColor = COLOR_TEXT_HEX
                                         valueFormatter = object : ValueFormatter() {
+                                            @SuppressLint("DefaultLocale")
                                             override fun getFormattedValue(value: Float): String =
                                                 String.format("%.1f h", value)
                                         }
@@ -507,6 +533,7 @@ fun AnalysisScreen(
                                     label = "Night usage",
                                     entries = toBarEntriesFromFloats(nightMonthly),
                                     valueFormatter = object : ValueFormatter() {
+                                        @SuppressLint("DefaultLocale")
                                         override fun getBarLabel(e: BarEntry?): String =
                                             if (e == null) "" else String.format("%.1f h", e.y)
                                     }
@@ -535,6 +562,7 @@ fun AnalysisScreen(
                                     label = "Day usage",
                                     entries = toBarEntriesFromFloats(dayMonthly),
                                     valueFormatter = object : ValueFormatter() {
+                                        @SuppressLint("DefaultLocale")
                                         override fun getBarLabel(e: BarEntry?): String =
                                             if (e == null) "" else String.format("%.1f h", e.y)
                                     }
@@ -609,7 +637,7 @@ fun AnalysisScreen(
                                     legend.apply {
                                         textSize = 16f
                                         isWordWrapEnabled = true
-                                        setMaxSizePercent(0.80f)
+                                        maxSizePercent = 0.80f
                                         verticalAlignment =
                                             com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
                                         horizontalAlignment =
@@ -624,6 +652,7 @@ fun AnalysisScreen(
                                         valueTextSize = 14f
                                         valueTextColor = COLOR_TEXT_HEX
                                         valueFormatter = object : ValueFormatter() {
+                                            @SuppressLint("DefaultLocale")
                                             override fun getFormattedValue(value: Float): String =
                                                 String.format("%.1f h", value)
                                         }
@@ -675,7 +704,7 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     setTouchEnabled(true)  // MUOKATTU aiemmin, pidetään näin
 
     // Removing the dark blue highlight.
-    setHighlightPerTapEnabled(false)
+    isHighlightPerTapEnabled = false
     isHighlightPerDragEnabled = false
 
     // X-axis to the bottom.
@@ -762,18 +791,6 @@ private fun makeBarDataSet(
     // If format given, use it.
     valueTextColor = COLOR_TEXT_HEX
     if (valueFormatter != null) setValueFormatter(valueFormatter)
-}
-
-// 'UnitValueFormatter' formats column values ​​with a unit and decimal number.
-private class UnitValueFormatter(
-    private val unit: String,
-    private val decimals: Int
-) : ValueFormatter() {
-    override fun getBarLabel(barEntry: BarEntry?): String {
-        val v = barEntry?.y ?: return ""
-        return if (decimals == 0) "${v.toInt()}${if (unit.isNotEmpty()) " $unit" else ""}"
-        else "%.${decimals}f %s".format(v, unit).trim()
-    }
 }
 
 // Round the upper limit up to the nearest multiple of 'step'.
