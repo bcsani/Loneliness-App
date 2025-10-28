@@ -35,6 +35,32 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+
+        // This is a temporary demo element
+        item {
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                ) {
+                    Text(
+                        text = "Home Screen",
+                        modifier = modifier.align(Alignment.Center),
+                        fontSize = 32.sp
+                    )
+                }
+            }
+        }
 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -62,6 +88,17 @@ fun HomeScreen(
                         tint = Color(0xFFFF9800), // Orange
                         modifier = Modifier.size(40.dp)
                     )
+                ) {
+                    Row(
+                        modifier = modifier.align(Alignment.Center),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "Streak Icon",
+                            modifier = modifier.size(64.dp)
+                        )
 
                     Column {
                         Text(
@@ -75,6 +112,7 @@ fun HomeScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+
                 }
             }
         }
@@ -87,6 +125,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp),
+                onClick = { mainViewModel.openSurvey() },
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX))
             ) {
@@ -96,6 +135,26 @@ fun HomeScreen(
 
         //  Loneliness Correlations Chart
 
+        // This is a temporary demo element
+        item {
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Box(
+                    modifier = modifier
+                        .fillMaxSize()
+                ) {
+                    Text(
+                        text = "Loneliness Correlations",
+                        modifier = modifier.align(Alignment.Center),
+                        fontSize = 32.sp
+                    )
+                }
+            }
+        }
 
         if (showDialog) {
             item {
@@ -109,3 +168,15 @@ fun HomeScreen(
 }
 
 
+
+        // CORRECTED SECTION: The if-statement is now inside an item block.
+        item {
+            if (showDialog) {
+                SurveyDialog(
+                    onDismiss = { mainViewModel.closeSurvey() },
+                    surveyViewModel = surveyViewModel
+                )
+            }
+        }
+    }
+}
