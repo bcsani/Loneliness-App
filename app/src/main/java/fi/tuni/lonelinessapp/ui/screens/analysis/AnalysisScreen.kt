@@ -25,7 +25,10 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
+import kotlin.math.roundToInt
+
 
 
 // The colors are now hardcoded. Later we will move under the theme?
@@ -109,7 +112,8 @@ fun AnalysisScreen(
                             axisRight.isEnabled = false
                             legend.isEnabled = false
 
-                            // MUOKATTU
+                            axisLeft.textSize = 14f
+                            xAxis.textSize = 14f
                             setTouchEnabled(false)
                             setPinchZoom(false)
 
@@ -117,16 +121,19 @@ fun AnalysisScreen(
                             xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             xAxis.granularity = 1f
                             xAxis.setDrawGridLines(true)
-                            xAxis.enableGridDashedLine(10f,10f,0f)
+                            xAxis.enableGridDashedLine(10f, 10f, 0f)
+
 
                             axisLeft.axisMinimum = 0f
                             axisLeft.axisMaximum = 9f
-                            axisLeft.granularity = 0.5f
-                            axisLeft.setLabelCount(7, true)
+                            axisLeft.granularity = 1f
+                            axisLeft.spaceTop = 0f
+                            axisLeft.setLabelCount(10, true)
                             axisLeft.setDrawGridLines(true)
                             axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
-                            val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
+                            val entries =
+                                lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
 
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
@@ -158,6 +165,8 @@ fun AnalysisScreen(
 
                             // Run common basic settings (x-axis down, grid).
                             applyBarDefaults(dayLabels)
+                            setTouchEnabled(false)
+                            setPinchZoom(false)
 
                             // Get the y-values (hours) as a list.
                             val hours = nightPts.map { it.y }
@@ -184,7 +193,7 @@ fun AnalysisScreen(
                             )
 
                             // Set the data and column width.
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            data = BarData(set).apply { barWidth = 0.7f }
 
                             // Draw the graph.
                             invalidate()
@@ -208,6 +217,8 @@ fun AnalysisScreen(
 
                             // Common basic settings.
                             applyBarDefaults(dayLabels)
+                            setTouchEnabled(false)
+                            setPinchZoom(false)
 
                             // Take the y-values (hours) as a list.
                             val hours = dayPts.map { it.y }
@@ -234,7 +245,7 @@ fun AnalysisScreen(
                             )
 
                             // Set the data and width.
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            data = BarData(set).apply { barWidth = 0.7f }
 
                             // Draw the graph.
                             invalidate()
@@ -249,8 +260,7 @@ fun AnalysisScreen(
             ChartCard(title = "Exercise (steps)") {
                 AndroidView(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
+                        .fillMaxWidth().height(240.dp),
 
                     // Creating a BarChart.
                     factory = { ctx ->
@@ -260,12 +270,41 @@ fun AnalysisScreen(
 
                             // Common basic settings.
                             applyBarDefaults(dayLabels)
+                            setTouchEnabled(false)
+                            setPinchZoom(false)
 
-                            // Get the step values.
-                            val values = stepsPts.map { it.y }
 
-                            // Step selection for steps (500/1000/2000/5000).
-                            applyNiceYAxis(values, ::stepStepFor)
+                            //  Asetetaan Y-akselin alkamaan nollasta.
+                            axisLeft.axisMinimum = 0f
+
+                            // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
+                            axisLeft.granularity = 1000f
+
+
+                            // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
+                            axisLeft.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
+                                    if (value == 0f) return "0"
+                                    return "%,d".format(value.roundToInt())
+                                }
+                            }
+
+                            //  Asetetaan Y-akselin alkamaan nollasta.
+                            axisLeft.axisMinimum = 0f
+
+                            // Pakotetaan Y-akselin välit olemaan aina 1000 askelta.
+                            axisLeft.granularity = 1000f
+
+
+                            // Muotoillaan Y-akselin luvut kokonaisluvuiksi.
+                            axisLeft.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
+                                    if (value == 0f) return "0"
+                                    return "%,d".format(value.roundToInt())
+                                }
+                            }
 
                             // Create datasets.
                             val set = makeBarDataSet(
@@ -283,7 +322,7 @@ fun AnalysisScreen(
                             )
 
                             // Set the data and width.
-                            data = BarData(set).apply { barWidth = 0.5f }
+                            data = BarData(set).apply { barWidth = 0.7f }
 
                             // Draw the graph.
                             invalidate()
@@ -295,16 +334,25 @@ fun AnalysisScreen(
 
 
         // Chart 5: Communication Apps Usage (pie chart).
+        // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
-                    modifier = Modifier.fillMaxWidth().height(280.dp),
+                    modifier = Modifier.fillMaxWidth().height(340.dp),
                     factory = { ctx ->
                         PieChart(ctx).apply {
                             description = Description().apply { text = "" }
-                            legend.isEnabled = true
 
-                            // No percentages.
+                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
+                            legend.isEnabled = false
+
+                                // Määritellään, mihin muotoon selite asetetaan.
+
+
+                            // MUOKKAUS: Poistetaan selite (legend) oletuksena. Se lisätään takaisin vain, jos dataa on.
+                            legend.isEnabled = false
+
+                            // Yleiset asetukset, jotka ovat aina voimassa
                             setUsePercentValues(false)
                             setDrawEntryLabels(false)
 
@@ -316,21 +364,56 @@ fun AnalysisScreen(
 
                             // No animations.
                             animateY(0)
+                            holeRadius = 45f // Kaavion keskellä olevan reiän koko
+                            val entries = commPie
+                                .filter { it.value > 0f }
+                                .map { PieEntry(it.value, it.label) }
 
-                            val entries = commPie.map { PieEntry(it.value, it.label) }
-                            val set = PieDataSet(entries, "").apply {
-                                colors = PIE_COLORS
-                                valueTextSize = 12f
-                                valueTextColor = COLOR_TEXT_HEX
-                                valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float): String =
-                                        String.format("%.1f h", value)
+                            // MUOKKAUS: Tarkistetaan, onko dataa.
+                            if (entries.sumOf { it.value.toDouble() } == 0.0) {
+                                // --- KUN DATA ON NOLLA ---
+                                // Näytetään keskellä viesti ja tyhjennetään data.
+                                centerText = "No chart data available"
+                                setCenterTextSize(16f)
+                                setCenterTextColor(android.graphics.Color.BLACK) // Muutettu suoraan mustaksi
+
+                                // MUOKKAUS: Aseta tyhjä PieData-objekti nullin sijaan.
+                                data = PieData(PieDataSet(emptyList(), "")) // <-- TÄMÄ ON
+
+                            } else {
+                                // --- KUN DATA EI OLE NOLLA ---
+                                // Otetaan selite takaisin käyttöön ja muotoillaan se.
+                                legend.isEnabled = true
+                                legend.apply {
+                                    textSize = 16f
+                                    isWordWrapEnabled = true
+                                    setMaxSizePercent(0.80f)
+                                    verticalAlignment =
+                                        com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                    horizontalAlignment =
+                                        com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                    orientation =
+                                        com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                    setDrawInside(false)
                                 }
-                            }
-                            data = PieData(set)
-                            invalidate()
 
-                            // Display the application name and number of hours as a Toast.
+                                // Luodaan ja asetetaan datajoukko normaalisti.
+                                val set = PieDataSet(entries, "").apply {
+                                    colors = PIE_COLORS
+                                    sliceSpace = 2f
+                                    valueTextSize = 14f
+                                    valueTextColor = COLOR_TEXT_HEX
+                                    valueFormatter = object : ValueFormatter() {
+                                        override fun getFormattedValue(value: Float): String =
+                                            String.format("%.1f h", value)
+                                    }
+                                }
+                                data = PieData(set)
+                            }
+
+                            invalidate() // Piirretään kaavio uudelleen
+
+                            // Toast-ilmoituksen logiikka pysyy samana.
                             setOnChartValueSelectedListener(object :
                                 com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                                 override fun onValueSelected(
@@ -390,16 +473,17 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     legend.isEnabled = false
 
     // Allow touch/scroll.
-    // MUOKATTU
-    setTouchEnabled(false)
+    setTouchEnabled(true) // MUOKATTU aiemmin, pidetään näin
 
     // Removing the dark blue highlight.
     setHighlightPerTapEnabled(false)
 
+    isHighlightPerDragEnabled = false
 
     // X-axis to the bottom.
     xAxis.position = XAxis.XAxisPosition.BOTTOM
     xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
+    xAxis.textSize = 12f // <-- UUSI: Suurennetaan X-akselin tekstejä
 
     // Labels given to the X-axis in order.
     // Space one index at a time.
@@ -413,6 +497,7 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
     // Draw vertical guides.
     axisLeft.setDrawGridLines(true)
+    axisLeft.textSize = 12f
 
     // Vaaka-apuviivoihin katkoviiva, OR DO WE WANT?
     axisLeft.enableGridDashedLine(10f, 10f, 0f)
@@ -470,7 +555,9 @@ private fun makeBarDataSet(
     // Column color.
     color = COLOR_PRIMARY_HEX
 
-    // The color of the text displayed on top of the column.
+    // Set the text size for values on top of bars.
+    this.valueFormatter = valueFormatter
+    valueTextSize = 12f // <-- UUSI: Suurennetaan arvojen tekstejä
     valueTextColor = COLOR_TEXT_HEX
 
     // Font size of the text displayed at the top of the column.
