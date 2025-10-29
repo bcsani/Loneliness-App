@@ -464,6 +464,7 @@ fun AnalysisScreen(
                                 // Piirretään kaavio uudelleen
                                 invalidate()
                             }
+
                         }
                     )
                 }
