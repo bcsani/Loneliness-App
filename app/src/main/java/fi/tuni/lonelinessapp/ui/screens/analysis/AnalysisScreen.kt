@@ -29,7 +29,6 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import fi.tuni.lonelinessapp.data.entity.DayEntity
-import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
@@ -67,7 +66,7 @@ fun AnalysisScreen(
 
     // Päivänäytteet valitulle valitusti (ei repo/VM-muutoksia)
     val samples: List<DaySample> = remember(daysEntity, selectedRange, analysisViewModel.start) {
-        buildSamplesForRange(daysEntity, analysisViewModel.start, selectedRange)
+        buildSamplesForRange(daysEntity, selectedRange)
     }
 
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
@@ -204,7 +203,6 @@ fun AnalysisScreen(
                                 axisLeft.granularity = 1f
                                 axisLeft.setLabelCount(10, true)
                                 axisLeft.setDrawGridLines(true)
-                                axisLeft.enableGridDashedLine(10f, 10f, 0f)
 
                                 val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
                                 val set = LineDataSet(entries, "Loneliness").apply {
@@ -368,7 +366,7 @@ fun AnalysisScreen(
                                             if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
                                                 return ""
                                             }
-                                            return if (e == null) "" else String.format("%.1f h", e.y)
+                                            return if (e == null) "" else String.format("%f", e.y)
                                         }
                                     }
 // ...
@@ -587,16 +585,25 @@ fun AnalysisScreen(
                                 setPinchZoom(false)
 
                                 applyNiceYAxis(stepsMonthly, ::stepStepFor)
+
+                                // Y-akseli ilman desimaaleja
                                 axisLeft.valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float): String =
-                                        if (value == 0f) "0" else "%,d".format(value.roundToInt())
+                                    override fun getFormattedValue(value: Float): String {
+                                        // Käytetään tuhaterottimia selkeyden vuoksi
+                                        return "%,d".format(value.toInt())
+                                    }
                                 }
+
+                                // ... (loppuosa koodista pysyy samana)
+
                                 val set = makeBarDataSet(
                                     label = "Steps",
                                     entries = toBarEntriesFromFloats(stepsMonthly),
                                     valueFormatter = object : ValueFormatter() {
-                                        override fun getBarLabel(e: BarEntry?): String =
-                                            if (e == null) "" else "%,d".format(e.y.toInt())
+                                        override fun getBarLabel(e: BarEntry?): String {
+                                            // Muotoillaan pylvään päällä oleva luku
+                                            return if (e == null) "" else "%,d".format(e.y.toInt())
+                                        }
                                     }
                                 )
                                 data = BarData(set).apply { barWidth = 0.7f }
@@ -606,6 +613,7 @@ fun AnalysisScreen(
                     )
                 }
             }
+
 
             // Communications (donut)
             item {
@@ -668,6 +676,7 @@ fun AnalysisScreen(
         }
     }
 }
+
 
 // The 'Chartcard' function creates a uniform card template for graphs.
 @Composable
@@ -850,26 +859,30 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
 
 private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
-    start: LocalDate,
     range: TimeRange
 ): List<DaySample> {
     val entities = daysEntity ?: return emptyList()
-    val want = when (range) {
-        TimeRange.Week        -> 7
-        TimeRange.Month       -> 30      // 1 month = päivätason 30 (tai 31) viime päivää
-        TimeRange.ThreeMonths -> 90      // 3 kk → kuukausi-aggregaatti (yllä)
-        TimeRange.Year        -> 365     // 1 v  → kuukausi-aggregaatti (yllä)
-        TimeRange.All         -> entities.size
+    val filteredEntities = when (range) {
+        TimeRange.Week -> entities.takeLast(7)
+        TimeRange.Month -> entities.takeLast(30)
+        TimeRange.ThreeMonths -> entities.takeLast(90)
+        TimeRange.Year -> {
+            val sorted = entities.sortedBy { it.date }
+            if (sorted.size > 365) sorted.takeLast(365) else sorted
+        }
+
+        TimeRange.All -> entities
     }
-    val n = minOf(want, entities.size)
-    return (0 until n).map { i ->
-        val e = entities[i]
+
+    val sorted = filteredEntities.sortedBy { it.date }
+
+    return sorted.map {
         DaySample(
-            date = start.plusDays(i.toLong()),
-            loneliness = e.loneliness,
-            nightMinutes = e.nightMinutes,
-            dayMinutes = e.dayMinutes,
-            steps = e.steps
+            date = it.date,
+            loneliness = it.loneliness,
+            nightMinutes = it.nightMinutes,
+            dayMinutes = it.dayMinutes,
+            steps = it.steps
         )
     }
 }

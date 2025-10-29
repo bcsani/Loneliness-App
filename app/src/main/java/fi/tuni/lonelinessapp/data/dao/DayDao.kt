@@ -18,7 +18,6 @@ interface DayDao {
     fun insertDay(day: DayEntity)
     @Query("UPDATE dayTable SET loneliness = :loneliness WHERE date = :date")
     suspend fun updateLoneliness(date: LocalDate, loneliness: Int)
-
     @Query("UPDATE dayTable SET nightMinutes = :nightMinutes WHERE date = :date")
     suspend fun updateNightMinutes(date: LocalDate, nightMinutes: Int)
 
