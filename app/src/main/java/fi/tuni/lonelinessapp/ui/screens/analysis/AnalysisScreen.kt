@@ -174,7 +174,7 @@ fun AnalysisScreen(
                 }
             }
         } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
-            // ===================== VIikko & 1 KUUKAUSI = PÄIVITTÄISET KAAVIOT =====================
+            // WEEK 1 AND MONTH CHART.
 
             // 1) Loneliness (line)
             item {
@@ -346,7 +346,14 @@ fun AnalysisScreen(
                                 axisLeft.valueFormatter = object : ValueFormatter() {
                                     override fun getFormattedValue(value: Float): String {
                                         // Näytetään 0, jos arvo on 0, muuten tuhaterottimella.
-                                        return if (value == 0f) "0" else "%,d".format(value.roundToInt())
+                                        return if (value == 0f)
+                                        {
+                                            "0"
+                                        }
+                                        else
+                                        {
+                                            "%,d".format(value.roundToInt())
+                                        }
                                     }
                                 }
 
@@ -358,15 +365,19 @@ fun AnalysisScreen(
                                     entries = toBarEntries(stepsPts),
 
                                     // Format the column value.
-                                    // ...
                                     valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
                                         override fun getBarLabel(e: BarEntry?): String {
-                                            // ÄLÄ NÄYTÄ ARVOJA, JOS AIKAVÄLI ON KUUKAUSI TAI PIDEMPI
+
+                                            // Don't show the amount of steps if time period > week.
                                             if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
                                                 return ""
                                             }
-                                            return if (e == null) "" else String.format("%f", e.y)
+
+                                            if (e == null) return ""
+
+                                            // -> "5456" eikä "5456.0"
+                                            return e.y.toInt().toString()
+
                                         }
                                     }
 // ...
@@ -883,22 +894,22 @@ private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
     range: TimeRange
 ): List<DaySample> {
-    val entities = daysEntity ?: return emptyList()
-    val filteredEntities = when (range) {
-        TimeRange.Week -> entities.takeLast(7)
-        TimeRange.Month -> entities.takeLast(30)
-        TimeRange.ThreeMonths -> entities.takeLast(90)
-        TimeRange.Year -> {
-            val sorted = entities.sortedBy { it.date }
-            if (sorted.size > 365) sorted.takeLast(365) else sorted
-        }
+    // 1) jos ei dataa → tyhjä
+    val all = (daysEntity ?: return emptyList())
+        // LAJITTELE ENSIN nousevaan järjestykseen
+        .sortedBy { it.date }
 
-        TimeRange.All -> entities
+    // 2) ota oikea määrä TÄSTÄ lajittelusta
+    val filtered = when (range) {
+        TimeRange.Week        -> all.takeLast(7)
+        TimeRange.Month       -> all.takeLast(30)
+        TimeRange.ThreeMonths -> all.takeLast(90)
+        TimeRange.Year        -> all.takeLast(365)
+        TimeRange.All         -> all
     }
 
-    val sorted = filteredEntities.sortedBy { it.date }
-
-    return sorted.map {
+    // 3) muuta DaySampleksi
+    return filtered.map {
         DaySample(
             date = it.date,
             loneliness = it.loneliness,
