@@ -459,6 +459,27 @@ fun AnalysisScreen(
                                     data = PieData(set)
                                 }
 
+                                // Toast-ilmoituksen logiikka pysyy samana.
+                                setOnChartValueSelectedListener(object :
+                                    com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+                                    override fun onValueSelected(
+                                        e: com.github.mikephil.charting.data.Entry?,
+                                        h: com.github.mikephil.charting.highlight.Highlight?
+                                    ) {
+                                        if (e is PieEntry) {
+                                            val label = e.label
+                                            val hours = e.value
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "$label – %.1f h".format(hours),
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                    override fun onNothingSelected() {}
+                                })
+
+
                                 // Piirretään kaavio uudelleen
                                 invalidate()
                             }
