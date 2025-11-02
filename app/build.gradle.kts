@@ -58,7 +58,10 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     // Chart library.
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
     implementation(libs.mp.android.chart)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
