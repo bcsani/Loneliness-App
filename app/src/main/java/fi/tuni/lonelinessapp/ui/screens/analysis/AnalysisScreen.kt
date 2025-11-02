@@ -52,8 +52,8 @@ private val PIE_COLORS = listOf(
 enum class TimeRange { Week, Month, ThreeMonths, Year, All }
 
  /**
- // AnalysisScreen: displays line, bar, and pie charts of daily/monthly data.
- // Data comes from the Room database via the AnalysisViewModel.
+  * AnalysisScreen: displays line, bar, and pie charts of daily/monthly data.
+  * Data comes from the Room database via the AnalysisViewModel.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +70,6 @@ fun AnalysisScreen(
      val samples: List<DaySample> = remember(daysEntity, selectedRange) {
          buildSamplesForRange(daysEntity, selectedRange)
      }
-
 
      // creating data for charts.
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
@@ -96,7 +95,6 @@ fun AnalysisScreen(
             }
         }
     }
-
 
     // Monthly aggregate (only 3 months / 1 year / All).
     val monthlyAgg = remember(samples, selectedRange) {
@@ -227,6 +225,8 @@ fun AnalysisScreen(
                                     color = COLOR_PRIMARY_HEX
                                     setCircleColor(COLOR_PRIMARY_HEX)
                                     lineWidth = 3f
+
+                                    // Muutetaan pilkun kokoa.
                                     circleRadius = 5f
                                     mode = LineDataSet.Mode.CUBIC_BEZIER
                                     setDrawValues(false)
@@ -257,17 +257,9 @@ fun AnalysisScreen(
                                     label = "Night usage",
                                     entries = toBarEntries(nightPts),
 
-                                    valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
-                                        override fun getBarLabel(e: BarEntry?): String {
-                                            // DO NOT SHOW VALUES IF THE TIME INTERVAL IS ONE MONTH OR LONGER
-                                            if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
-                                                return ""
-                                            }
-                                            return if (e == null) "" else String.format("%.1f h", e.y)
-                                        }
+                                    valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
+                                        String.format("%.1f h", y)
                                     }
-
 
                                 )
                                 // Set the data and column width.
@@ -311,18 +303,9 @@ fun AnalysisScreen(
                                     entries = toBarEntries(dayPts),
 
                                     // Text on top of the column.
-                                    // ...
-                                    valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
-                                        override fun getBarLabel(e: BarEntry?): String {
-                                            // DO NOT SHOW VALUES IF THE TIME INTERVAL IS ONE MONTH OR LONGER.
-                                            if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
-                                                return ""
-                                            }
-                                            return if (e == null) "" else String.format("%.1f h", e.y)
-                                        }
+                                    valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
+                                        String.format("%.1f h", y)
                                     }
-
 
                                 )
 
@@ -383,22 +366,9 @@ fun AnalysisScreen(
                                     entries = toBarEntries(stepsPts),
 
                                     // Format the column value.
-                                    valueFormatter = object : ValueFormatter() {
-                                        override fun getBarLabel(e: BarEntry?): String {
-
-                                            // Don't show the amount of steps if time period > week.
-                                            if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
-                                                return ""
-                                            }
-
-                                            if (e == null) return ""
-
-                                            // -> "5456" eikä "5456.0"
-                                            return e.y.toInt().toString()
-
-                                        }
+                                    valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
+                                        y.toInt().toString()
                                     }
-
 
                                 )
 
@@ -500,9 +470,9 @@ fun AnalysisScreen(
                 }
             }
         } else {
-            // 3 months / 1 year / all = KUUKAUSI-AGGREGAATIT
+            // 3 months / 1 year / all = monthly aggregates.
 
-            // UCLA Loneliness (monthly avg)
+            // UCLA Loneliness (monthly avg).
             item {
                 ChartCard(title = "UCLA Loneliness Scale$periodSuffix") {
                     AndroidView(
@@ -563,11 +533,11 @@ fun AnalysisScreen(
                                 val set = makeBarDataSet(
                                     label = "Night usage",
                                     entries = toBarEntriesFromFloats(nightMonthly),
-                                    valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
-                                        override fun getBarLabel(e: BarEntry?): String =
-                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                    valueFormatter = threeMonthsOnlyFormatter(selectedRange) { y ->
+                                        String.format("%.1f h", y)
                                     }
+
+
                                 )
                                 data = BarData(set).apply { barWidth = 0.7f }
                                 invalidate()
@@ -592,10 +562,8 @@ fun AnalysisScreen(
                                 val set = makeBarDataSet(
                                     label = "Day usage",
                                     entries = toBarEntriesFromFloats(dayMonthly),
-                                    valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
-                                        override fun getBarLabel(e: BarEntry?): String =
-                                            if (e == null) "" else String.format("%.1f h", e.y)
+                                    valueFormatter = threeMonthsOnlyFormatter(selectedRange) { y ->
+                                        String.format("%.1f h", y)
                                     }
                                 )
                                 data = BarData(set).apply { barWidth = 0.7f }
@@ -622,22 +590,19 @@ fun AnalysisScreen(
                                 // Y-akseli ilman desimaaleja
                                 axisLeft.valueFormatter = object : ValueFormatter() {
                                     override fun getFormattedValue(value: Float): String {
-                                        // Käytetään tuhaterottimia selkeyden vuoksi
-                                        return "%,d".format(value.toInt())
+                                        return value.toInt().toString()
                                     }
                                 }
 
-                                // ... (loppuosa koodista pysyy samana)
+
 
                                 val set = makeBarDataSet(
                                     label = "Steps",
                                     entries = toBarEntriesFromFloats(stepsMonthly),
-                                    valueFormatter = object : ValueFormatter() {
-                                        override fun getBarLabel(e: BarEntry?): String {
-                                            // Muotoillaan pylvään päällä oleva luku
-                                            return if (e == null) "" else "%,d".format(e.y.toInt())
-                                        }
+                                    valueFormatter = threeMonthsOnlyFormatter(selectedRange) { y ->
+                                        y.toInt().toString()
                                     }
+
                                 )
                                 data = BarData(set).apply { barWidth = 0.7f }
                                 invalidate()
@@ -837,30 +802,23 @@ private fun toBarEntriesFromFloats(values: List<Float>): List<BarEntry> =
 
 // Create a unified BarDataSet with the same layout.
 private fun makeBarDataSet(
-
-    // 'Series' name.
     label: String,
-
-    // Column points.
     entries: List<BarEntry>,
-
-    // Optional value formatter for the top of the column.
-    valueFormatter: ValueFormatter? = null
-
-    // Return the configured dataset.
+    valueFormatter: ValueFormatter? = null,
+    showValues: Boolean = true,   // <-- UUSI
 ): BarDataSet = BarDataSet(entries, label).apply {
-
-    // Column color.
     color = COLOR_PRIMARY_HEX
-
-    // Set the text size for values on top of bars.
-    this.valueFormatter = valueFormatter
-    valueTextSize = 12f  // <-- UUSI: Suurennetaan arvojen tekstejä.
-
-    // If format given, use it.
+    valueTextSize = 12f
     valueTextColor = COLOR_TEXT_HEX
-    if (valueFormatter != null) setValueFormatter(valueFormatter)
+
+    if (valueFormatter != null) {
+        setValueFormatter(valueFormatter)
+    }
+
+    // lopullinen päätös tulee tästä
+    setDrawValues(showValues && valueFormatter != null)
 }
+
 
 private fun PieChart.enableToastOnSliceClick() {
     setOnChartValueSelectedListener(object :
@@ -882,6 +840,30 @@ private fun PieChart.enableToastOnSliceClick() {
 
         override fun onNothingSelected() { }
     })
+}
+
+// Luvut vain viikon kohdalle.
+private fun weekOnlyLabelFormatter(
+    selectedRange: TimeRange,
+    format: (Float) -> String
+): ValueFormatter = object : ValueFormatter() {
+    override fun getBarLabel(e: BarEntry?): String {
+        if (selectedRange != TimeRange.Week) return ""
+        if (e == null) return ""
+        return format(e.y)
+    }
+}
+
+// Näytä arvot vain, jos valittuna on 3 kk
+private fun threeMonthsOnlyFormatter(
+    selectedRange: TimeRange,
+    format: (Float) -> String
+): ValueFormatter = object : ValueFormatter() {
+    override fun getBarLabel(e: BarEntry?): String {
+        if (selectedRange != TimeRange.ThreeMonths) return ""
+        if (e == null) return ""
+        return format(e.y)
+    }
 }
 
 
