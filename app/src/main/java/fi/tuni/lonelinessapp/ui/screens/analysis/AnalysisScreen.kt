@@ -489,25 +489,7 @@ fun AnalysisScreen(
                                 }
 
                                 // Toast-ilmoituksen logiikka pysyy samana.
-                                setOnChartValueSelectedListener(object :
-                                    com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-                                    override fun onValueSelected(
-                                        e: com.github.mikephil.charting.data.Entry?,
-                                        h: com.github.mikephil.charting.highlight.Highlight?
-                                    ) {
-                                        if (e is PieEntry) {
-                                            val label = e.label
-                                            val hours = e.value
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "$label – %.1f h".format(hours),
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                    override fun onNothingSelected() {}
-                                })
-
+                                enableToastOnSliceClick()
 
                                 // Piirretään kaavio uudelleen
                                 invalidate()
@@ -718,6 +700,10 @@ fun AnalysisScreen(
                                     }
                                     data = PieData(set)
                                 }
+
+                                enableToastOnSliceClick()
+
+
                                 invalidate()
                             }
                         }
@@ -875,6 +861,29 @@ private fun makeBarDataSet(
     valueTextColor = COLOR_TEXT_HEX
     if (valueFormatter != null) setValueFormatter(valueFormatter)
 }
+
+private fun PieChart.enableToastOnSliceClick() {
+    setOnChartValueSelectedListener(object :
+        com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+        override fun onValueSelected(
+            e: com.github.mikephil.charting.data.Entry?,
+            h: com.github.mikephil.charting.highlight.Highlight?
+        ) {
+            if (e is PieEntry) {
+                val label = e.label
+                val hours = e.value
+                android.widget.Toast.makeText(
+                    context,
+                    "$label – %.1f h".format(hours),
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        override fun onNothingSelected() { }
+    })
+}
+
 
 // Round the upper limit up to the nearest multiple of 'step'.
 private fun niceCeil(value: Float, step: Float): Float {
@@ -1034,3 +1043,4 @@ private fun buildSamplesForRange(
         }
     }
 }
+
