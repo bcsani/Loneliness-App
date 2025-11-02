@@ -32,6 +32,8 @@ import fi.tuni.lonelinessapp.data.entity.DayEntity
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import java.time.LocalDate
+
 
 // The colors are now hardcoded. Later we will move under the theme?
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
@@ -894,28 +896,102 @@ private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
     range: TimeRange
 ): List<DaySample> {
-    // 1) jos ei dataa → tyhjä
-    val all = (daysEntity ?: return emptyList())
-        // LAJITTELE ENSIN nousevaan järjestykseen
-        .sortedBy { it.date }
+    val entities = daysEntity ?: return emptyList()
 
-    // 2) ota oikea määrä TÄSTÄ lajittelusta
-    val filtered = when (range) {
-        TimeRange.Week        -> all.takeLast(7)
-        TimeRange.Month       -> all.takeLast(30)
-        TimeRange.ThreeMonths -> all.takeLast(90)
-        TimeRange.Year        -> all.takeLast(365)
-        TimeRange.All         -> all
-    }
+    // järjestetään aina aikajärjestykseen
+    val sorted = entities.sortedBy { it.date }
 
-    // 3) muuta DaySampleksi
-    return filtered.map {
-        DaySample(
-            date = it.date,
-            loneliness = it.loneliness,
-            nightMinutes = it.nightMinutes,
-            dayMinutes = it.dayMinutes,
-            steps = it.steps
-        )
+    return when (range) {
+
+        // ====== VIIKKO: aina tähän päivään ======
+        TimeRange.Week -> {
+            val today = LocalDate.now()
+
+            // 7 päivää: (tänään - 6) ... tänään
+            val wantedDates = (0..6).map { i ->
+                today.minusDays((6 - i).toLong())
+            }
+
+            // jos DayEntity.date on LocalDate -> tää riittää
+            // jos se on LocalDateTime -> muuta tähän: .associateBy { it.date.toLocalDate() }
+            val byDate = sorted.associateBy { it.date }
+
+            wantedDates.map { date ->
+                val e = byDate[date]
+                if (e != null) {
+                    DaySample(
+                        date = e.date,
+                        loneliness = e.loneliness,
+                        nightMinutes = e.nightMinutes,
+                        dayMinutes = e.dayMinutes,
+                        steps = e.steps
+                    )
+                } else {
+                    // puuttuva päivä → näytetään se silti, mutta nollilla
+                    DaySample(
+                        date = date,
+                        loneliness = 0,
+                        nightMinutes = 0,
+                        dayMinutes = 0,
+                        steps = 0
+                    )
+                }
+            }
+        }
+
+        // ====== KUUKAUSI: normaali, ei paddingia ======
+        TimeRange.Month -> {
+            val last30 = sorted.takeLast(30)
+            last30.map {
+                DaySample(
+                    date = it.date,
+                    loneliness = it.loneliness,
+                    nightMinutes = it.nightMinutes,
+                    dayMinutes = it.dayMinutes,
+                    steps = it.steps
+                )
+            }
+        }
+
+        // ====== 3 KK ======
+        TimeRange.ThreeMonths -> {
+            val last90 = sorted.takeLast(90)
+            last90.map {
+                DaySample(
+                    date = it.date,
+                    loneliness = it.loneliness,
+                    nightMinutes = it.nightMinutes,
+                    dayMinutes = it.dayMinutes,
+                    steps = it.steps
+                )
+            }
+        }
+
+        // ====== VUOSI ======
+        TimeRange.Year -> {
+            val last365 = sorted.takeLast(365)
+            last365.map {
+                DaySample(
+                    date = it.date,
+                    loneliness = it.loneliness,
+                    nightMinutes = it.nightMinutes,
+                    dayMinutes = it.dayMinutes,
+                    steps = it.steps
+                )
+            }
+        }
+
+        // ====== ALL ======
+        TimeRange.All -> {
+            sorted.map {
+                DaySample(
+                    date = it.date,
+                    loneliness = it.loneliness,
+                    nightMinutes = it.nightMinutes,
+                    dayMinutes = it.dayMinutes,
+                    steps = it.steps
+                )
+            }
+        }
     }
 }
