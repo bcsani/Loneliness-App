@@ -88,7 +88,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyVi
             if (!showSettings) {
                 when (selectedTab) {
                     0 -> HomeScreen(viewModel, surveyViewModel=surveyViewModel)
-                    1 -> AnalysisScreen()
+                    1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
                 SettingsScreen()
