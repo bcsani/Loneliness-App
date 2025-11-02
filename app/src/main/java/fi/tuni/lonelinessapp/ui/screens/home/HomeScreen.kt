@@ -184,6 +184,10 @@ fun HomeScreen(
                                 granularity = 0.05f
 
                                 textSize = 14f
+
+                                // Add zero line configuration
+                                setDrawZeroLine(true)
+                                zeroLineWidth = 2f
                             }
 
                             val dataSet = BarDataSet(entries, "Correlation").apply {
