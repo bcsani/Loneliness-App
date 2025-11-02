@@ -35,9 +35,11 @@ import java.util.Locale
 import java.time.LocalDate
 
 
-// The colors are now hardcoded. Later we will move under the theme?
+// The colors are now hardcoded. Later we will move under the theme (?)
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
+
+// pie chart colors.
 private val PIE_COLORS = listOf(
     0xFF2563EB.toInt(), // blue
     0xFFF59E0B.toInt(), // amber
@@ -46,14 +48,13 @@ private val PIE_COLORS = listOf(
     0xFFEF4444.toInt()  // red
 )
 
-// Time range
+// User selectable time ranges in the analysis view.
 enum class TimeRange { Week, Month, ThreeMonths, Year, All }
-// 1) Loneliness Level (line)
-// 2) Night Phone Usage (bar)
-// 3) Daytime Phone Usage (bar)
-// 4) Exercise (steps) (bar)
-// 5) Communication Apps Usage (pie)
 
+ /**
+ // AnalysisScreen: displays line, bar, and pie charts of daily/monthly data.
+ // Data comes from the Room database via the AnalysisViewModel.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(
@@ -62,32 +63,42 @@ fun AnalysisScreen(
 ) {
     // Default: Week
     var selectedRange by remember { mutableStateOf(TimeRange.Week) }
-
-    // Data connection?
+     // Listen to the daily data provided by the ViewModel.
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
-    // Päivänäytteet valitulle valitusti (ei repo/VM-muutoksia)
-    val samples: List<DaySample> = remember(daysEntity, selectedRange, analysisViewModel.start) {
-        buildSamplesForRange(daysEntity, selectedRange)
-    }
+    // Daily samples for the selected time.
+     val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+         buildSamplesForRange(daysEntity, selectedRange)
+     }
 
+
+     // creating data for charts.
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
     val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
     val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
     val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
 
-    // Piirakka demodatalle
+    // Pie chart demo data.
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
-    // X-akselin labelit päivätasolle
+     // X-axis texts for charts: days of the week for weeks, otherwise day number.
     val dayLabels = remember(samples, selectedRange) {
-        if (selectedRange == TimeRange.Week)
-            samples.map { it.date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { c -> c.uppercase() } }
-        else
-            samples.map { it.date.dayOfMonth.toString() } // 1..30/31
+        when (selectedRange) {
+            TimeRange.Week -> {
+                samples.map {
+                    it.date.dayOfWeek.name
+                        .take(3)
+                        .lowercase()
+                        .replaceFirstChar { ch -> ch.titlecase(Locale.getDefault()) }
+                }  }
+            else -> {
+                samples.map { it.date.dayOfMonth.toString() }
+            }
+        }
     }
 
-    // Kuukausi-aggregaatti (vain 3 kk / 1 v / All)
+
+    // Monthly aggregate (only 3 months / 1 year / All).
     val monthlyAgg = remember(samples, selectedRange) {
         if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) emptyList()
         else aggregateMonthly(samples)
@@ -98,8 +109,9 @@ fun AnalysisScreen(
     val dayMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.dayH } }
     val stepsMonthly = remember(monthlyAgg) { monthlyAgg.map { it.stepsAvg } }
 
-    // Otsikoihin pieni lisäteksti
-    val periodSuffix = when (selectedRange) {
+    // Descriptive titles.
+    val periodSuffix = when (selectedRange)
+    {
         TimeRange.Week  -> " (This Week)"
         TimeRange.Month -> " (This Month)"
         TimeRange.ThreeMonths -> " (Last 3 Months)"
@@ -107,6 +119,7 @@ fun AnalysisScreen(
         TimeRange.All -> " (All Time)"
     }
 
+    // Show the entire analysis as a vertical list (one card per chart).
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -114,14 +127,14 @@ fun AnalysisScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Dropdown box
+        // Dropdown box.
+        // Time range selection. Updates the selectedRange value, causing the charts below
+        // to recalculate their data.
         item {
             var expanded by remember { mutableStateOf(false) }
             val options = listOf("Week", "1 Month", "3 Months", "1 Year", "All Time")
             var selectedOptionText by remember { mutableStateOf(options[0]) }
 
-            // We want to occupy the full width, so we wrap it in a Box
-            // with a Modifier that aligns the menu to the end.
             Box(
                 modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
                 contentAlignment = Alignment.CenterEnd
@@ -169,15 +182,18 @@ fun AnalysisScreen(
             }
         }
 
-        if (samples.isEmpty()) {
+        // No data at all → show “No data…”.
+        if (samples.isEmpty())
+        {
             item {
                 ChartCard(title = "No data for the selected range") {
                     Text("Add some entries and come back – I’ll draw you a masterpiece.")
                 }
             }
-        } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
-            // WEEK 1 AND MONTH CHART.
 
+        } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month)
+        // Week or month → show 5 charts of daily data.
+        {
             // 1) Loneliness (line)
             item {
                 ChartCard(title = "Loneliness Level$periodSuffix") {
@@ -240,18 +256,18 @@ fun AnalysisScreen(
                                 val set = makeBarDataSet(
                                     label = "Night usage",
                                     entries = toBarEntries(nightPts),
-                                    // ...
+
                                     valueFormatter = object : ValueFormatter() {
                                         @SuppressLint("DefaultLocale")
                                         override fun getBarLabel(e: BarEntry?): String {
-                                            // ÄLÄ NÄYTÄ ARVOJA, JOS AIKAVÄLI ON KUUKAUSI TAI PIDEMPI
+                                            // DO NOT SHOW VALUES IF THE TIME INTERVAL IS ONE MONTH OR LONGER
                                             if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
                                                 return ""
                                             }
                                             return if (e == null) "" else String.format("%.1f h", e.y)
                                         }
                                     }
-// ...
+
 
                                 )
                                 // Set the data and column width.
@@ -299,14 +315,14 @@ fun AnalysisScreen(
                                     valueFormatter = object : ValueFormatter() {
                                         @SuppressLint("DefaultLocale")
                                         override fun getBarLabel(e: BarEntry?): String {
-                                            // ÄLÄ NÄYTÄ ARVOJA, JOS AIKAVÄLI ON KUUKAUSI TAI PIDEMPI
+                                            // DO NOT SHOW VALUES IF THE TIME INTERVAL IS ONE MONTH OR LONGER.
                                             if (selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths) {
                                                 return ""
                                             }
                                             return if (e == null) "" else String.format("%.1f h", e.y)
                                         }
                                     }
-// ...
+
 
                                 )
 
@@ -382,7 +398,7 @@ fun AnalysisScreen(
 
                                         }
                                     }
-// ...
+
 
                                 )
 
@@ -502,11 +518,11 @@ fun AnalysisScreen(
                 }
             }
         } else {
-            // ===================== 3 KK / 1 V / ALL = KUUKAUSI-AGGREGAATIT =====================
+            // 3 months / 1 year / all = KUUKAUSI-AGGREGAATIT
 
             // UCLA Loneliness (monthly avg)
             item {
-                ChartCard(title = "UCLA Loneliness Scale") {
+                ChartCard(title = "UCLA Loneliness Scale$periodSuffix") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -552,7 +568,7 @@ fun AnalysisScreen(
 
             // Night Usage (monthly avg hours)
             item {
-                ChartCard(title = "Night Usage (hours)") {
+                ChartCard(title = "Night Usage (hours)$periodSuffix") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -581,7 +597,7 @@ fun AnalysisScreen(
 
             // Day Usage (monthly avg hours)
             item {
-                ChartCard(title = "Day Usage (hours)") {
+                ChartCard(title = "Day Usage (hours)$periodSuffix") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -610,7 +626,7 @@ fun AnalysisScreen(
 
             // Exercise (monthly avg steps)
             item {
-                ChartCard(title = "Exercise (steps)") {
+                ChartCard(title = "Exercise (steps)$periodSuffix") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -652,7 +668,7 @@ fun AnalysisScreen(
 
             // Communications (donut)
             item {
-                ChartCard(title = "Communication Apps Usage") {
+                ChartCard(title = "Communication Apps Usage$periodSuffix") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
@@ -801,6 +817,29 @@ private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Floa
     }
 }
 
+// Sama layout kuin steps-kaaviossa,
+// mutta y-akselin väli ja formatteri annetaan ulkoa.
+private fun BarChart.applyStepsLikeLayout(
+    xLabels: List<String>,
+    yMin: Float = 0f,
+    yMax: Float? = null,
+    yGranularity: Float = 1f,
+    yFormatter: ValueFormatter
+) {
+    applyBarDefaults(xLabels)
+
+    axisLeft.axisMinimum = yMin
+    axisLeft.granularity = yGranularity
+    axisLeft.valueFormatter = yFormatter
+
+    if (yMax != null) {
+        axisLeft.axisMaximum = yMax
+        // jos haluat tasaiset labelit
+        axisLeft.setLabelCount(((yMax - yMin) / yGranularity).toInt() + 1, true)
+    }
+}
+
+
 // Convert BarPoint → BarEntry.
 private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntry> =
 
@@ -898,16 +937,16 @@ private fun buildSamplesForRange(
 ): List<DaySample> {
     val entities = daysEntity ?: return emptyList()
 
-    // järjestetään aina aikajärjestykseen
+    // Always arranged in chronological order
     val sorted = entities.sortedBy { it.date }
 
     return when (range) {
 
-        // ====== VIIKKO: aina tähän päivään ======
+        // WEEK: up to this day
         TimeRange.Week -> {
             val today = LocalDate.now()
 
-            // 7 päivää: (tänään - 6) ... tänään
+            // 7 days: (today - 6) ... today.
             val wantedDates = (0..6).map { i ->
                 today.minusDays((6 - i).toLong())
             }
@@ -939,7 +978,7 @@ private fun buildSamplesForRange(
             }
         }
 
-        // ====== KUUKAUSI: normaali, ei paddingia ======
+        // 1 month.
         TimeRange.Month -> {
             val last30 = sorted.takeLast(30)
             last30.map {
@@ -953,7 +992,7 @@ private fun buildSamplesForRange(
             }
         }
 
-        // ====== 3 KK ======
+        // Three months.
         TimeRange.ThreeMonths -> {
             val last90 = sorted.takeLast(90)
             last90.map {
@@ -967,7 +1006,7 @@ private fun buildSamplesForRange(
             }
         }
 
-        // ====== VUOSI ======
+        // Year.
         TimeRange.Year -> {
             val last365 = sorted.takeLast(365)
             last365.map {
@@ -981,7 +1020,7 @@ private fun buildSamplesForRange(
             }
         }
 
-        // ====== ALL ======
+        //  all.
         TimeRange.All -> {
             sorted.map {
                 DaySample(
