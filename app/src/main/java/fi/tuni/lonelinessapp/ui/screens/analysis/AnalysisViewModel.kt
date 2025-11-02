@@ -63,11 +63,10 @@ class AnalysisViewModel (
     // Single slice data for pie chart.
     data class PieSlice (val label: String, val value: Float)
 
-    // Start date 6 days ago.
-    val start = java.time.LocalDate.now().minusDays(6)
 
-    val daysEntity : StateFlow<List<DayEntity>?> = dayRepository.getDaysFromDate(start)
-       .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val daysEntity: StateFlow<List<DayEntity>?> =
+        dayRepository.getAllDays()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
