@@ -81,22 +81,28 @@ fun AnalysisScreen(
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
      // X-axis texts for charts: days of the week for weeks, otherwise day number.
-    val dayLabels = remember(samples, selectedRange) {
-        when (selectedRange) {
-            TimeRange.Week -> {
-                samples.map {
-                    it.date.dayOfWeek.name
-                        .take(3)
-                        .lowercase()
-                        .replaceFirstChar { ch -> ch.titlecase(Locale.getDefault()) }
-                }  }
-            else -> {
-                samples.map { it.date.dayOfMonth.toString() }
-            }
-        }
-    }
+     val dayLabels = remember(samples, selectedRange) {
+         when (selectedRange) {
+             // Week.
+             TimeRange.Week -> samples.map {
+                 it.date.dayOfWeek.name
+                     .take(3)
+                     .lowercase()
+                     .replaceFirstChar { ch -> ch.titlecase(Locale.getDefault()) }
+             }
 
-    // Monthly aggregate (only 3 months / 1 year / All).
+             // Month.
+             TimeRange.Month -> List(samples.size) { index ->
+                 (index + 1).toString()
+             }
+
+             // The others don't actually use the day label
+             else -> emptyList()
+         }
+     }
+
+
+     // Monthly aggregate (only 3 months / 1 year / All).
     val monthlyAgg = remember(samples, selectedRange) {
         if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) emptyList()
         else aggregateMonthly(samples)
@@ -219,6 +225,7 @@ fun AnalysisScreen(
                                 axisLeft.granularity = 1f
                                 axisLeft.setLabelCount(10, true)
                                 axisLeft.setDrawGridLines(true)
+                                
 
                                 val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
                                 val set = LineDataSet(entries, "Loneliness").apply {
@@ -249,18 +256,18 @@ fun AnalysisScreen(
                                 applyBarDefaults(dayLabels)
                                 setTouchEnabled(false)
                                 setPinchZoom(false)
-
-                                val hours = nightPts.map { it.y }
-                                applyNiceYAxis(hours, ::hourStepFor)
-
-                                val set = makeBarDataSet(
+                                
+                                    val hours = nightPts.map { it.y }
+                                    applyNiceYAxis(hours, ::hourStepFor)
+                                                                    
+                                    val set = makeBarDataSet(
                                     label = "Night usage",
                                     entries = toBarEntries(nightPts),
 
                                     valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
                                         String.format("%.1f h", y)
-                                    }
 
+                                    } 
                                 )
                                 // Set the data and column width.
                                 data = BarData(set).apply { barWidth = 0.7f }
@@ -712,7 +719,7 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     legend.isEnabled = false
 
     // Allow touch/scroll.
-    setTouchEnabled(true)  // MUOKATTU aiemmin, pidetään näin
+    setTouchEnabled(true)  
 
     // Removing the dark blue highlight.
     isHighlightPerTapEnabled = false
@@ -721,8 +728,9 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     // X-axis to the bottom.
     xAxis.position = XAxis.XAxisPosition.BOTTOM
     xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
-    xAxis.textSize = 12f// <-- UUSI: Suurennetaan X-akselin tekstejä
-
+    xAxis.textSize = 12f
+    xAxis.granularity = 1f
+    xAxis.setDrawGridLines(true)
     // Labels given to the X-axis in order.
     // Space one index at a time.
     xAxis.granularity = 1f
@@ -730,14 +738,13 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     // Draw vertical guides.
     xAxis.setDrawGridLines(true)
 
-    // Apuviivoihin katkoviiva. OR DO WE WANT?
+    axisLeft.setDrawAxisLine(true)        
+    axisLeft.axisMinimum = 0f
+    
     xAxis.enableGridDashedLine(10f, 10f, 0f)
 
-    // Draw vertical guides.
-    axisLeft.setDrawGridLines(true)
     axisLeft.textSize = 12f
 
-    // Vaaka-apuviivoihin katkoviiva, OR DO WE WANT?
     axisLeft.enableGridDashedLine(10f, 10f, 0f)
 }
 
@@ -815,7 +822,6 @@ private fun makeBarDataSet(
         setValueFormatter(valueFormatter)
     }
 
-    // lopullinen päätös tulee tästä
     setDrawValues(showValues && valueFormatter != null)
 }
 
@@ -842,7 +848,7 @@ private fun PieChart.enableToastOnSliceClick() {
     })
 }
 
-// Luvut vain viikon kohdalle.
+// Numbers only for the week.
 private fun weekOnlyLabelFormatter(
     selectedRange: TimeRange,
     format: (Float) -> String
@@ -854,7 +860,30 @@ private fun weekOnlyLabelFormatter(
     }
 }
 
-// Näytä arvot vain, jos valittuna on 3 kk
+// Month x-axis: show 5,10,15,20,25 and the last 30.
+private fun monthAxisEvery5Formatter(dayCount: Int): ValueFormatter =
+    object : ValueFormatter() {
+        override fun getFormattedValue(value: Float): String {
+            
+            val index = value.toInt()
+            val lastIndex = dayCount - 1
+
+            // First day.
+            if (index < 0 || index > lastIndex) return ""
+
+            val day = index + 1
+
+            if (index == 0) return "1"
+
+            if (index == lastIndex) return dayCount.toString()
+            return if (day % 5 == 0) day.toString() else "" 
+                
+            
+        }
+    }
+
+
+// Show values only if 3 months is selected.
 private fun threeMonthsOnlyFormatter(
     selectedRange: TimeRange,
     format: (Float) -> String
@@ -899,8 +928,7 @@ private fun stepStepFor(maxVal: Float): Float =
         else              -> 5_000f
     }
 
-// --- Agregaatiot & datan koonti ---
-
+// Aggregations and data aggregation.
 private data class MonthBucket(
     val label: String,
     val lonAvg: Float,
@@ -922,42 +950,39 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
     }
 }
 
+
 private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
     range: TimeRange
 ): List<DaySample> {
     val entities = daysEntity ?: return emptyList()
 
-    // Always arranged in chronological order
+    // Always in chronological order.
     val sorted = entities.sortedBy { it.date }
+    val today = LocalDate.now()
+
+    fun DayEntity.toSample() = DaySample(
+        date = date,
+        loneliness = loneliness,
+        nightMinutes = nightMinutes,
+        dayMinutes = dayMinutes,
+        steps = steps
+    )
 
     return when (range) {
 
-        // WEEK: up to this day
+        // 1) Week.
         TimeRange.Week -> {
-            val today = LocalDate.now()
-
-            // 7 days: (today - 6) ... today.
             val wantedDates = (0..6).map { i ->
                 today.minusDays((6 - i).toLong())
             }
-
-            // jos DayEntity.date on LocalDate -> tää riittää
-            // jos se on LocalDateTime -> muuta tähän: .associateBy { it.date.toLocalDate() }
             val byDate = sorted.associateBy { it.date }
 
             wantedDates.map { date ->
                 val e = byDate[date]
                 if (e != null) {
-                    DaySample(
-                        date = e.date,
-                        loneliness = e.loneliness,
-                        nightMinutes = e.nightMinutes,
-                        dayMinutes = e.dayMinutes,
-                        steps = e.steps
-                    )
+                    e.toSample()
                 } else {
-                    // puuttuva päivä → näytetään se silti, mutta nollilla
                     DaySample(
                         date = date,
                         loneliness = 0,
@@ -969,60 +994,72 @@ private fun buildSamplesForRange(
             }
         }
 
-        // 1 month.
+        // 2) 30 päivää.
         TimeRange.Month -> {
-            val last30 = sorted.takeLast(30)
-            last30.map {
-                DaySample(
-                    date = it.date,
-                    loneliness = it.loneliness,
-                    nightMinutes = it.nightMinutes,
-                    dayMinutes = it.dayMinutes,
-                    steps = it.steps
-                )
+            val from = today.minusDays(29)        
+            val byDate = sorted.associateBy { it.date }
+
+            (0..29).map { i ->
+                val date = from.plusDays(i.toLong())
+                val e = byDate[date]
+                if (e != null) {
+                    e.toSample()
+                } else {
+                    DaySample(
+                        date = date,
+                        loneliness = 0,
+                        nightMinutes = 0,
+                        dayMinutes = 0,
+                        steps = 0
+                    )
+                }
             }
         }
 
-        // Three months.
+        // 3) 3 months.
         TimeRange.ThreeMonths -> {
-            val last90 = sorted.takeLast(90)
-            last90.map {
-                DaySample(
-                    date = it.date,
-                    loneliness = it.loneliness,
-                    nightMinutes = it.nightMinutes,
-                    dayMinutes = it.dayMinutes,
-                    steps = it.steps
-                )
-            }
+            val from = today.minusDays(89)        
+            sorted
+                .filter { it.date in from..today }
+                .map { it.toSample() }
         }
 
-        // Year.
+        // 4) year.
         TimeRange.Year -> {
-            val last365 = sorted.takeLast(365)
-            last365.map {
-                DaySample(
-                    date = it.date,
-                    loneliness = it.loneliness,
-                    nightMinutes = it.nightMinutes,
-                    dayMinutes = it.dayMinutes,
-                    steps = it.steps
-                )
-            }
+            val from = today.minusDays(364)
+            sorted
+                .filter { it.date in from..today }
+                .map { it.toSample() }
         }
 
-        //  all.
+        // 5) all.
         TimeRange.All -> {
-            sorted.map {
-                DaySample(
-                    date = it.date,
-                    loneliness = it.loneliness,
-                    nightMinutes = it.nightMinutes,
-                    dayMinutes = it.dayMinutes,
-                    steps = it.steps
-                )
-            }
+            sorted.map { it.toSample() }
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
