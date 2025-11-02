@@ -14,10 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
 import fi.tuni.lonelinessapp.MainViewModel
 import fi.tuni.lonelinessapp.ui.screens.analysis.ChartCard
 import fi.tuni.lonelinessapp.ui.screens.analysis.applyBarDefaults
@@ -48,9 +52,21 @@ fun HomeScreen(
     // Variable for streak count
     val streakCount by homeViewModel.streakCount
 
+    // Variable for loading correlation chart and showing loading bar
+    val isLoading by homeViewModel.isLoading.collectAsState()
+
     // Values for correlation chart
-    val labels = homeViewModel.labels
-    val entries = homeViewModel.entries
+    val correlationResults by homeViewModel.correlationResults.collectAsState()
+    LaunchedEffect(Unit) {
+        homeViewModel.calculateCorrelation()
+    }
+
+    val correlationValues = correlationResults.map { it.correlationValue }
+    val entries = correlationValues.mapIndexed { index, value ->
+        BarEntry(index.toFloat(), value.toFloat())
+    }
+    val labels = correlationResults.map { it.variableName }
+
 
     LazyColumn(
         modifier = modifier,
@@ -58,7 +74,11 @@ fun HomeScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-
+        if (isLoading) {
+            item {
+                CircularProgressIndicator()
+            }
+        }
         // This is a temporary demo element
         item {
             Card(
@@ -157,11 +177,11 @@ fun HomeScreen(
 
                             axisLeft.apply {
                                 // Left Y-axis limits
-                                axisMinimum = -1f
-                                axisMaximum = 1f
+                                axisMinimum = -0.1f
+                                axisMaximum = 0.1f
 
                                 // Step
-                                granularity = 0.5f
+                                granularity = 0.05f
 
                                 textSize = 14f
                             }
@@ -170,6 +190,7 @@ fun HomeScreen(
                                 setDrawValues(false)
                                 color = 0xFF4169E1.toInt()
                             }
+
 
                             // Set the data and width.
                             data = BarData(dataSet).apply {

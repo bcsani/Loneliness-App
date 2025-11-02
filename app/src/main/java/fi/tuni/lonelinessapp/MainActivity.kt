@@ -21,9 +21,11 @@ import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
+import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
+import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,8 +35,10 @@ class MainActivity : ComponentActivity() {
 
         val dayDataSource = DayDataSource(database.dayDao())
         val dayRepository = DayRepository(dayDataSource)
+        val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
+        val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
 
 
 
@@ -43,7 +47,8 @@ class MainActivity : ComponentActivity() {
             LonelinessAppTheme {
                 MainScreen(
                     surveyViewModel=surveyViewModel,
-                    analysisViewModel=analysisViewModel
+                    analysisViewModel=analysisViewModel,
+                    homeViewModel=homeViewModel
                 )
             }
         }
@@ -51,7 +56,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyViewModel, analysisViewModel: AnalysisViewModel) {
+fun MainScreen(
+    viewModel: MainViewModel = viewModel(),
+    surveyViewModel: SurveyViewModel,
+    analysisViewModel: AnalysisViewModel,
+    homeViewModel: HomeViewModel
+) {
 
     // Selected bottom tab
     val selectedTab by viewModel.selectedTab
@@ -87,7 +97,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyVi
             // Show main content or settings
             if (!showSettings) {
                 when (selectedTab) {
-                    0 -> HomeScreen(viewModel, surveyViewModel=surveyViewModel)
+                    0 -> HomeScreen(viewModel, homeViewModel=homeViewModel, surveyViewModel=surveyViewModel)
                     1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {

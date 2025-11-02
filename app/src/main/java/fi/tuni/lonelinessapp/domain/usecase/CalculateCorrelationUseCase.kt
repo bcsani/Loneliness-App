@@ -1,6 +1,5 @@
 package fi.tuni.lonelinessapp.domain.usecase
 
-import fi.tuni.lonelinessapp.data.entity.DayEntity
 import fi.tuni.lonelinessapp.domain.model.CorrelationResult
 import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.flow.first
@@ -10,12 +9,16 @@ class CalculateCorrelationUseCase (
     private val dayRepository: DayRepository
 ) {
     suspend operator fun invoke(): List<CorrelationResult> {
+        // Get all days values from database
         val days = dayRepository.getAllDays().first()
 
+        // Retrieve all data from days value
         val lonelinessData = days.map { it.loneliness.toDouble() }
         val nightMinutesData = days.map { it.nightMinutes.toDouble() }
         val dayMinutesData = days.map { it.dayMinutes.toDouble() }
         val stepsData = days.map { it.steps.toDouble()}
+
+        // Calculate the correlations and return the results
         val results = listOfNotNull(
             calculatePearsonCorrelation(
                 variableName = "Night Minutes",
@@ -46,6 +49,7 @@ class CalculateCorrelationUseCase (
             return null
         }
 
+        // Calculate correlation value and return with its own value and variable's name
         val correlationValue = calculatePearsonCoefficient(lonelinessData, variableData)
 
         return CorrelationResult(
