@@ -20,6 +20,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 @Composable
 fun HomeScreen(
     mainViewModel: MainViewModel,
@@ -44,7 +45,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .border(2.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
+                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
                 shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
             ) {
@@ -81,11 +82,13 @@ fun HomeScreen(
         //  Fill Daily Survey Button
         item {
             Button(
+
                 onClick = { mainViewModel.openSurvey() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp),
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX))
             ) {
                 Text("Fill Daily Survey", fontSize = 20.sp)
             }
