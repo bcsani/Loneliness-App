@@ -26,7 +26,7 @@ fun TopBar(
 ) {
     val titles = listOf("Home", "Analysis", "Settings")
 
-    Column { // Column mahdollistaa viivan lisäämisen
+    Column {
         TopAppBar(
             title = {
                 Text(
@@ -41,7 +41,7 @@ fun TopBar(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Viiva TopBarin alaosaan
+        // line under top bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,7 +94,7 @@ fun BottomNavigation(
                                 modifier = Modifier
                                     .height(2.dp)
                                     .width(24.dp)
-                                    .background(Color.Blue)
+                                    .background(COLOR_PRIMARY)
                             )
                         } else {
                             Spacer(modifier = Modifier.height(6.dp))
@@ -106,13 +106,10 @@ fun BottomNavigation(
             )
         }
 
-        // Home tab (Material Icon)
         BottomNavItem(iconVector = Icons.Filled.Home, label = "Home", index = 0, onClick = { selectNewTab(0) })
 
-        // Survey tab (oma SVG, ei alaviivaa)
         BottomNavItem(iconVector = Icons.Filled.AddCircle, label = "Survey", index = -1, onClick = onSurveyButtonClick)
 
-        // Analysis tab (Material Icon)
         BottomNavItem(iconVector = Icons.Filled.Analytics, label = "Analysis", index = 1, onClick = { selectNewTab(1) })
     }
 }
