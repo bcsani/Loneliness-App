@@ -69,7 +69,7 @@ fun BottomNavigation(
             onClick: () -> Unit
         ) {
             val isSelected = index >= 0 && currentTab == index && !showSettingsScreen
-            val iconColor = if (isSelected) COLOR_PRIMARY else Color.Black
+            val iconColor = if (isSelected) COLOR_PRIMARY else Color.Gray
 
             NavigationBarItem(
                 icon = {
