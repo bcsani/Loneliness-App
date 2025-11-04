@@ -57,7 +57,7 @@ class DayDataSource (
         if (existingDay == null) {
             insertDayWithData(date=date, steps=steps)
         } else {
-            dayDao.updateNightMinutes(date, steps)
+            dayDao.updateSteps(date, steps)
         }
     }
 

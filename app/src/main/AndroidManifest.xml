@@ -3,9 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:allowBackup="true"
@@ -28,12 +25,6 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".service.StepForegroundService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync">
-        </service>
     </application>
 
 </manifest>

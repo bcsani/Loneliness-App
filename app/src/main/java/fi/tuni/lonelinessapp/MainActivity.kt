@@ -1,5 +1,7 @@
 package fi.tuni.lonelinessapp
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +13,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
 import fi.tuni.lonelinessapp.ui.navigation.TopBar
@@ -25,9 +30,13 @@ import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
+import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 
 class MainActivity : ComponentActivity() {
+    private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
+    private val REQUEST_ACTIVITY_PERMISSION = 100
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -38,9 +47,9 @@ class MainActivity : ComponentActivity() {
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
-        val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
+        val homeViewModel = HomeViewModel(calculateCorrelationUseCase, dayRepository)
 
-
+        requestActivityPermission()
 
         enableEdgeToEdge()
         setContent {
@@ -51,6 +60,40 @@ class MainActivity : ComponentActivity() {
                     homeViewModel=homeViewModel
                 )
             }
+        }
+    }
+
+    private fun requestActivityPermission() {
+        if (ContextCompat.checkSelfPermission(this, activityRecognitionPermission)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(activityRecognitionPermission),
+                REQUEST_ACTIVITY_PERMISSION
+            )
+        } else {
+            println("StartStepTracking")
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String?>,
+        grantResults: IntArray,
+        deviceId: Int
+    ) {
+        super.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults,
+            deviceId
+        )
+        if(requestCode == REQUEST_ACTIVITY_PERMISSION &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            println("StartStepTracking")
         }
     }
 }

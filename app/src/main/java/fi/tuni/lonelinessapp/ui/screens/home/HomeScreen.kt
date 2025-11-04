@@ -1,5 +1,8 @@
 package fi.tuni.lonelinessapp.ui.screens.home
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,20 +22,27 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import fi.tuni.lonelinessapp.MainViewModel
+import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.ui.screens.analysis.ChartCard
 import fi.tuni.lonelinessapp.ui.screens.analysis.applyBarDefaults
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
@@ -43,7 +53,8 @@ fun HomeScreen(
     mainViewModel: MainViewModel,
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = viewModel(),
-    surveyViewModel: SurveyViewModel
+    surveyViewModel: SurveyViewModel,
+    context: Context = LocalContext.current
 ) {
 
     // Variable for daily survey dialog
@@ -60,12 +71,44 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         homeViewModel.calculateCorrelation()
     }
+    val stepsToday by homeViewModel.stepsToday.collectAsState()
+
 
     val correlationValues = correlationResults.map { it.correlationValue }
     val entries = correlationValues.mapIndexed { index, value ->
         BarEntry(index.toFloat(), value.toFloat())
     }
     val labels = correlationResults.map { it.variableName }
+
+
+    var permissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACTIVITY_RECOGNITION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val stepManager = remember {
+        StepSensorManager(context) { steps ->
+            homeViewModel.onStepsUpdated(steps)
+        }
+    }
+
+    LaunchedEffect(permissionGranted) {
+        if(permissionGranted) {
+            println("Let's start tracking")
+            stepManager.startTracking()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        println("Let's stop tracking")
+        onDispose {
+            stepManager.stopTracking()
+        }
+    }
 
 
     LazyColumn(
