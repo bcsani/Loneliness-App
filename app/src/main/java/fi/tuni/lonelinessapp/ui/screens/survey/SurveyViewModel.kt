@@ -25,7 +25,7 @@ class SurveyViewModel(
         "How often have you felt isolated from others during past week?"
     )
     val options = listOf("Often", "Sometimes", "Never")
-    val optionValues = listOf(1, 2, 3)
+    val optionValues = listOf(3, 2, 1)
 
     fun setAnswer(step: Int, value: Int) {
         if (step in 1.._answers.size) {
