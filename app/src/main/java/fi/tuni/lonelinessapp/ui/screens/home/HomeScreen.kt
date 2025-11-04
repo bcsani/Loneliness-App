@@ -75,6 +75,7 @@ fun HomeScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+
                 }
             }
         }
