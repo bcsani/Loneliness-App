@@ -24,6 +24,7 @@ import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
+import fi.tuni.lonelinessapp.ui.screens.settings.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val dayRepository = DayRepository(dayDataSource)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
-
+        val settingsViewModel = SettingsViewModel(dayRepository)
 
 
         enableEdgeToEdge()
@@ -43,7 +44,8 @@ class MainActivity : ComponentActivity() {
             LonelinessAppTheme {
                 MainScreen(
                     surveyViewModel=surveyViewModel,
-                    analysisViewModel=analysisViewModel
+                    analysisViewModel=analysisViewModel,
+                    settingsViewModel=settingsViewModel
                 )
             }
         }
@@ -51,7 +53,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyViewModel, analysisViewModel: AnalysisViewModel) {
+fun MainScreen(viewModel: MainViewModel = viewModel(),
+               surveyViewModel: SurveyViewModel,
+               analysisViewModel: AnalysisViewModel,
+               settingsViewModel: SettingsViewModel) {
 
     // Selected bottom tab
     val selectedTab by viewModel.selectedTab
@@ -91,7 +96,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(), surveyViewModel: SurveyVi
                     1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
-                SettingsScreen()
+                SettingsScreen(settingsViewModel=settingsViewModel)
             }
 
             // Show survey dialog
