@@ -38,17 +38,14 @@ fun SettingsScreen(
     val days by settingsViewModel.daysEntity.collectAsState()
 
     val createFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/plain"),
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
         onResult = { uri: Uri? ->
             uri?.let {
-                val content = buildString {
-                    days?.forEach { day ->
-                        append(day.toString() + "\n")
-                    }
-                }
+                val content = formatContent(days)
                 context.contentResolver.openOutputStream(uri)?.use {
                     it.write(content.toByteArray())
                 }
+                Toast.makeText(context, "Export successful", Toast.LENGTH_LONG).show()
             }
         }
     )
@@ -61,7 +58,7 @@ fun SettingsScreen(
     ){
         item {
             Button(
-                onClick = {createFileLauncher.launch("data.txt")},
+                onClick = {createFileLauncher.launch("data.csv")},
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -72,6 +69,15 @@ fun SettingsScreen(
                     fontSize = 24.sp
                 )
             }
+        }
+    }
+}
+
+fun formatContent(days: List<DayEntity>?): String {
+    return buildString {
+        append("date,loneliness,nightMinutes,dayMinutes,steps\n")
+        days?.forEach { day ->
+            append("${day.date},${day.loneliness},${day.nightMinutes},${day.dayMinutes},${day.steps}\n")
         }
     }
 }
