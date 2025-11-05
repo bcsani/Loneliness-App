@@ -1,8 +1,13 @@
 package fi.tuni.lonelinessapp
 
 import android.Manifest
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +42,21 @@ class MainActivity : ComponentActivity() {
     private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
     private val REQUEST_ACTIVITY_PERMISSION = 100
 
+    // Step tracking service
+    private lateinit var stepSensorManager: StepSensorManager
+    private var isServiceBound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            // Service is connected, but we're using startService instead of bindService
+            // So we'll handle service setup differently
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isServiceBound = false
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,6 +68,8 @@ class MainActivity : ComponentActivity() {
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase, dayRepository)
+
+        initializeStepTrackingService(dayRepository)
 
         requestActivityPermission()
 
@@ -63,6 +85,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun initializeStepTrackingService(dayRepository: DayRepository) {
+        val intent = Intent(this, StepSensorManager::class.java)
+
+        // Start the service first
+        ContextCompat.startForegroundService(this, intent)
+
+        // Then bind to set the repository
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+
+        // Create service instance and set repository
+        stepSensorManager = StepSensorManager()
+        stepSensorManager.setDayRepository(dayRepository)
+    }
+
     private fun requestActivityPermission() {
         if (ContextCompat.checkSelfPermission(this, activityRecognitionPermission)
             != PackageManager.PERMISSION_GRANTED
@@ -73,7 +109,7 @@ class MainActivity : ComponentActivity() {
                 REQUEST_ACTIVITY_PERMISSION
             )
         } else {
-            println("StartStepTracking")
+            startStepTracking()
         }
     }
 
@@ -93,7 +129,20 @@ class MainActivity : ComponentActivity() {
             grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
-            println("StartStepTracking")
+            startStepTracking()
+        }
+    }
+
+    private fun startStepTracking() {
+        stepSensorManager.startStepTracking()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unbind service but don't stop it (continues in background)
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
         }
     }
 }

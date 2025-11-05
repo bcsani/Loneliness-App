@@ -71,7 +71,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         homeViewModel.calculateCorrelation()
     }
-    val stepsToday by homeViewModel.stepsToday.collectAsState()
+//    val stepsToday by homeViewModel.stepsToday.collectAsState()
 
 
     val correlationValues = correlationResults.map { it.correlationValue }
@@ -81,34 +81,34 @@ fun HomeScreen(
     val labels = correlationResults.map { it.variableName }
 
 
-    var permissionGranted by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACTIVITY_RECOGNITION
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
+//    var permissionGranted by remember {
+//        mutableStateOf(
+//            ContextCompat.checkSelfPermission(
+//                context,
+//                Manifest.permission.ACTIVITY_RECOGNITION
+//            ) == PackageManager.PERMISSION_GRANTED
+//        )
+//    }
 
-    val stepManager = remember {
-        StepSensorManager(context) { steps ->
-            homeViewModel.onStepsUpdated(steps)
-        }
-    }
-
-    LaunchedEffect(permissionGranted) {
-        if(permissionGranted) {
-            println("Let's start tracking")
-            stepManager.startTracking()
-        }
-    }
-
-    DisposableEffect(Unit) {
-        println("Let's stop tracking")
-        onDispose {
-            stepManager.stopTracking()
-        }
-    }
+//    val stepManager = remember {
+//        StepSensorManager(context) { steps ->
+//            homeViewModel.onStepsUpdated(steps)
+//        }
+//    }
+//
+//    LaunchedEffect(permissionGranted) {
+//        if(permissionGranted) {
+//            println("Let's start tracking")
+//            stepManager.startTracking()
+//        }
+//    }
+//
+//    DisposableEffect(Unit) {
+//        println("Let's stop tracking")
+//        onDispose {
+//            stepManager.stopTracking()
+//        }
+//    }
 
 
     LazyColumn(
