@@ -1,5 +1,6 @@
 package fi.tuni.lonelinessapp.ui.navigation
 
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Analytics
@@ -13,7 +14,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import fi.tuni.lonelinessapp.R
+
 
 
 private val COLOR_PRIMARY = Color(0xFF2563EB)
@@ -29,8 +33,10 @@ fun TopBar(
     Column {
         TopAppBar(
             title = {
-                Text(
-                    if (showSettingsScreen) titles.last() else titles[currentTab]
+                Image(
+                    painter = painterResource(id = R.drawable.logo_small), // <-- Varmista, että tämä vastaa tiedostonimeäsi
+                    contentDescription = "App Logo",
+                    modifier = Modifier.height(45.dp)
                 )
             },
             actions = {
