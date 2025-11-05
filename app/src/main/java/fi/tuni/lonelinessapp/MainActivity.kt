@@ -39,9 +39,11 @@ import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 
 class MainActivity : ComponentActivity() {
+
     private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
     private val REQUEST_ACTIVITY_PERMISSION = 100
 
+    private lateinit var dayRepository: DayRepository
     // Step tracking service
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
@@ -50,20 +52,28 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             // Service is connected, but we're using startService instead of bindService
             // So we'll handle service setup differently
+            println("Service connected")
+            val binder = service as StepSensorManager.StepTrackingBinder
+            stepSensorManager = binder.getService()
+            isServiceBound = true
+
+            stepSensorManager.setDayRepository(dayRepository)
+
+            requestActivityPermission()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            println("Service disconnected")
             isServiceBound = false
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val database = AppDatabase.getInstance(applicationContext)
 
         val dayDataSource = DayDataSource(database.dayDao())
-        val dayRepository = DayRepository(dayDataSource)
+        dayRepository = DayRepository(dayDataSource)
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
@@ -71,7 +81,7 @@ class MainActivity : ComponentActivity() {
 
         initializeStepTrackingService(dayRepository)
 
-        requestActivityPermission()
+
 
         enableEdgeToEdge()
         setContent {
@@ -92,11 +102,11 @@ class MainActivity : ComponentActivity() {
         ContextCompat.startForegroundService(this, intent)
 
         // Then bind to set the repository
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
 
         // Create service instance and set repository
-        stepSensorManager = StepSensorManager()
-        stepSensorManager.setDayRepository(dayRepository)
+//        stepSensorManager = StepSensorManager()
+//        stepSensorManager.setDayRepository(dayRepository)
     }
 
     private fun requestActivityPermission() {
