@@ -1,6 +1,8 @@
 package fi.tuni.lonelinessapp.ui.screens.analysis
 
 // Compose
+import android.graphics.Color
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -19,12 +21,17 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Description
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.PieSlice
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 
@@ -70,6 +77,20 @@ fun AnalysisScreen(
     }
     val week = loadCurrentWeek()
 
+    val commPie = daysEntity?.let { entities ->
+        if (entities.size >= 7) {
+            analysisViewModel.communicationPieHours(
+                whatApps = entities[6].whatApps,
+                messages = entities[6].messages,
+                calls = entities[6].calls,
+                signal = entities[6].signal,
+                telegram = entities[6].telegram
+            )
+        } else {
+            null
+        }
+    }
+
     // List<LinePoint>
     val lonelinessPts = remember { analysisViewModel.lonelinessLine(week) }
 
@@ -83,7 +104,7 @@ fun AnalysisScreen(
     val stepsPts      = remember { analysisViewModel.stepsBars(week) }
 
     // List<PieSlice>
-    val commPie       = remember { analysisViewModel.communicationPieHours() }
+//    val commPie       = remember { analysisViewModel.communicationPieHours() }
 
     // Mon/Tue..
     val dayLabels     = remember { lonelinessPts.map { it.xLabel } }
@@ -359,16 +380,16 @@ fun AnalysisScreen(
                             animateY(0)
                             holeRadius = 45f // Kaavion keskellä olevan reiän koko
                             val entries = commPie
-                                .filter { it.value > 0f }
-                                .map { PieEntry(it.value, it.label) }
+                                ?.filter { it.value > 0f }
+                                ?.map { PieEntry(it.value, it.label) }
 
                             // MUOKKAUS: Tarkistetaan, onko dataa.
-                            if (entries.sumOf { it.value.toDouble() } == 0.0) {
+                            if (entries?.sumOf { it.value.toDouble() } == 0.0) {
                                 // --- KUN DATA ON NOLLA ---
                                 // Näytetään keskellä viesti ja tyhjennetään data.
                                 centerText = "No chart data available"
                                 setCenterTextSize(16f)
-                                setCenterTextColor(android.graphics.Color.BLACK) // Muutettu suoraan mustaksi
+                                setCenterTextColor(Color.BLACK) // Muutettu suoraan mustaksi
 
                                 // MUOKKAUS: Aseta tyhjä PieData-objekti nullin sijaan.
                                 data = PieData(PieDataSet(emptyList(), "")) // <-- TÄMÄ ON
@@ -382,11 +403,11 @@ fun AnalysisScreen(
                                     isWordWrapEnabled = true
                                     setMaxSizePercent(0.80f)
                                     verticalAlignment =
-                                        com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                        Legend.LegendVerticalAlignment.BOTTOM
                                     horizontalAlignment =
-                                        com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                        Legend.LegendHorizontalAlignment.CENTER
                                     orientation =
-                                        com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                        Legend.LegendOrientation.HORIZONTAL
                                     setDrawInside(false)
                                 }
 
@@ -408,18 +429,18 @@ fun AnalysisScreen(
 
                             // Toast-ilmoituksen logiikka pysyy samana.
                             setOnChartValueSelectedListener(object :
-                                com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+                                OnChartValueSelectedListener {
                                 override fun onValueSelected(
-                                    e: com.github.mikephil.charting.data.Entry?,
-                                    h: com.github.mikephil.charting.highlight.Highlight?
+                                    e: Entry?,
+                                    h: Highlight?
                                 ) {
                                     if (e is PieEntry) {
                                         val label = e.label
                                         val hours = e.value
-                                        android.widget.Toast.makeText(
+                                        Toast.makeText(
                                             context,
                                             "$label – %.1f h".format(hours),
-                                            android.widget.Toast.LENGTH_SHORT
+                                            Toast.LENGTH_SHORT
                                         ).show()
                                     }
                                 }
@@ -577,7 +598,7 @@ private class UnitValueFormatter(
 // Round the upper limit up to the nearest multiple of 'step'.
 private fun niceCeil(value: Float, step: Float): Float {
     if (step <= 0f) return value
-    val k = kotlin.math.ceil(value / step)
+    val k = ceil(value / step)
     return (k * step)
 }
 
