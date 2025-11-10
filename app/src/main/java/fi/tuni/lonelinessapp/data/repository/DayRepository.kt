@@ -18,6 +18,16 @@ class DayRepository  (
         dayDataSource.saveDayMinutes(date, dayMinutes)
     suspend fun saveSteps(date: LocalDate, steps: Int) =
         dayDataSource.saveSteps(date, steps)
+    suspend fun saveWhatApp(date: LocalDate, whatApps: Int) =
+        dayDataSource.saveWhatApp(date, whatApps)
+    suspend fun saveMessages(date: LocalDate, messages: Int) =
+        dayDataSource.saveMessages(date, messages)
+    suspend fun saveCalls(date: LocalDate, calls: Int) =
+        dayDataSource.saveCalls(date, calls)
+    suspend fun saveSignal(date: LocalDate, signal: Int) =
+        dayDataSource.saveSignal(date, signal)
+    suspend fun saveTelegram(date: LocalDate, telegram: Int) =
+        dayDataSource.saveTelegram(date, telegram)
     fun getAllDays(): Flow<List<DayEntity>?> =
         dayDataSource.getAllDays()
     fun getDayByDate(date: LocalDate): Flow<DayEntity?> =

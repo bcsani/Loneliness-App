@@ -25,7 +25,12 @@ object PrepopulateDataGenerator {
                     loneliness = Random.nextInt(3, 10),
                     nightMinutes = Random.nextInt(16, 31),
                     dayMinutes = Random.nextInt(27, 420),
-                    steps = Random.nextInt(500, 8000)
+                    steps = Random.nextInt(500, 8000),
+                    whatApps = Random.nextInt(1, 120),
+                    messages = Random.nextInt(1,120),
+                    calls = Random.nextInt(1,60),
+                    signal = Random.nextInt(1, 120),
+                    telegram = Random.nextInt(1,120)
                 )
             )
             currentDate = currentDate.plusDays(1)
