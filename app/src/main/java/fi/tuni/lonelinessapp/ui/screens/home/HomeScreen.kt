@@ -1,17 +1,11 @@
 package fi.tuni.lonelinessapp.ui.screens.home
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.*
+//import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +31,12 @@ import fi.tuni.lonelinessapp.ui.screens.analysis.ChartCard
 import fi.tuni.lonelinessapp.ui.screens.analysis.applyBarDefaults
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 @Composable
 fun HomeScreen(
     mainViewModel: MainViewModel,
@@ -45,11 +44,7 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     surveyViewModel: SurveyViewModel,
 ) {
-
-    // Variable for daily survey dialog
     val showDialog by mainViewModel.showSurvey
-
-    // Variable for streak count
     val streakCount by homeViewModel.streakCount
 
     // Variable for loading correlation chart and showing loading bar
@@ -68,7 +63,9 @@ fun HomeScreen(
     val labels = correlationResults.map { it.variableName }
 
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -99,66 +96,65 @@ fun HomeScreen(
             }
         }
 
-        //Streak Card
+//        horizontalAlignment = Alignment.CenterHorizontally,
+//        verticalArrangement = Arrangement.spacedBy(24.dp)
+
+        //  Streak Card
         item {
             Card(
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                shape = MaterialTheme.shapes.medium
+                    .height(100.dp)
+                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
             ) {
-                Box(
-                    modifier = modifier
+                Row(
+                    modifier = Modifier
                         .fillMaxSize()
-                ){
-                    Row(
-                        modifier = modifier.align(Alignment.Center),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = "Streak Icon",
-                            modifier = modifier.size(64.dp)
+                        .padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Whatshot,
+                        contentDescription = "Streak Icon",
+                        tint = Color(0xFFFF9800), // Orange
+                        modifier = Modifier.size(40.dp)
+                    )
+
+                    Column {
+                        Text(
+                            text = streakCount.toString(),
+                            fontSize = 36.sp,
+                            style = MaterialTheme.typography.headlineMedium
                         )
-
-                        Column(
-                            modifier = modifier,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = streakCount.toString(),
-                                modifier = modifier,
-                                fontSize = 36.sp
-                            )
-                            Text(
-                                text = "Day Streak",
-                                modifier = modifier,
-                                fontSize = 16.sp
-                            )
-                        }
+                        Text(
+                            text = "Day Streak",
+                            fontSize = 16.sp,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
-
                 }
             }
         }
 
-        // Survey Button
+        //  Fill Daily Survey Button
         item {
             Button(
-                onClick = {mainViewModel.openSurvey()},
-                shape = MaterialTheme.shapes.medium,
-                modifier = modifier
+
+                onClick = { mainViewModel.openSurvey() },
+                modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(70.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX))
             ) {
-                Text(
-                    text = "Fill Daily Survey",
-                    fontSize = 24.sp
-                )
+                Text("Fill Daily Survey", fontSize = 20.sp)
             }
         }
 
+        //  Loneliness Correlations Chart
         // Correlation chart
         item {
             ChartCard(title = "Loneliness correlations") {
@@ -208,9 +204,16 @@ fun HomeScreen(
                 )
             }
         }
-    }
 
-    if(showDialog){
-        SurveyDialog( onDismiss = { mainViewModel.closeSurvey()}, surveyViewModel = surveyViewModel)
+        if (showDialog) {
+            item {
+                SurveyDialog(
+                    onDismiss = { mainViewModel.closeSurvey() },
+                    surveyViewModel = surveyViewModel
+                )
+            }
+        }
     }
 }
+
+

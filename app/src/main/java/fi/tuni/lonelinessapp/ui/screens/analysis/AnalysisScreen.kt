@@ -328,7 +328,6 @@ fun AnalysisScreen(
 
 
         // Chart 5: Communication Apps Usage (pie chart).
-        // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
