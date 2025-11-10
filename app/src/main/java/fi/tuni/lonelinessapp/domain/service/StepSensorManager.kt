@@ -1,8 +1,5 @@
 package fi.tuni.lonelinessapp.domain.service
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -13,20 +10,17 @@ import android.hardware.SensorManager
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
 
 class StepSensorManager() : Service(), SensorEventListener {
 
+    // Constant values to store the steps
     companion object {
         private const val TAG = "StepTrackingService"
-        private const val NOTIFICATION_ID = 1
-        private const val CHANNEL_ID = "step_tracking_channel"
         private const val STEP_COUNT_PREF_KEY = "step_count"
         private const val STEP_OFFSET_PREF_KEY = "step_offset"
         private const val TRACKING_DATE_PREF_KEY = "tracking_date"
@@ -45,8 +39,7 @@ class StepSensorManager() : Service(), SensorEventListener {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
 
-    private lateinit var notificationManager: NotificationManager
-
+    // This binder will create stepSensorManager
     inner class StepTrackingBinder : Binder() {
         fun getService(): StepSensorManager = this@StepSensorManager
     }
@@ -56,16 +49,14 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     override fun onCreate() {
-        println("onCreate")
         super.onCreate()
         Log.d(TAG, "Service onCreate")
 
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        createNotificationChannel()
-
+        // Get the step sensor
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
 
+        // Loading the current step count, step offset and current date
         loadStepData()
 
         if (stepSensor == null) {
@@ -76,8 +67,6 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        println("onStartCommand")
-        startForegroundService()
         startStepTracking()
         return START_STICKY
     }
@@ -89,51 +78,13 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     fun setDayRepository(repository: DayRepository) {
-        println("setDayRepository")
-
         this.dayRepository = repository
-        if(this.dayRepository == null) {
-            println("dayRepository is null during setday")
-        }
-    }
-
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Step Tracking",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Tracks your steps in the background"
-        }
-        notificationManager.createNotificationChannel(channel)
-
-    }
-
-
-    private fun startForegroundService() {
-        val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification, FOREGROUND_SERVICE_TYPE_HEALTH)
-
-    }
-
-    private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Step Tracker")
-            .setContentText("Tracking your steps: $stepCount")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .build()
-    }
-
-    private fun updateNotification() {
-        val notification = createNotification()
-        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     fun startStepTracking() {
         if (isTracking) return
 
+        // Start tracking step if there is a step sensor
         stepSensor?.let { sensor ->
             val success = sensorManager.registerListener(
                 this,
@@ -160,13 +111,15 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        println("onSensorChanged")
+        // If sensor changed then start calculating the step
         event?.let {
             if (it.sensor.type == Sensor.TYPE_STEP_COUNTER) {
+                // Get the cumulative current step that is stored in the database.
+                // The step is cumulated through the phone lifecycle
                 val currentSteps = it.values[0].toInt()
-                println("Current steps: " + currentSteps)
                 checkAndResetForNewDay(currentSteps)
 
+                // Set stepOffset
                 if (stepOffset == 0) {
                     // First reading, set offset
                     stepOffset = currentSteps
@@ -180,21 +133,16 @@ class StepSensorManager() : Service(), SensorEventListener {
                 }
             }
         }
-        println("Step Count: " + stepCount)
-        println("Step Offset: " + stepOffset)
-        println("Tracking Date: " + currentTrackingDate)
     }
-
 
     private fun checkAndResetForNewDay(currentSteps: Int) {
         val today = LocalDate.now()
 
         // If it's a new day, reset the step counting
         if (today.isAfter(currentTrackingDate)) {
-            println("New day detected! Resetting step counter.")
 
             // Reset for new day
-            stepOffset = currentSteps  // Start fresh from today's step count
+            stepOffset = currentSteps
             stepCount = 0
             currentTrackingDate = today
 
@@ -212,10 +160,7 @@ class StepSensorManager() : Service(), SensorEventListener {
         serviceScope.launch {
             try {
                 val today = LocalDate.now()
-                println("Step count in updateDatabase: " + stepCount)
-                if (dayRepository == null) {
-                    println("DayRepository is null")
-                }
+                // Update the steps to the database through repository
                 dayRepository?.saveSteps(today, stepCount)
             } catch (e: Exception) {
                 // Handle database error
@@ -225,6 +170,7 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     private fun saveStepData() {
+        // Save all step data through SharedPreferences "step_prefs"
         val prefs = getSharedPreferences("step_prefs", Context.MODE_PRIVATE)
         prefs.edit()
             .putInt(STEP_COUNT_PREF_KEY, stepCount)
@@ -234,6 +180,7 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     private fun loadStepData() {
+        // Load all data using SharedPreferences "step_prefs
         val prefs = getSharedPreferences("step_prefs", Context.MODE_PRIVATE)
         stepCount = prefs.getInt(STEP_COUNT_PREF_KEY, 0)
         stepOffset = prefs.getInt(STEP_OFFSET_PREF_KEY, 0)
@@ -245,10 +192,10 @@ class StepSensorManager() : Service(), SensorEventListener {
             LocalDate.now()
         }
 
-        // Check if we need to reset on app start
+        // Check if need to reset on app start
         val today = LocalDate.now()
         if (today.isAfter(currentTrackingDate)) {
-            // We'll reset when we get the first sensor reading
+            // reset when get the first sensor reading
             stepOffset = 0  // Force reset on next sensor reading
         }
     }

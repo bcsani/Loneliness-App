@@ -41,20 +41,15 @@ import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 class MainActivity : ComponentActivity() {
 
     private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
-
+    // dayRepository is initialized later for the stepService.
     private lateinit var dayRepository: DayRepository
-    // Step tracking service
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
-
-    // Use ActivityResultLauncher for better permission handling
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            // Service is connected, but we're using startService instead of bindService
-            // So we'll handle service setup differently
-            println("Service connected")
+            // Create step service with binder
             val binder = service as StepSensorManager.StepTrackingBinder
             stepSensorManager = binder.getService()
             isServiceBound = true
@@ -64,7 +59,6 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            println("Service disconnected")
             isServiceBound = false
         }
     }
@@ -86,6 +80,7 @@ class MainActivity : ComponentActivity() {
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
             if (isGranted) {
+                // If user grant permission, then can start initialize step tracking service
                 initializeStepTrackingService(dayRepository)
             } else {
                 // Handle permission denial
@@ -114,6 +109,7 @@ class MainActivity : ComponentActivity() {
                 this,
                 activityRecognitionPermission
             ) == PackageManager.PERMISSION_GRANTED -> {
+                // If the permission is granted, then initialize step tracking service
                 initializeStepTrackingService(dayRepository)
             }
             else -> {
