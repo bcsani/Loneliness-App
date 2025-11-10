@@ -29,6 +29,7 @@ class StepSensorManager() : Service(), SensorEventListener {
         private const val CHANNEL_ID = "step_tracking_channel"
         private const val STEP_COUNT_PREF_KEY = "step_count"
         private const val STEP_OFFSET_PREF_KEY = "step_offset"
+        private const val TRACKING_DATE_PREF_KEY = "tracking_date"
     }
 
     private val binder = StepTrackingBinder()
@@ -37,6 +38,7 @@ class StepSensorManager() : Service(), SensorEventListener {
     private var stepCount = 0
     private var stepOffset = 0
     private var isTracking = false
+    private var currentTrackingDate = LocalDate.now()
 
     // Database operations
     private var dayRepository: DayRepository? = null
@@ -163,6 +165,7 @@ class StepSensorManager() : Service(), SensorEventListener {
             if (it.sensor.type == Sensor.TYPE_STEP_COUNTER) {
                 val currentSteps = it.values[0].toInt()
                 println("Current steps: " + currentSteps)
+                checkAndResetForNewDay(currentSteps)
 
                 if (stepOffset == 0) {
                     // First reading, set offset
@@ -179,7 +182,27 @@ class StepSensorManager() : Service(), SensorEventListener {
         }
         println("Step Count: " + stepCount)
         println("Step Offset: " + stepOffset)
+        println("Tracking Date: " + currentTrackingDate)
     }
+
+
+    private fun checkAndResetForNewDay(currentSteps: Int) {
+        val today = LocalDate.now()
+
+        // If it's a new day, reset the step counting
+        if (today.isAfter(currentTrackingDate)) {
+            println("New day detected! Resetting step counter.")
+
+            // Reset for new day
+            stepOffset = currentSteps  // Start fresh from today's step count
+            stepCount = 0
+            currentTrackingDate = today
+
+            // Save the reset state
+            saveStepData()
+        }
+    }
+
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Handle accuracy changes if needed
@@ -206,6 +229,7 @@ class StepSensorManager() : Service(), SensorEventListener {
         prefs.edit()
             .putInt(STEP_COUNT_PREF_KEY, stepCount)
             .putInt(STEP_OFFSET_PREF_KEY, stepOffset)
+            .putString(TRACKING_DATE_PREF_KEY, currentTrackingDate.toString())
             .apply()
     }
 
@@ -213,6 +237,19 @@ class StepSensorManager() : Service(), SensorEventListener {
         val prefs = getSharedPreferences("step_prefs", Context.MODE_PRIVATE)
         stepCount = prefs.getInt(STEP_COUNT_PREF_KEY, 0)
         stepOffset = prefs.getInt(STEP_OFFSET_PREF_KEY, 0)
-    }
 
+        val savedDate = prefs.getString(TRACKING_DATE_PREF_KEY, null)
+        currentTrackingDate = if (savedDate != null) {
+            LocalDate.parse(savedDate)
+        } else {
+            LocalDate.now()
+        }
+
+        // Check if we need to reset on app start
+        val today = LocalDate.now()
+        if (today.isAfter(currentTrackingDate)) {
+            // We'll reset when we get the first sensor reading
+            stepOffset = 0  // Force reset on next sensor reading
+        }
+    }
 }
