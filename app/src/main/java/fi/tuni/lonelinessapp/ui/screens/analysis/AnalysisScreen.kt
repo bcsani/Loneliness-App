@@ -71,45 +71,45 @@ fun AnalysisScreen(
 
     // ÄLÄ POISTA OIKEA VERSIO!!!!!!
     //Listen to the daily data provided by the ViewModel.
-    val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
     // Daily samples for the selected time.
-    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        buildSamplesForRange(daysEntity, selectedRange)
-    }
+    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        //buildSamplesForRange(daysEntity, selectedRange)
+    //}
 
     // Creating data for charts.
-    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     // ÄLÄ POISTA OIKEA VERSIO!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // ====================== TESTIDATA ALKAA ======================
 
     // 1. LUODAAN KUVITTEELLINEN TESTIDATA
     // Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
-    //val testSamples: List<DaySample> = remember {
-    //listOf(
-    //DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-    //DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-    //DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
-    //DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-    //DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
-    //DaySample(LocalDate.now().minusDays(1), loneliness = 6, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-    //DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-    //)
-    //}
+    val testSamples: List<DaySample> = remember {
+    listOf(
+    DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+    DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+    DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
+    DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+    DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
+    DaySample(LocalDate.now().minusDays(1), loneliness = 9, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+    DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+    )
+    }
 
     // `samples`-muuttuja on nyt meidän testidatamme.
-    //((val samples = testSamples
+    val samples = testSamples
 
     // 2. MUUNNETAAN TESTIDATA KAAVIOIDEN MUUTTUJIIN
     // Tämä on sama koodi kuin ennen, mutta se käyttää nyt `testSamples`-dataa.
-    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
 
     // ======================= TESTIDATA LOPPUU =======================
 
@@ -152,15 +152,15 @@ fun AnalysisScreen(
     val dayMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.dayH } }
     val stepsMonthly = remember(monthlyAgg) { monthlyAgg.map { it.stepsAvg } }
 
-    // Descriptive titles.
-    val periodSuffix = when (selectedRange)
-    {
-        TimeRange.Week  -> " (This Week)"
-        TimeRange.Month -> " (This Month)"
-        TimeRange.ThreeMonths -> " (Last 3 Months)"
-        TimeRange.Year -> " (This Year)"
-        TimeRange.All -> " (All Time)"
-    }
+    // Descriptive titles. -Mahdollisesti poistoon!
+    //val periodSuffix = when (selectedRange)
+    //{
+        //TimeRange.Week  -> " (This Week)"
+        //TimeRange.Month -> " (This Month)"
+        //TimeRange.ThreeMonths -> " (Last 3 Months)"
+        //TimeRange.Year -> " (This Year)"
+        //TimeRange.All -> " (All Time)"
+    //}
 
     // Show the entire analysis as a vertical list: one card per chart.
     LazyColumn(
@@ -238,8 +238,9 @@ fun AnalysisScreen(
         } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
 
             // 1) Loneliness (line)
+            // $periodSuffix. EHKÄ?
             item {
-                ChartCard(title = "Loneliness Level$periodSuffix") {
+                ChartCard(title = "Loneliness Level") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -278,31 +279,31 @@ fun AnalysisScreen(
                             chart.notifyDataSetChanged()
                             chart.invalidate()
                         }
+
                     )
                 }
             }
 
             // 2) Night usage (bar)
+            // $periodSuffix
             item {
-                ChartCard(title = "Night Phone Usage (hours)$periodSuffix") {
+                ChartCard(title = "Night Phone Usage") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList()) // staattiset
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
                             }
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             chart.applyNiceYAxis(nightPts.map { it.y }, ::hourStepFor)
+                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
                                 label = "Night usage",
                                 entries = toBarEntries(nightPts),
-                                valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
-                                    String.format("%.1f h", y)
-                                }
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
                             chart.data.notifyDataChanged(); chart.notifyDataSetChanged(); chart.invalidate()
@@ -312,8 +313,9 @@ fun AnalysisScreen(
             }
 
             // 3) Daytime usage (bar)
+            // $periodSuffix
             item {
-                ChartCard(title = "Daytime Phone Usage (6am–10pm, hours)$periodSuffix") {
+                ChartCard(title = "Daytime Phone Usage") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -329,9 +331,6 @@ fun AnalysisScreen(
                             val set = makeBarDataSet(
                                 label = "Daytime usage",
                                 entries = toBarEntries(dayPts),
-                                valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
-                                    String.format("%.1f h", y)
-                                }
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
                             chart.data.notifyDataChanged(); chart.notifyDataSetChanged(); chart.invalidate()
@@ -340,9 +339,10 @@ fun AnalysisScreen(
                 }
             }
 
-            // 4) Steps (bar)
+            // 4) Steps (bar).
+            // $periodSuffix.
             item {
-                ChartCard(title = "Exercise (steps)$periodSuffix") {
+                ChartCard(title = "Exercise") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -364,9 +364,6 @@ fun AnalysisScreen(
                             val set = makeBarDataSet(
                                 label = "Steps",
                                 entries = toBarEntries(stepsPts),
-                                valueFormatter = weekOnlyLabelFormatter(selectedRange) { y ->
-                                    y.toInt().toString()
-                                }
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
                             chart.data.notifyDataChanged(); chart.notifyDataSetChanged(); chart.invalidate()
@@ -375,9 +372,10 @@ fun AnalysisScreen(
                 }
             }
 
-            // 5) Communications (pie)
+            // 5) Communications (pie).
+            // $periodSuffix
             item {
-                ChartCard(title = "Communication Apps Usage$periodSuffix") {
+                ChartCard(title = "Communication Apps Usage") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
@@ -438,8 +436,9 @@ fun AnalysisScreen(
         } else {
 
             // UCLA Loneliness (monthly avg).
+            // $periodSuffix
             item {
-                ChartCard(title = "UCLA Loneliness Scale$periodSuffix") {
+                ChartCard(title = "UCLA Loneliness Scale") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -488,9 +487,10 @@ fun AnalysisScreen(
                 }
             }
 
-            // Night Usage (monthly avg hours).
+            // Night Usage.
+            // $periodSuffix
             item {
-                ChartCard(title = "Night Usage (hours)$periodSuffix") {
+                ChartCard(title = "Night Usage") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -507,9 +507,6 @@ fun AnalysisScreen(
                             val set = makeBarDataSet(
                                 label = "Night usage",
                                 entries = toBarEntriesFromFloats(nightMonthly),
-                                valueFormatter = threeMonthsOnlyFormatter(selectedRange) { y ->
-                                    String.format("%.1f h", y)
-                                }
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
 
@@ -521,8 +518,9 @@ fun AnalysisScreen(
 
 
             // Day Usage (monthly avg hours).
+            // $periodSuffix
             item {
-                ChartCard(title = "Day Usage (hours)$periodSuffix") {
+                ChartCard(title = "Day Usage") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -539,9 +537,6 @@ fun AnalysisScreen(
                             val set = makeBarDataSet(
                                 label = "Day usage",
                                 entries = toBarEntriesFromFloats(dayMonthly),
-                                valueFormatter = threeMonthsOnlyFormatter(selectedRange) { y ->
-                                    String.format("%.1f h", y)
-                                }
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
 
@@ -553,8 +548,9 @@ fun AnalysisScreen(
 
 
             // Exercise (monthly avg steps).
+            // $periodSuffix
             item {
-                ChartCard(title = "Exercise (steps)$periodSuffix") {
+                ChartCard(title = "Exercise") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -574,9 +570,6 @@ fun AnalysisScreen(
                             val set = makeBarDataSet(
                                 label = "Steps",
                                 entries = toBarEntriesFromFloats(stepsMonthly),
-                                valueFormatter = threeMonthsOnlyFormatter(selectedRange) { y ->
-                                    y.toInt().toString()
-                                }
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
 
@@ -588,8 +581,9 @@ fun AnalysisScreen(
 
 
             // Communications (donut).
+            // $periodSuffix
             item {
-                ChartCard(title = "Communication Apps Usage$periodSuffix") {
+                ChartCard(title = "Communication Apps Usage") {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
@@ -765,18 +759,21 @@ private fun toBarEntriesFromFloats(values: List<Float>): List<BarEntry> =
 private fun makeBarDataSet(
     label: String,
     entries: List<BarEntry>,
-    valueFormatter: ValueFormatter? = null,
-    showValues: Boolean = true,   // <-- UUSI
+    //valueFormatter: ValueFormatter? = null,
+    //showValues: Boolean = true,
 ): BarDataSet = BarDataSet(entries, label).apply {
     color = COLOR_PRIMARY_HEX
     valueTextSize = 12f
     valueTextColor = COLOR_TEXT_HEX
 
-    if (valueFormatter != null) {
-        setValueFormatter(valueFormatter)
-    }
+    setDrawValues(false)
 
-    setDrawValues(showValues && valueFormatter != null)
+    // POISTOON?
+    //if (valueFormatter != null) {
+        //setValueFormatter(valueFormatter)
+    //}
+
+   // setDrawValues(showValues && valueFormatter != null)
 }
 
 /** PieChart.enableToastOnSliceClick:
@@ -805,35 +802,6 @@ private fun PieChart.enableToastOnSliceClick() {
     })
 }
 
-/** weekOnlyLabelFormatter:
- * ValueFormatters that conditionally show in-bar labels depending on selection.
- * This keeps Week charts readable and hides labels when bars get dense.
- */
-private fun weekOnlyLabelFormatter(
-    selectedRange: TimeRange,
-    format: (Float) -> String
-): ValueFormatter = object : ValueFormatter() {
-    override fun getBarLabel(e: BarEntry?): String {
-        if (selectedRange != TimeRange.Week) return ""
-        if (e == null) return ""
-        return format(e.y)
-    }
-}
-
-/** threeMonthsOnlyFormatter:
- * ValueFormatters that conditionally show in-bar labels depending on selection.
- * This keeps Week charts readable and hides labels when bars get dense.
- */
-private fun threeMonthsOnlyFormatter(
-    selectedRange: TimeRange,
-    format: (Float) -> String
-): ValueFormatter = object : ValueFormatter() {
-    override fun getBarLabel(e: BarEntry?): String {
-        if (selectedRange != TimeRange.ThreeMonths) return ""
-        if (e == null) return ""
-        return format(e.y)
-    }
-}
 
 /** niceCeil:
  * Rounds up to the nearest multiple of 'step'. If step <= 0, returns value.
@@ -998,8 +966,39 @@ private fun buildSamplesForRange(
     }
 }
 
+/**
+ * enableTapToShowValue: Näyttää Toast-viestin, jossa on palkin arvo.
+ * Usage: call in the `update` block of each BarChart when the X-labels and data are known.
+ */
+private fun BarChart.enableTapToShowValue(
+    labels: List<String>,
+    format: (Float) -> String
+) {
+    // interaktio päälle
+    setTouchEnabled(true)
+    setHighlightPerTapEnabled(true)
+    isHighlightPerDragEnabled = false
 
+    setOnChartValueSelectedListener(object :
+        com.github.mikephil.charting.listener.OnChartValueSelectedListener {
 
+        override fun onValueSelected(
+            e: com.github.mikephil.charting.data.Entry?,
+            h: com.github.mikephil.charting.highlight.Highlight?
+        ) {
+            if (e is BarEntry) {
+                val i = e.x.toInt().coerceIn(labels.indices)
+                val label = labels.getOrElse(i) { "" }
+                android.widget.Toast.makeText(
+                    context,
+                    "$label: ${format(e.y)}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        override fun onNothingSelected() {}
+    })
+}
 
 
 
