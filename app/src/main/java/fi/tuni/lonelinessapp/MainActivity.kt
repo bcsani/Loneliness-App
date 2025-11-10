@@ -2,15 +2,17 @@ package fi.tuni.lonelinessapp
 
 import android.Manifest
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.IBinder
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -18,8 +20,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
@@ -41,12 +41,14 @@ import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 class MainActivity : ComponentActivity() {
 
     private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
-    private val REQUEST_ACTIVITY_PERMISSION = 100
 
     private lateinit var dayRepository: DayRepository
     // Step tracking service
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
+
+    // Use ActivityResultLauncher for better permission handling
+    private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -59,7 +61,6 @@ class MainActivity : ComponentActivity() {
 
             stepSensorManager.setDayRepository(dayRepository)
 
-            requestActivityPermission()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -69,6 +70,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         val database = AppDatabase.getInstance(applicationContext)
 
@@ -77,11 +79,22 @@ class MainActivity : ComponentActivity() {
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
-        val homeViewModel = HomeViewModel(calculateCorrelationUseCase, dayRepository)
+        val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
 
-        initializeStepTrackingService(dayRepository)
+        // Initialize permission launcher
+        permissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                initializeStepTrackingService(dayRepository)
+            } else {
+                // Handle permission denial
+                Toast.makeText(this, "Permission denied - step tracking disabled", Toast.LENGTH_LONG).show()
+            }
+        }
 
-
+        // Check and request permission
+        checkPermission()
 
         enableEdgeToEdge()
         setContent {
@@ -95,6 +108,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun checkPermission() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                activityRecognitionPermission
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                initializeStepTrackingService(dayRepository)
+            }
+            else -> {
+                permissionLauncher.launch(activityRecognitionPermission)
+            }
+        }
+    }
+
     private fun initializeStepTrackingService(dayRepository: DayRepository) {
         val intent = Intent(this, StepSensorManager::class.java)
 
@@ -104,47 +131,6 @@ class MainActivity : ComponentActivity() {
         // Then bind to set the repository
         bindService(intent, serviceConnection, BIND_AUTO_CREATE)
 
-        // Create service instance and set repository
-//        stepSensorManager = StepSensorManager()
-//        stepSensorManager.setDayRepository(dayRepository)
-    }
-
-    private fun requestActivityPermission() {
-        if (ContextCompat.checkSelfPermission(this, activityRecognitionPermission)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(activityRecognitionPermission),
-                REQUEST_ACTIVITY_PERMISSION
-            )
-        } else {
-            startStepTracking()
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String?>,
-        grantResults: IntArray,
-        deviceId: Int
-    ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults,
-            deviceId
-        )
-        if(requestCode == REQUEST_ACTIVITY_PERMISSION &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            startStepTracking()
-        }
-    }
-
-    private fun startStepTracking() {
-        stepSensorManager.startStepTracking()
     }
 
     override fun onDestroy() {

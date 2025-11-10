@@ -1,6 +1,5 @@
 package fi.tuni.lonelinessapp.domain.service
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,9 +13,7 @@ import android.hardware.SensorManager
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,13 +44,6 @@ class StepSensorManager() : Service(), SensorEventListener {
 
 
     private lateinit var notificationManager: NotificationManager
-
-    interface StepTrackingCallback {
-        fun onStepsUpdated(steps: Int)
-        fun onTrackingStateChanged(isTracking: Boolean)
-    }
-
-    private var callback: StepTrackingCallback? = null
 
     inner class StepTrackingBinder : Binder() {
         fun getService(): StepSensorManager = this@StepSensorManager
@@ -172,6 +162,7 @@ class StepSensorManager() : Service(), SensorEventListener {
         event?.let {
             if (it.sensor.type == Sensor.TYPE_STEP_COUNTER) {
                 val currentSteps = it.values[0].toInt()
+                println("Current steps: " + currentSteps)
 
                 if (stepOffset == 0) {
                     // First reading, set offset
@@ -180,8 +171,6 @@ class StepSensorManager() : Service(), SensorEventListener {
 
                 val newStepCount = currentSteps - stepOffset
                 if (newStepCount > stepCount) {
-                    println("saveStepData")
-                    println("UpdateDatabase")
                     stepCount = newStepCount
                     saveStepData()
                     updateDatabase()
@@ -204,30 +193,12 @@ class StepSensorManager() : Service(), SensorEventListener {
                 if (dayRepository == null) {
                     println("DayRepository is null")
                 }
-                println("today" + today)
                 dayRepository?.saveSteps(today, stepCount)
             } catch (e: Exception) {
-                println("Error in updatedabase")
                 // Handle database error
                 e.printStackTrace()
             }
         }
-    }
-
-    fun getStepCount(): Int = stepCount
-
-    fun resetStepCount() {
-        stepCount = 0
-        stepOffset = 0
-        saveStepData()
-        callback?.onStepsUpdated(stepCount)
-        updateNotification()
-    }
-
-    fun isTracking(): Boolean = isTracking
-
-    fun setCallback(callback: StepTrackingCallback?) {
-        this.callback = callback
     }
 
     private fun saveStepData() {
@@ -244,35 +215,4 @@ class StepSensorManager() : Service(), SensorEventListener {
         stepOffset = prefs.getInt(STEP_OFFSET_PREF_KEY, 0)
     }
 
-//    fun startTracking() {
-//        sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-//        stepSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
-//
-//        if (stepSensor == null) {
-//            Toast.makeText(context, "Step sensor not available", Toast.LENGTH_LONG).show()
-//            return
-//        }
-//
-//        sensorManager?.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_FASTEST)
-//        tracking = true
-//
-//    }
-//
-//    fun stopTracking() {
-//        sensorManager?.unregisterListener(this)
-//        tracking = false
-//    }
-//
-//    override fun onSensorChanged(event: SensorEvent) {
-//        if(!tracking) return
-//        val steps = event.values[0]
-//
-//        if (initialSteps == null) {
-//            initialSteps = steps
-//        }
-//        val stepsToday = (steps - (initialSteps ?: 0f)).toInt()
-//        onStepsUpdated(stepsToday)
-//    }
-//
-//    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 }

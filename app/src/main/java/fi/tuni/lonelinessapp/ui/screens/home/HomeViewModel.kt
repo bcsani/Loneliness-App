@@ -14,8 +14,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class HomeViewModel(
-    private val calculateCorrelationUseCase: CalculateCorrelationUseCase,
-    private val dayRepository: DayRepository
+    private val calculateCorrelationUseCase: CalculateCorrelationUseCase
 ) : ViewModel() {
 
     // Streak count
@@ -27,8 +26,6 @@ class HomeViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading
     private val _correlationResults = MutableStateFlow<List<CorrelationResult>>(emptyList())
     val correlationResults: StateFlow<List<CorrelationResult>> = _correlationResults.asStateFlow()
-//    private val _stepsToday = MutableStateFlow(0)
-//    val stepsToday: StateFlow<Int> = _stepsToday.asStateFlow()
 
     fun calculateCorrelation(){
         viewModelScope.launch {
@@ -44,11 +41,4 @@ class HomeViewModel(
         }
     }
 
-//    fun onStepsUpdated(steps: Int) {
-//        _stepsToday.value = steps
-//        viewModelScope.launch {
-//            val today = LocalDate.now()
-//            dayRepository.saveSteps(today, steps)
-//        }
-//    }
 }
