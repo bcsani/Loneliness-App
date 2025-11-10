@@ -33,6 +33,9 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 import java.time.LocalDate
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.IconButton
 
 // Color configuration for charts.
 // The colors are now hardcoded. Later we will move under the theme (?)
@@ -67,49 +70,52 @@ fun AnalysisScreen(
 ) {
     // Default selection is Week.
     var selectedRange by remember { mutableStateOf(TimeRange.Week) }
+    // AnalysisScreen-funktion sisällä, heti alussa
+    var infoDialogMessage by remember { mutableStateOf<String?>(null) }
 
 
-    // ÄLÄ POISTA OIKEA VERSIO!!!!!!
+
+    // ÄLÄ POISTA OIKEA VERSIO
     //Listen to the daily data provided by the ViewModel.
-    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
     // Daily samples for the selected time.
-    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        //buildSamplesForRange(daysEntity, selectedRange)
-    //}
+    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        buildSamplesForRange(daysEntity, selectedRange)
+    }
 
-    // Creating data for charts.
-    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
-    // ÄLÄ POISTA OIKEA VERSIO!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //Creating data for charts.
+    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    // ÄLÄ POISTA OIKEA VERSIO
 
     // ====================== TESTIDATA ALKAA ======================
 
     // 1. LUODAAN KUVITTEELLINEN TESTIDATA
     // Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
-    val testSamples: List<DaySample> = remember {
-    listOf(
-    DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-    DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-    DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
-    DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-    DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
-    DaySample(LocalDate.now().minusDays(1), loneliness = 9, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-    DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-    )
-    }
+    //val testSamples: List<DaySample> = remember {
+        //listOf(
+        //DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+        //DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+        //DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
+        //DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+    //DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
+   // DaySample(LocalDate.now().minusDays(1), loneliness = 9, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+    //DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+    //)
+   // }
 
     // `samples`-muuttuja on nyt meidän testidatamme.
-    val samples = testSamples
+    //val samples = testSamples
 
     // 2. MUUNNETAAN TESTIDATA KAAVIOIDEN MUUTTUJIIN
     // Tämä on sama koodi kuin ennen, mutta se käyttää nyt `testSamples`-dataa.
-    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+   // val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
 
     // ======================= TESTIDATA LOPPUU =======================
 
@@ -240,7 +246,11 @@ fun AnalysisScreen(
             // 1) Loneliness (line)
             // $periodSuffix. EHKÄ?
             item {
-                ChartCard(title = "Loneliness Level") {
+                val infoText = "Shows the monthly average of your UCLA Loneliness Scale scores. Higher values indicate greater feelings of loneliness."
+                ChartCard(
+                    title = "UCLA Loneliness Scale",
+                    onInfoClick = { infoDialogMessage = infoText } // <-- LISÄÄ TÄMÄ
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -257,9 +267,9 @@ fun AnalysisScreen(
                                 xAxis.setDrawGridLines(true)
                                 xAxis.enableGridDashedLine(10f, 10f, 0f)
                                 axisLeft.axisMinimum = 0f
-                                axisLeft.axisMaximum = 9.05f
+                                axisLeft.axisMaximum = 7.05f
                                 axisLeft.granularity = 1f
-                                axisLeft.setLabelCount(10, true)
+                                axisLeft.setLabelCount(8, true)
                                 axisLeft.setDrawGridLines(true)
                             }
                         },
@@ -287,7 +297,11 @@ fun AnalysisScreen(
             // 2) Night usage (bar)
             // $periodSuffix
             item {
-                ChartCard(title = "Night Phone Usage") {
+                val infoText = "Shows the time spent on your phone in the night."
+                ChartCard(
+                    title = "Night time phone usage",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -315,7 +329,11 @@ fun AnalysisScreen(
             // 3) Daytime usage (bar)
             // $periodSuffix
             item {
-                ChartCard(title = "Daytime Phone Usage") {
+                val infoText = "Shows the time spent on your phone during the day."
+                ChartCard(
+                    title = "Day time phone usage",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -342,7 +360,11 @@ fun AnalysisScreen(
             // 4) Steps (bar).
             // $periodSuffix.
             item {
-                ChartCard(title = "Exercise") {
+                val infoText = "Shows the number of steps taken during the selected period."
+                ChartCard(
+                    title = "Steps taken",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -375,7 +397,11 @@ fun AnalysisScreen(
             // 5) Communications (pie).
             // $periodSuffix
             item {
-                ChartCard(title = "Communication Apps Usage") {
+                val infoText = "Shows how your communication app usage is distributed. The chart displays the total hours spent on each app during the selected period."
+                ChartCard(
+                    title = "Communication Apps Usage",
+                    onInfoClick = { infoDialogMessage = infoText } // <-- TÄMÄ RIVI SAA NAPIN NÄKYVIIN
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
@@ -640,6 +666,20 @@ fun AnalysisScreen(
 
         }
     }
+
+    if (infoDialogMessage != null) {
+        AlertDialog(
+            onDismissRequest = { infoDialogMessage = null },
+            title = { Text("Information") },
+            text = { Text(infoDialogMessage!!) },
+            confirmButton = {
+                TextButton(onClick = { infoDialogMessage = null }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
 }
 
 
@@ -648,19 +688,45 @@ fun AnalysisScreen(
  */
 @Composable
 private fun ChartCard(
-    title: String? = null,
+    title: String, onInfoClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
+        modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            if (title != null) {
-                Text(title, style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.height(8.dp))
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Rivi, joka asettaa otsikon ja infonapin vierekkäin
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween, // Asettaa elementit reunoihin
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Otsikko
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f) // Varmistaa, että teksti vie suurimman osan tilasta
+                )
+
+                // Infonappi (näytetään vain, jos onInfoClick on määritelty)
+                if (onInfoClick != null) {
+                    IconButton(onClick = onInfoClick) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Show info about $title",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(16.dp)) // Väli otsikon ja kaavion välille
+
+            // Kaavion sisältö (esim. AndroidView)
             content()
         }
     }

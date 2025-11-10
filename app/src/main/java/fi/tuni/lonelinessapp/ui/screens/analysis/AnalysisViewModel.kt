@@ -70,8 +70,26 @@ class AnalysisViewModel (
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
-    fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
-        data.map { d -> LinePoint(d.date.dayOfWeek.name.take(3), d.loneliness.toFloat()) }
+
+    fun lonelinessLine(data: List<DaySample>): List<LinePoint> {
+        return data.map { d ->
+            // Haetaan raaka-arvo (esim. 3, 9 tai null)
+            val rawLoneliness = d.loneliness
+
+            // Muunnetaan arvo uuteen asteikkoon (0-7)
+            val displayValue = when (rawLoneliness) {
+                // `loneliness` on Int, joten null-tarkistusta ei tarvita,
+                // mutta oletetaan että 0 on "ei vastausta"
+                0 -> 0f
+                in 3..9 -> (rawLoneliness - 2).toFloat() // Muunnetaan 3-9 -> 1-7
+                else -> 0f   // Kaikki muut tapaukset, näytetään 0
+            }
+
+            // Luodaan kaavion piste
+            LinePoint(d.date.dayOfWeek.name.take(3), displayValue)
+        }
+    }
+
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
