@@ -5,7 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.*
-//import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -75,29 +74,6 @@ fun HomeScreen(
                 CircularProgressIndicator()
             }
         }
-        // This is a temporary demo element
-        item {
-            Card(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Box(
-                    modifier = modifier
-                        .fillMaxSize()
-                ){
-                    Text(
-                        text = "Home Screen",
-                        modifier = modifier.align(Alignment.Center),
-                        fontSize = 32.sp
-                    )
-                }
-            }
-        }
-
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        verticalArrangement = Arrangement.spacedBy(24.dp)
 
         //  Streak Card
         item {
