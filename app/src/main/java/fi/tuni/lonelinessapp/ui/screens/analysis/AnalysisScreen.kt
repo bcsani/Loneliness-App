@@ -71,45 +71,45 @@ fun AnalysisScreen(
 
     // ÄLÄ POISTA OIKEA VERSIO!!!!!!
     //Listen to the daily data provided by the ViewModel.
-    val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
     // Daily samples for the selected time.
-    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        buildSamplesForRange(daysEntity, selectedRange)
-    }
+    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        //buildSamplesForRange(daysEntity, selectedRange)
+    //}
 
     // Creating data for charts.
-    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     // ÄLÄ POISTA OIKEA VERSIO!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // ====================== TESTIDATA ALKAA ======================
 
     // 1. LUODAAN KUVITTEELLINEN TESTIDATA
     // Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
-    //val testSamples: List<DaySample> = remember {
-    //listOf(
-    //DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-    //DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-    //DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
-    //DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-    //DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
-    //DaySample(LocalDate.now().minusDays(1), loneliness = 6, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-    //DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-    //)
-    //}
+    val testSamples: List<DaySample> = remember {
+    listOf(
+    DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+    DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+    DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
+    DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+    DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
+    DaySample(LocalDate.now().minusDays(1), loneliness = 9, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+    DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+    )
+    }
 
     // `samples`-muuttuja on nyt meidän testidatamme.
-    //((val samples = testSamples
+    val samples = testSamples
 
     // 2. MUUNNETAAN TESTIDATA KAAVIOIDEN MUUTTUJIIN
     // Tämä on sama koodi kuin ennen, mutta se käyttää nyt `testSamples`-dataa.
-    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
 
     // ======================= TESTIDATA LOPPUU =======================
 
@@ -279,6 +279,7 @@ fun AnalysisScreen(
                             chart.notifyDataSetChanged()
                             chart.invalidate()
                         }
+
                     )
                 }
             }
@@ -292,13 +293,14 @@ fun AnalysisScreen(
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList()) // staattiset
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
                             }
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             chart.applyNiceYAxis(nightPts.map { it.y }, ::hourStepFor)
+                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
                                 label = "Night usage",
                                 entries = toBarEntries(nightPts),
@@ -964,8 +966,39 @@ private fun buildSamplesForRange(
     }
 }
 
+/**
+ * enableTapToShowValue: Näyttää Toast-viestin, jossa on palkin arvo.
+ * Usage: call in the `update` block of each BarChart when the X-labels and data are known.
+ */
+private fun BarChart.enableTapToShowValue(
+    labels: List<String>,
+    format: (Float) -> String
+) {
+    // interaktio päälle
+    setTouchEnabled(true)
+    setHighlightPerTapEnabled(true)
+    isHighlightPerDragEnabled = false
 
+    setOnChartValueSelectedListener(object :
+        com.github.mikephil.charting.listener.OnChartValueSelectedListener {
 
+        override fun onValueSelected(
+            e: com.github.mikephil.charting.data.Entry?,
+            h: com.github.mikephil.charting.highlight.Highlight?
+        ) {
+            if (e is BarEntry) {
+                val i = e.x.toInt().coerceIn(labels.indices)
+                val label = labels.getOrElse(i) { "" }
+                android.widget.Toast.makeText(
+                    context,
+                    "$label: ${format(e.y)}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        override fun onNothingSelected() {}
+    })
+}
 
 
 

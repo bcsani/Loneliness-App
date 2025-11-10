@@ -72,7 +72,6 @@ class AnalysisViewModel (
     // Convert the day's data to fit a line chart (date + value).
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
         data.map { d -> LinePoint(d.date.dayOfWeek.name.take(3), d.loneliness.toFloat()) }
-
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
