@@ -1,5 +1,8 @@
 package fi.tuni.lonelinessapp.domain.service
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -15,12 +18,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+import androidx.core.app.NotificationCompat
 
 class StepSensorManager() : Service(), SensorEventListener {
 
     // Constant values to store the steps
     companion object {
         private const val TAG = "StepTrackingService"
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "step_tracking_channel"
         private const val STEP_COUNT_PREF_KEY = "step_count"
         private const val STEP_OFFSET_PREF_KEY = "step_offset"
         private const val TRACKING_DATE_PREF_KEY = "tracking_date"
@@ -38,6 +45,8 @@ class StepSensorManager() : Service(), SensorEventListener {
     private var dayRepository: DayRepository? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
 
+    // Notification manager
+    private lateinit var notificationManager: NotificationManager
 
     // This binder will create stepSensorManager
     inner class StepTrackingBinder : Binder() {
@@ -51,6 +60,9 @@ class StepSensorManager() : Service(), SensorEventListener {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service onCreate")
+
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createNotificationChannel()
 
         // Get the step sensor
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -67,6 +79,7 @@ class StepSensorManager() : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundService()
         startStepTracking()
         return START_STICKY
     }
@@ -79,6 +92,40 @@ class StepSensorManager() : Service(), SensorEventListener {
 
     fun setDayRepository(repository: DayRepository) {
         this.dayRepository = repository
+    }
+
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "Step Tracking",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Tracks your steps in the background"
+        }
+        notificationManager.createNotificationChannel(channel)
+
+    }
+
+
+    private fun startForegroundService() {
+        val notification = createNotification()
+        startForeground(NOTIFICATION_ID, notification, FOREGROUND_SERVICE_TYPE_HEALTH)
+
+    }
+
+    private fun createNotification(): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Step Tracker")
+            .setContentText("Tracking your steps: $stepCount")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .build()
+    }
+
+    private fun updateNotification() {
+        val notification = createNotification()
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     fun startStepTracking() {
@@ -133,6 +180,8 @@ class StepSensorManager() : Service(), SensorEventListener {
                 }
             }
         }
+
+        println("Step Count" + stepCount)
     }
 
     private fun checkAndResetForNewDay(currentSteps: Int) {

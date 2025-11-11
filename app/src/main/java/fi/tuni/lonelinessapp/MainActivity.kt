@@ -4,15 +4,12 @@ import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -35,19 +32,18 @@ import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
+import fi.tuni.lonelinessapp.domain.service.PermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 import fi.tuni.lonelinessapp.domain.utils.CallDurationHelper
 
 class MainActivity : ComponentActivity() {
 
-    private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
-    private val readCallLogPermission = Manifest.permission.READ_CALL_LOG
     // dayRepository is initialized later for the stepService.
     private lateinit var dayRepository: DayRepository
+    private lateinit var permissionManager: PermissionManager
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
-    private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -57,7 +53,6 @@ class MainActivity : ComponentActivity() {
             isServiceBound = true
 
             stepSensorManager.setDayRepository(dayRepository)
-
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -68,8 +63,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        val database = AppDatabase.getInstance(applicationContext)
 
+        val database = AppDatabase.getInstance(applicationContext)
         val dayDataSource = DayDataSource(database.dayDao())
         dayRepository = DayRepository(dayDataSource)
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
@@ -77,22 +72,16 @@ class MainActivity : ComponentActivity() {
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
 
-        // Initialize permission launcher
-        permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                // If user grant permission, then can start initialize step tracking service
-                initializeStepTrackingService(dayRepository)
-            } else {
-                // Handle permission denial
-                Toast.makeText(this, "Permission denied - step tracking disabled", Toast.LENGTH_LONG).show()
+        permissionManager = PermissionManager(
+            activity = this,
+            onPermissionGranted = {
+                initializeStepTrackingService()
+            },
+            onPermissionDenied = {
+                showPermissionDeniedMessage()
             }
-        }
+        )
 
-        // Check and request permission
-        checkPermission()
-        checkCallPermissions()
 
         enableEdgeToEdge()
         setContent {
@@ -104,58 +93,32 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+
+        checkActivityRecognitionPermission()
     }
 
-    private fun checkPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                activityRecognitionPermission
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // If the permission is granted, then initialize step tracking service
-                initializeStepTrackingService(dayRepository)
-            }
-            else -> {
-                permissionLauncher.launch(activityRecognitionPermission)
-            }
-        }
+    private fun checkActivityRecognitionPermission() {
+        permissionManager.checkPermission(Manifest.permission.ACTIVITY_RECOGNITION)
     }
 
-    private fun checkCallPermissions() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                readCallLogPermission
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                initializeCallDuration()
-            }
-            else -> {
-                permissionLauncher.launch(readCallLogPermission)
-            }
-        }
-    }
-
-    private fun initializeStepTrackingService(dayRepository: DayRepository) {
+    private fun initializeStepTrackingService() {
         val intent = Intent(this, StepSensorManager::class.java)
 
-        // Start the service first
+        // Start the service
         ContextCompat.startForegroundService(this, intent)
 
-        // Then bind to set the repository
+        // Bind to set the repository
         bindService(intent, serviceConnection, BIND_AUTO_CREATE)
 
     }
 
-    private fun initializeCallDuration() {
-        val callDurationHelper = CallDurationHelper(this)
-
-        val duration = callDurationHelper.getTotalCallDurationTodayFormatted()
-        println("Duration"+ duration)
+    private fun showPermissionDeniedMessage() {
+        Toast.makeText(this, "Permission denied - step tracking disabled", Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Unbind service but don't stop it (continues in background)
+        // Unbind service but don't stop (continues in background)
         if (isServiceBound) {
             unbindService(serviceConnection)
             isServiceBound = false
