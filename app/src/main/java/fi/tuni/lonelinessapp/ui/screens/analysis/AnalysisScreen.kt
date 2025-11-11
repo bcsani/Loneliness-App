@@ -28,6 +28,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.PieEntry
+import com.github.mikephil.charting.charts.BarLineChartBase
 
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
@@ -274,11 +275,14 @@ fun AnalysisScreen(
                                 axisLeft.granularity = 1f
                                 axisLeft.setLabelCount(8, true)
                                 axisLeft.setDrawGridLines(true)
+                                lockZoomPanKeepTap()
                             }
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                            chart.lockZoomPanKeepTap()
                             chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f", y) }
+                            //chart.enableTapToShowValue(dayLabels) { y -> "%d".format(y.toInt()) }
                             val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
@@ -835,12 +839,6 @@ private fun makeBarDataSet(
 
     setDrawValues(false)
 
-    // POISTOON?
-    //if (valueFormatter != null) {
-        //setValueFormatter(valueFormatter)
-    //}
-
-   // setDrawValues(showValues && valueFormatter != null)
 }
 
 /** PieChart.enableToastOnSliceClick:
@@ -1042,58 +1040,54 @@ private fun BarChart.enableTapToShowValue(
     labels: List<String>,
     format: (Float) -> String
 ) {
-    // interaktio päälle
-    setTouchEnabled(true)
-    setHighlightPerTapEnabled(true)
-    isHighlightPerDragEnabled = false
+    lockZoomPanKeepTap()
 
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-
-        override fun onValueSelected(
-            e: com.github.mikephil.charting.data.Entry?,
-            h: com.github.mikephil.charting.highlight.Highlight?
-        ) {
+        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
             if (e is BarEntry) {
                 val i = e.x.toInt().coerceIn(labels.indices)
                 val label = labels.getOrElse(i) { "" }
-                android.widget.Toast.makeText(
-                    context,
-                    "$label: ${format(e.y)}",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
+                android.widget.Toast.makeText(context, "$label: ${format(e.y)}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        override fun onNothingSelected() {}
+    })
+}
+private fun LineChart.enableTapToShowValue(
+    labels: List<String>,
+    format: (Float) -> String
+) {
+    // estä zoom/pan, pidä tap
+    lockZoomPanKeepTap()
+
+    setOnChartValueSelectedListener(object :
+        com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
+            if (e != null) {
+                val i = e.x.toInt().coerceIn(labels.indices)
+                val label = labels.getOrElse(i) { "" }
+                android.widget.Toast.makeText(context, "$label: ${format(e.y)}", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
         override fun onNothingSelected() {}
     })
 }
 
-private fun LineChart.enableTapToShowValue(
-    labels: List<String>,
-    format: (Float) -> String
-) {
-    // interaktio päälle
-    setTouchEnabled(true)
-    setHighlightPerTapEnabled(true)
+private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
+    setTouchEnabled(true)            // tarvitaan napautukseen
+    setDragEnabled(false)            // ei pannailua
+    setScaleEnabled(false)           // kaikki zoom pois
+    setScaleXEnabled(false)
+    setScaleYEnabled(false)
+    setPinchZoom(false)              // nipistys-zoom pois
+    setDoubleTapToZoomEnabled(false) // tuplatap-zoom pois
+    isHighlightPerTapEnabled = true  // napautus sallittu
     isHighlightPerDragEnabled = false
+}
 
-    setOnChartValueSelectedListener(object :
-        com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-
-        override fun onValueSelected(
-            e: com.github.mikephil.charting.data.Entry?,
-            h: com.github.mikephil.charting.highlight.Highlight?
-        ) {
-            if (e != null) {
-                val i = e.x.toInt().coerceIn(labels.indices)
-                val label = labels.getOrElse(i) { "" }
-                android.widget.Toast.makeText(
-                    context,
-                    "$label: ${format(e.y)}",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-        override fun onNothingSelected() {}
-    })
+private fun PieChart.noZoomNoPanKeepTap() {
+    setTouchEnabled(true)
+    isRotationEnabled = false
+    isHighlightPerTapEnabled = true
 }
