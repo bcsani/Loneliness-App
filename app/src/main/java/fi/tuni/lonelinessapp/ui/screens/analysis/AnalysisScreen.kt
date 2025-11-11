@@ -1054,7 +1054,7 @@ private fun buildSamplesForRange(
 
 
 /**
- * enableTapToShowValue: Näyttää Toast-viestin, jossa on palkin arvo.
+ * enableTapToShowValue: Displays a Toast message with the bar value.
  * Usage: call in the `update` block of each BarChart when the X-labels and data are known.
  */
 private fun BarChart.enableTapToShowValue(
@@ -1075,11 +1075,15 @@ private fun BarChart.enableTapToShowValue(
         override fun onNothingSelected() {}
     })
 }
+
+/**
+ * Näyttää Toast-viestin, kun käyttäjä napauttaa viivadiagrammin datapistettä,
+ * ja lukitsee samalla zoomauksen sekä pannauksen (tap-highlight jää päälle).
+ */
 private fun LineChart.enableTapToShowValue(
     labels: List<String>,
     format: (Float) -> String
 ) {
-    // estä zoom/pan, pidä tap
     lockZoomPanKeepTap()
 
     setOnChartValueSelectedListener(object :
@@ -1095,20 +1099,20 @@ private fun LineChart.enableTapToShowValue(
     })
 }
 
+
+/**
+ * BarLineChartBase: Locks zoom and panning on all Bar/Line type charts,
+ * but leaves tap-highlight working.
+ */
 private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
-    setTouchEnabled(true)            // tarvitaan napautukseen
-    setDragEnabled(false)            // ei pannailua
-    setScaleEnabled(false)           // kaikki zoom pois
+    setTouchEnabled(true)
+    setDragEnabled(false)
+    setScaleEnabled(false)
     setScaleXEnabled(false)
     setScaleYEnabled(false)
-    setPinchZoom(false)              // nipistys-zoom pois
-    setDoubleTapToZoomEnabled(false) // tuplatap-zoom pois
-    isHighlightPerTapEnabled = true  // napautus sallittu
+    setPinchZoom(false)
+    setDoubleTapToZoomEnabled(false)
+    isHighlightPerTapEnabled = true
     isHighlightPerDragEnabled = false
 }
 
-private fun PieChart.noZoomNoPanKeepTap() {
-    setTouchEnabled(true)
-    isRotationEnabled = false
-    isHighlightPerTapEnabled = true
-}
