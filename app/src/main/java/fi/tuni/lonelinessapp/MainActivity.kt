@@ -37,10 +37,12 @@ import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
+import fi.tuni.lonelinessapp.domain.utils.CallDurationHelper
 
 class MainActivity : ComponentActivity() {
 
     private val activityRecognitionPermission = Manifest.permission.ACTIVITY_RECOGNITION
+    private val readCallLogPermission = Manifest.permission.READ_CALL_LOG
     // dayRepository is initialized later for the stepService.
     private lateinit var dayRepository: DayRepository
     private lateinit var stepSensorManager: StepSensorManager
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
 
         // Check and request permission
         checkPermission()
+        checkCallPermissions()
 
         enableEdgeToEdge()
         setContent {
@@ -118,6 +121,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun checkCallPermissions() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                readCallLogPermission
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                initializeCallDuration()
+            }
+            else -> {
+                permissionLauncher.launch(readCallLogPermission)
+            }
+        }
+    }
+
     private fun initializeStepTrackingService(dayRepository: DayRepository) {
         val intent = Intent(this, StepSensorManager::class.java)
 
@@ -127,6 +144,13 @@ class MainActivity : ComponentActivity() {
         // Then bind to set the repository
         bindService(intent, serviceConnection, BIND_AUTO_CREATE)
 
+    }
+
+    private fun initializeCallDuration() {
+        val callDurationHelper = CallDurationHelper(this)
+
+        val duration = callDurationHelper.getTotalCallDurationTodayFormatted()
+        println("Duration"+ duration)
     }
 
     override fun onDestroy() {
