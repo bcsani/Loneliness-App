@@ -95,7 +95,7 @@ fun AnalysisScreen(
     val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     // ÄLÄ POISTA OIKEA VERSIO
 
-    // ====================== TESTIDATA ALKAA ======================
+    // ====================== TESTIDATA ALKAA ======================/
 
     // 1. LUODAAN KUVITTEELLINEN TESTIDATA
     // Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
@@ -412,6 +412,7 @@ fun AnalysisScreen(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText } // <-- TÄMÄ RIVI SAA NAPIN NÄKYVIIN
                 ) {
+
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
@@ -473,7 +474,11 @@ fun AnalysisScreen(
 
             // UCLA Loneliness (monthly avg).
             item {
-                ChartCard(title = "UCLA Loneliness Scale") {
+                val infoText = "Shows the monthly average of your UCLA Loneliness Scale scores. Higher values indicate greater feelings of loneliness."
+                ChartCard(
+                    title = "UCLA Loneliness Scale",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -524,7 +529,11 @@ fun AnalysisScreen(
 
             // Night Usage.
             item {
-                ChartCard(title = "Night Usage") {
+                val infoText = "Shows the monthly average of the time spent on your phone in the night."
+                ChartCard(
+                    title = "Night Usage",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -553,7 +562,11 @@ fun AnalysisScreen(
 
             // Day Usage (monthly avg hours).
             item {
-                ChartCard(title = "Day Usage") {
+                val infoText = "Shows the monthly average of the time spent on your phone during the day."
+                ChartCard(
+                    title = "Day Usage",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -582,7 +595,11 @@ fun AnalysisScreen(
 
             // Exercise (monthly avg steps).
             item {
-                ChartCard(title = "Exercise") {
+                val infoText = "Shows the monthly average of the number of steps taken."
+                ChartCard(
+                    title = "Exercise",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -614,7 +631,11 @@ fun AnalysisScreen(
 
             // Communications (donut).
             item {
-                ChartCard(title = "Communication Apps Usage") {
+                val infoText = "Shows how your communication app usage is distributed. The chart displays the total hours spent on each app during the selected period."
+                ChartCard(
+                    title = "Communication Apps Usage",
+                    onInfoClick = { infoDialogMessage = infoText }
+                ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
@@ -878,7 +899,7 @@ private fun niceCeil(value: Float, step: Float): Float {
 }
 
 /** hourStepFor:
- * Policies for selecting "nice" Y-axis step sizes for hours.
+ * Policies for selecting “nice” Y-axis step sizes for hours.
  */
 private fun hourStepFor(maxVal: Float): Float =
     when {
@@ -896,7 +917,7 @@ private fun hourStepFor(maxVal: Float): Float =
     }
 
 /** stepStepFor:
- * Policies for selecting "nice" Y-axis step sizes for steps.
+ * Policies for selecting “nice” Y-axis step sizes for steps.
  */
 private fun stepStepFor(maxVal: Float): Float =
     when {
