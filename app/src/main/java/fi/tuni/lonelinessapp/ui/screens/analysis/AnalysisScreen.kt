@@ -25,6 +25,9 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.data.PieEntry
 
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
@@ -197,7 +200,7 @@ fun AnalysisScreen(
                         modifier = Modifier.menuAnchor().width(150.dp),
                         readOnly = true,
                         value = selectedOptionText,
-                        onValueChange = {},
+                        onValueChange = { },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
@@ -260,7 +263,7 @@ fun AnalysisScreen(
                                 legend.isEnabled = false
                                 axisLeft.textSize = 14f
                                 xAxis.textSize = 14f
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
                                 xAxis.position = XAxis.XAxisPosition.BOTTOM
                                 xAxis.granularity = 1f
@@ -275,6 +278,7 @@ fun AnalysisScreen(
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f", y) }
                             val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
@@ -307,7 +311,7 @@ fun AnalysisScreen(
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList()) // staattiset
-                                setTouchEnabled(true)
+                                setTouchEnabled(false)
                                 setPinchZoom(false)
                             }
                         },
@@ -346,6 +350,7 @@ fun AnalysisScreen(
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             chart.applyNiceYAxis(dayPts.map { it.y }, ::hourStepFor)
+                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
                                 label = "Daytime usage",
                                 entries = toBarEntries(dayPts),
@@ -383,6 +388,7 @@ fun AnalysisScreen(
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
                             chart.applyNiceYAxis(stepsPts.map { it.y }, ::stepStepFor)
+                            chart.enableTapToShowValue(dayLabels) { y -> "%,d".format(y.toInt()) }
                             val set = makeBarDataSet(
                                 label = "Steps",
                                 entries = toBarEntries(stepsPts),
@@ -458,11 +464,10 @@ fun AnalysisScreen(
                 }
             }
 
-        // 3 months, 1 year, all????
+        // 3 months, 1 year, all
         } else {
 
             // UCLA Loneliness (monthly avg).
-            // $periodSuffix
             item {
                 ChartCard(title = "UCLA Loneliness Scale") {
                     AndroidView(
@@ -475,7 +480,7 @@ fun AnalysisScreen(
 
                                 axisLeft.textSize = 14f
                                 xAxis.textSize = 14f
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
 
                                 xAxis.position = XAxis.XAxisPosition.BOTTOM
@@ -493,7 +498,7 @@ fun AnalysisScreen(
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(monthLabels)
-
+                            chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f", y) }
                             val entries = lonMonthly.mapIndexed { i, v -> Entry(i.toFloat(), v) }
                             val set = LineDataSet(entries, "Loneliness").apply {
                                 color = COLOR_PRIMARY_HEX
@@ -514,7 +519,6 @@ fun AnalysisScreen(
             }
 
             // Night Usage.
-            // $periodSuffix
             item {
                 ChartCard(title = "Night Usage") {
                     AndroidView(
@@ -522,14 +526,14 @@ fun AnalysisScreen(
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
                             }
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(monthLabels)
                             chart.applyNiceYAxis(nightMonthly, ::hourStepFor)
-
+                            chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
                                 label = "Night usage",
                                 entries = toBarEntriesFromFloats(nightMonthly),
@@ -544,7 +548,6 @@ fun AnalysisScreen(
 
 
             // Day Usage (monthly avg hours).
-            // $periodSuffix
             item {
                 ChartCard(title = "Day Usage") {
                     AndroidView(
@@ -552,14 +555,14 @@ fun AnalysisScreen(
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
                             }
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(monthLabels)
                             chart.applyNiceYAxis(dayMonthly, ::hourStepFor)
-
+                            chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
                                 label = "Day usage",
                                 entries = toBarEntriesFromFloats(dayMonthly),
@@ -574,7 +577,6 @@ fun AnalysisScreen(
 
 
             // Exercise (monthly avg steps).
-            // $periodSuffix
             item {
                 ChartCard(title = "Exercise") {
                     AndroidView(
@@ -582,17 +584,17 @@ fun AnalysisScreen(
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
-                                setTouchEnabled(false)
+                                setTouchEnabled(true)
                                 setPinchZoom(false)
                                 axisLeft.valueFormatter = object : ValueFormatter() {
-                                    override fun getFormattedValue(value: Float) = value.toInt().toString()
+                                    override fun getFormattedValue(value: Float) = "%,d".format(value.toInt())
                                 }
                             }
                         },
                         update = { chart ->
                             chart.xAxis.valueFormatter = IndexAxisValueFormatter(monthLabels)
                             chart.applyNiceYAxis(stepsMonthly, ::stepStepFor)
-
+                            chart.enableTapToShowValue(monthLabels) { y -> "%,d".format(y.toInt()) }
                             val set = makeBarDataSet(
                                 label = "Steps",
                                 entries = toBarEntriesFromFloats(stepsMonthly),
@@ -607,7 +609,6 @@ fun AnalysisScreen(
 
 
             // Communications (donut).
-            // $periodSuffix
             item {
                 ChartCard(title = "Communication Apps Usage") {
                     AndroidView(
@@ -1032,6 +1033,7 @@ private fun buildSamplesForRange(
     }
 }
 
+
 /**
  * enableTapToShowValue: Näyttää Toast-viestin, jossa on palkin arvo.
  * Usage: call in the `update` block of each BarChart when the X-labels and data are known.
@@ -1066,48 +1068,32 @@ private fun BarChart.enableTapToShowValue(
     })
 }
 
+private fun LineChart.enableTapToShowValue(
+    labels: List<String>,
+    format: (Float) -> String
+) {
+    // interaktio päälle
+    setTouchEnabled(true)
+    setHighlightPerTapEnabled(true)
+    isHighlightPerDragEnabled = false
 
+    setOnChartValueSelectedListener(object :
+        com.github.mikephil.charting.listener.OnChartValueSelectedListener {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        override fun onValueSelected(
+            e: com.github.mikephil.charting.data.Entry?,
+            h: com.github.mikephil.charting.highlight.Highlight?
+        ) {
+            if (e != null) {
+                val i = e.x.toInt().coerceIn(labels.indices)
+                val label = labels.getOrElse(i) { "" }
+                android.widget.Toast.makeText(
+                    context,
+                    "$label: ${format(e.y)}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        override fun onNothingSelected() {}
+    })
+}
