@@ -514,7 +514,7 @@ fun AnalysisScreen(
                                 setCircleColor(COLOR_PRIMARY_HEX)
                                 lineWidth = 3f
                                 circleRadius = 5f
-                                mode = LineDataSet.Mode.CUBIC_BEZIER
+                                mode = LineDataSet.Mode.LINEAR
                                 setDrawValues(false)
                             }
                             chart.data = LineData(set)
