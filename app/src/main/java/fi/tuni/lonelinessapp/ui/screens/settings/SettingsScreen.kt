@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.data.entity.DayEntity
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SettingsScreen(
@@ -67,7 +70,10 @@ fun SettingsScreen(
             Button(
                 onClick = {
                     enableShare = false
-                    createFileLauncher.launch("data.csv")},
+                    createFileLauncher.launch("data_${LocalDate.now()
+                        .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}" +
+                            "_${LocalTime.now().format(
+                        DateTimeFormatter.ofPattern("HH-mm"))}.csv")},
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -84,7 +90,10 @@ fun SettingsScreen(
             Button(
                 onClick = {
                     enableShare = true
-                    createFileLauncher.launch("data.csv")
+                    createFileLauncher.launch("data_${LocalDate.now()
+                        .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}" +
+                            "_${LocalTime.now().format(
+                        DateTimeFormatter.ofPattern("HH-mm"))}.csv")
                 },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
