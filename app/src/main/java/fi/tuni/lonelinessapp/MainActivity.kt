@@ -32,16 +32,14 @@ import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
-import fi.tuni.lonelinessapp.domain.service.PermissionManager
+import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
-import fi.tuni.lonelinessapp.domain.utils.CallDurationHelper
 
 class MainActivity : ComponentActivity() {
 
     // dayRepository is initialized later for the stepService.
     private lateinit var dayRepository: DayRepository
-    private lateinit var permissionManager: PermissionManager
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
 
@@ -72,17 +70,6 @@ class MainActivity : ComponentActivity() {
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
 
-        permissionManager = PermissionManager(
-            activity = this,
-            onPermissionGranted = {
-                initializeStepTrackingService()
-            },
-            onPermissionDenied = {
-                showPermissionDeniedMessage()
-            }
-        )
-
-
         enableEdgeToEdge()
         setContent {
             LonelinessAppTheme {
@@ -94,11 +81,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        checkActivityRecognitionPermission()
-    }
-
-    private fun checkActivityRecognitionPermission() {
-        permissionManager.checkPermission(Manifest.permission.ACTIVITY_RECOGNITION)
+        checkAllPermissions()
     }
 
     private fun initializeStepTrackingService() {
@@ -112,8 +95,8 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    private fun showPermissionDeniedMessage() {
-        Toast.makeText(this, "Permission denied - step tracking disabled", Toast.LENGTH_LONG).show()
+    private fun showPermissionDeniedMessage(text: String) {
+        Toast.makeText(this, text, Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {
@@ -123,6 +106,34 @@ class MainActivity : ComponentActivity() {
             unbindService(serviceConnection)
             isServiceBound = false
         }
+    }
+
+    private fun checkAllPermissions() {
+        val permissionManager = SequentialPermissionManager(this)
+
+        permissionManager.addPermission(
+            permission = Manifest.permission.ACTIVITY_RECOGNITION,
+            onGranted = {
+                initializeStepTrackingService()
+            },
+            onDenied = {
+                showPermissionDeniedMessage("Activity Recognition")
+            },
+            rationaleMessage = "We need activity recognition permission to track your steps and physical activity."
+        )
+
+        permissionManager.addPermission(
+            permission = Manifest.permission.READ_CALL_LOG,
+            onGranted = {
+                println("Call log permission granted")
+            },
+            onDenied = {
+                showPermissionDeniedMessage("Call log permission denied")
+            },
+            rationaleMessage = "We need call log permission to track call durations."
+        )
+
+        permissionManager.start()
     }
 }
 
