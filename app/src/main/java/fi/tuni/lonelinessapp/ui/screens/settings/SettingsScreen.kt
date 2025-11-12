@@ -1,6 +1,7 @@
 package fi.tuni.lonelinessapp.ui.screens.settings
 
 import android.content.ClipData
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,10 +42,22 @@ fun SettingsScreen(
         contract = ActivityResultContracts.CreateDocument("text/csv"),
         onResult = { uri: Uri? ->
             uri?.let {
+
+                // Download
                 val content = formatContent(days)
                 context.contentResolver.openOutputStream(uri)?.use {
                     it.write(content.toByteArray())
                 }
+
+                // Share sheet
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, it)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Share file"))
+
+                // Notification
                 Toast.makeText(context, "Export successful", Toast.LENGTH_LONG).show()
             }
         }
