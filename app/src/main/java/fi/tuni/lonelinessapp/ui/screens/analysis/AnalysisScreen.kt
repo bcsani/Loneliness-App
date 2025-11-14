@@ -1077,8 +1077,8 @@ private fun BarChart.enableTapToShowValue(
 }
 
 /**
- * Näyttää Toast-viestin, kun käyttäjä napauttaa viivadiagrammin datapistettä,
- * ja lukitsee samalla zoomauksen sekä pannauksen (tap-highlight jää päälle).
+ * displays a Toast message when the user taps on a line chart,
+ * and locks zoom and panning (tap-highlight remains on).
  */
 private fun LineChart.enableTapToShowValue(
     labels: List<String>,
