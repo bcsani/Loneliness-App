@@ -40,6 +40,8 @@ import java.time.LocalDate
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.IconButton
+import androidx.compose.ui.unit.min
+import com.github.mikephil.charting.components.AxisBase
 
 // Color configuration for charts.
 // The colors are now hardcoded. Later we will move under the theme (?)
@@ -66,6 +68,7 @@ enum class TimeRange { Week, Month, ThreeMonths, Year, All }
  * the selected time range changes.
  */
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(
@@ -152,17 +155,28 @@ fun AnalysisScreen(
 
 
     // Monthly aggregate (only 3 months / 1 year / All-time).
+    // Korjattu koodiv
     val monthlyAgg = remember(samples, selectedRange) {
-        if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) emptyList()
-        else aggregateMonthly(samples)
+    if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
+        emptyList()
+    } else {
+        val aggregated = aggregateMonthly(samples)
+        // JOS valinta on "All Time" JA kuukausia on yli 12, tiivistä data 12 palkkiin.
+        if (selectedRange == TimeRange.All && aggregated.size > 12) {
+            aggregateYearly(aggregated)
+        } else {
+            aggregated
+        }
     }
-    val monthLabels  = remember(monthlyAgg) { monthlyAgg.map { it.label } }
-    val lonMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.lonAvg } }
-    val nightMonthly = remember(monthlyAgg) { monthlyAgg.map { it.nightH } }
-    val dayMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.dayH } }
-    val stepsMonthly = remember(monthlyAgg) { monthlyAgg.map { it.stepsAvg } }
+}
+val monthLabels  = remember(monthlyAgg) { monthlyAgg.map { it.label } }
+val lonMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.lonAvg } }
+val nightMonthly = remember(monthlyAgg) { monthlyAgg.map { it.nightH } }
+val dayMonthly   = remember(monthlyAgg) { monthlyAgg.map { it.dayH } }
+val stepsMonthly = remember(monthlyAgg) { monthlyAgg.map { it.stepsAvg } }
 
-    // Descriptive titles. -Mahdollisesti poistoon!
+
+// Descriptive titles. -Mahdollisesti poistoon!
     //val periodSuffix = when (selectedRange)
     //{
         //TimeRange.Week  -> " (This Week)"
@@ -189,7 +203,9 @@ fun AnalysisScreen(
             var selectedOptionText by remember { mutableStateOf(options[0]) }
 
             Box(
-                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 ExposedDropdownMenuBox(
@@ -198,7 +214,9 @@ fun AnalysisScreen(
                 ) {
                     TextField(
                         // The `menuAnchor` modifier must be passed to the text field for correctness.
-                        modifier = Modifier.menuAnchor().width(150.dp),
+                        modifier = Modifier
+                            .menuAnchor()
+                            .width(150.dp),
                         readOnly = true,
                         value = selectedOptionText,
                         onValueChange = { },
@@ -256,7 +274,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText } // <-- LISÄÄ TÄMÄ
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             LineChart(ctx).apply {
                                 description = Description().apply { text = "" }
@@ -311,7 +331,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList()) // staattiset
@@ -343,7 +365,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
@@ -375,7 +399,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
@@ -414,7 +440,9 @@ fun AnalysisScreen(
                 ) {
 
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp),
                         factory = { ctx ->
                             PieChart(ctx).apply {
                                 description = Description().apply { text = "" }
@@ -470,7 +498,18 @@ fun AnalysisScreen(
             }
 
         // 3 months, 1 year, all
-        } else {
+
+        } else { // 3 months, 1 year or All-time
+
+            // --- LISÄTÄÄN TÄMÄ UUSI LOGIIKKA ---
+            // Määritellään X-akselin muotoilija valitun näkymän perusteella.
+            val xAxisFormatter = if (selectedRange == TimeRange.All) {
+                // "All Time": Käytä uutta StartEndValueFormatteria, joka näyttää vain alku- ja loppupäivät.
+                StartEndValueFormatter(monthLabels)
+            } else {
+                // Muut näkymät (3kk, 1v): Näytä kaikki kuukausien nimet.
+                IndexAxisValueFormatter(monthLabels)
+            }
 
             // UCLA Loneliness (monthly avg).
             item {
@@ -478,9 +517,12 @@ fun AnalysisScreen(
                 ChartCard(
                     title = "UCLA Loneliness Scale",
                     onInfoClick = { infoDialogMessage = infoText }
+
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             LineChart(ctx).apply {
                                 description = Description().apply { text = "" }
@@ -535,7 +577,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
@@ -568,7 +612,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
@@ -601,7 +647,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
                                 applyBarDefaults(emptyList())
@@ -637,7 +685,9 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp),
                         factory = { ctx ->
                             PieChart(ctx).apply {
                                 description = Description().apply { text = "" }
@@ -870,7 +920,7 @@ private fun PieChart.enableToastOnSliceClick() {
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
         override fun onValueSelected(
-            e: com.github.mikephil.charting.data.Entry?,
+            e: Entry?,
             h: com.github.mikephil.charting.highlight.Highlight?
         ) {
             if (e is PieEntry) {
@@ -952,6 +1002,73 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
         MonthBucket(label, lon, night, day, steps)
     }
 }
+// AnalysisAggregates.kt
+
+/**
+ * Aggregates monthly data into exactly 12 chunks for yearly overview.
+ * If there are 12 or fewer months, it returns them as is.
+ * If more than 12, it divides the months into 12 groups and averages them.
+ */
+/**
+ * Aggregates monthly data into exactly 12 chunks for yearly overview.
+ * If there are 12 or fewer months, it returns them as is.
+ * If more than 12, it divides the months into 12 groups and averages them.
+ */
+private fun aggregateYearly(monthlyData: List<MonthBucket>): List<MonthBucket> {
+    val monthCount = monthlyData.size
+    if (monthCount <= 12) {
+        return monthlyData
+    }
+
+    val yearlyAggregates = mutableListOf<MonthBucket>()
+    val chunkSize = monthCount.toFloat() / 12f
+
+    for (i in 0..11) {
+        val start = (i * chunkSize).roundToInt()
+        val end = ((i + 1) * chunkSize).roundToInt().coerceAtMost(monthCount)
+        val chunk = monthlyData.subList(start, end)
+
+        if (chunk.isNotEmpty()) {
+            val firstMonth = chunk.first().label
+            val lastMonth = chunk.last().label
+
+            val newLabel = if (firstMonth == lastMonth) {
+                firstMonth
+            } else {
+                "${firstMonth.take(3)}-${lastMonth.take(3)}"
+            }
+
+            yearlyAggregates.add(
+                MonthBucket(
+                    label = newLabel,
+                    lonAvg = chunk.map { it.lonAvg }.average().toFloat(),
+                    nightH = chunk.map { it.nightH }.average().toFloat(),
+                    dayH = chunk.map { it.dayH }.average().toFloat(),
+                    stepsAvg = chunk.map { it.stepsAvg }.average().toFloat()
+                )
+            )
+        }
+    }
+
+    return yearlyAggregates
+}
+
+
+/**
+ * ValueFormatter that shows only the first and the last label on the X-axis.
+ * Used for the "All Time" view to show the date range.
+ * @param labels The full list of labels for the axis.
+ */
+private class StartEndValueFormatter(private val labels: List<String>) : ValueFormatter() {
+    override fun getAxisLabel(value: Float, axis: AxisBase): String {
+        val index = value.toInt()
+        return when (index) {
+            0 -> labels.firstOrNull() ?: "" // Ensimmäinen tarra
+            labels.size - 1 -> labels.lastOrNull() ?: "" // Viimeinen tarra
+            else -> "" // Kaikki muut piilotetaan
+        }
+    }
+}
 
 
 /**
@@ -993,17 +1110,14 @@ private fun buildSamplesForRange(
 
             wantedDates.map { date ->
                 val e = byDate[date]
-                if (e != null) {
-                    e.toSample()
-                } else {
-                    DaySample(
+                e?.toSample()
+                    ?: DaySample(
                         date = date,
                         loneliness = 0,
                         nightMinutes = 0,
                         dayMinutes = 0,
                         steps = 0
                     )
-                }
             }
         }
 
@@ -1015,17 +1129,14 @@ private fun buildSamplesForRange(
             (0..29).map { i ->
                 val date = from.plusDays(i.toLong())
                 val e = byDate[date]
-                if (e != null) {
-                    e.toSample()
-                } else {
-                    DaySample(
+                e?.toSample()
+                    ?: DaySample(
                         date = date,
                         loneliness = 0,
                         nightMinutes = 0,
                         dayMinutes = 0,
                         steps = 0
                     )
-                }
             }
         }
 
@@ -1065,7 +1176,7 @@ private fun BarChart.enableTapToShowValue(
 
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
+        override fun onValueSelected(e: Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
             if (e is BarEntry) {
                 val i = e.x.toInt().coerceIn(labels.indices)
                 val label = labels.getOrElse(i) { "" }
@@ -1088,7 +1199,7 @@ private fun LineChart.enableTapToShowValue(
 
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
+        override fun onValueSelected(e: Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
             if (e != null) {
                 val i = e.x.toInt().coerceIn(labels.indices)
                 val label = labels.getOrElse(i) { "" }
@@ -1108,11 +1219,10 @@ private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
     setTouchEnabled(true)
     setDragEnabled(false)
     setScaleEnabled(false)
-    setScaleXEnabled(false)
-    setScaleYEnabled(false)
+    isScaleXEnabled = false
+    isScaleYEnabled = false
     setPinchZoom(false)
-    setDoubleTapToZoomEnabled(false)
+    isDoubleTapToZoomEnabled = false
     isHighlightPerTapEnabled = true
     isHighlightPerDragEnabled = false
 }
-
