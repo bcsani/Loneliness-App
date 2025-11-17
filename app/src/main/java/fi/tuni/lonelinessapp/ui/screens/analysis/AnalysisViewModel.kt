@@ -70,6 +70,9 @@ class AnalysisViewModel (
     val daysEntity : StateFlow<List<DayEntity>?> = dayRepository.getDaysFromDate(start)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    // Call log
+    val callDuration: Long = dayRepository.getTotalCallDurationToday()
+
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
@@ -97,7 +100,7 @@ class AnalysisViewModel (
     ): List<PieSlice>? = listOf(
         PieSlice("WhatsApp", minutesToHours(whatApps.toFloat())),
         PieSlice("Messages", minutesToHours(messages.toFloat())),
-        PieSlice("Calls",    minutesToHours(calls.toFloat())),
+        PieSlice("Calls",    minutesToHours(callDuration.toFloat())),
         PieSlice("Signal",   minutesToHours(signal.toFloat())),
         PieSlice("Telegram",  minutesToHours(telegram.toFloat()))
     )

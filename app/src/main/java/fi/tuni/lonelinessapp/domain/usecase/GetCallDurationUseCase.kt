@@ -1,13 +1,14 @@
-package fi.tuni.lonelinessapp.domain.utils
+package fi.tuni.lonelinessapp.domain.usecase
 
 import android.content.Context
 import android.database.Cursor
 import android.provider.CallLog
 import java.util.Calendar
 
-
-class CallDurationHelper(private val context: Context) {
-    fun getTotalCallDurationToday(): Long {
+class GetCallDurationUseCase(
+    private val context: Context
+) {
+    operator fun invoke(): Long {
         var totalDuration: Long = 0
 
         // Check if we have permission
@@ -52,23 +53,6 @@ class CallDurationHelper(private val context: Context) {
         }
 
         return totalDuration
-    }
-
-    fun getTotalCallDurationTodayFormatted(): String {
-        val totalSeconds = getTotalCallDurationToday()
-        return formatDuration(totalSeconds)
-    }
-
-    private fun formatDuration(totalSeconds: Long): String {
-        val hours = totalSeconds / 3600
-        val minutes = (totalSeconds % 3600) / 60
-        val seconds = totalSeconds % 60
-
-        return if (hours > 0) {
-            String.format("%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            String.format("%02d:%02d", minutes, seconds)
-        }
     }
 
     private fun hasCallLogPermission(): Boolean {

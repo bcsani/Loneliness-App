@@ -32,6 +32,7 @@ import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
+import fi.tuni.lonelinessapp.data.utils.CallDurationHelper
 import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
@@ -63,7 +64,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val database = AppDatabase.getInstance(applicationContext)
-        val dayDataSource = DayDataSource(database.dayDao())
+        val callDurationHelper = CallDurationHelper(this)
+        val dayDataSource = DayDataSource(database.dayDao(), callDurationHelper)
         dayRepository = DayRepository(dayDataSource)
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
