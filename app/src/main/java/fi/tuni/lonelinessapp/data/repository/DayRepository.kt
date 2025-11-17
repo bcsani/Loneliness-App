@@ -2,26 +2,30 @@ package fi.tuni.lonelinessapp.data.repository
 
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.entity.DayEntity
+import fi.tuni.lonelinessapp.domain.repository.DayRepositoryInterface
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDate
 
 class DayRepository  (
     private val dayDataSource: DayDataSource
-){
-    fun insertDay(day: DayEntity) =
+): DayRepositoryInterface {
+    override fun insertDay(day: DayEntity) =
         dayDataSource.insertDay(day)
-    suspend fun saveLoneliness(date: LocalDate, loneliness: Int) =
+    override suspend fun saveLoneliness(date: LocalDate, loneliness: Int) =
         dayDataSource.saveLoneliness(date, loneliness)
-    suspend fun saveNightMinutes(date: LocalDate, nightMinutes: Int) =
+    override suspend fun saveNightMinutes(date: LocalDate, nightMinutes: Int) =
         dayDataSource.saveNightMinutes(date, nightMinutes)
-    suspend fun saveDayMinutes(date: LocalDate, dayMinutes: Int) =
+    override suspend fun saveDayMinutes(date: LocalDate, dayMinutes: Int) =
         dayDataSource.saveDayMinutes(date, dayMinutes)
-    suspend fun saveSteps(date: LocalDate, steps: Int) =
+    override suspend fun saveSteps(date: LocalDate, steps: Int) =
         dayDataSource.saveSteps(date, steps)
-    fun getAllDays(): Flow<List<DayEntity>?> =
+    override fun getAllDays(): Flow<List<DayEntity>> =
         dayDataSource.getAllDays()
-    fun getDayByDate(date: LocalDate): Flow<DayEntity?> =
+    override fun getDayByDate(date: LocalDate): Flow<DayEntity?> =
         dayDataSource.getDayByDate(date)
-    fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
+    override fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDataSource.getDaysFromDate(startDate)
 }
