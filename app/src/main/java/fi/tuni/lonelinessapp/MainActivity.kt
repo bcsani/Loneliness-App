@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
+        checkAllPermissions(analysisViewModel)
 
         enableEdgeToEdge()
         setContent {
@@ -83,7 +84,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        checkAllPermissions()
     }
 
     private fun initializeStepTrackingService() {
@@ -110,7 +110,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun checkAllPermissions() {
+    private fun checkAllPermissions(analysisViewModel: AnalysisViewModel) {
         val permissionManager = SequentialPermissionManager(this)
 
         permissionManager.addPermission(
@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
         permissionManager.addPermission(
             permission = Manifest.permission.READ_CALL_LOG,
             onGranted = {
-                println("Call log permission granted")
+                analysisViewModel.setCallDuration()
             },
             onDenied = {
                 showPermissionDeniedMessage("Call log permission denied")

@@ -64,14 +64,14 @@ class AnalysisViewModel (
     data class PieSlice (val label: String, val value: Float)
 
     // Start date 6 days ago.
-    val start = java.time.LocalDate.now().minusDays(6)
+    val start = LocalDate.now().minusDays(6)
 
     // Example data.
     val daysEntity : StateFlow<List<DayEntity>?> = dayRepository.getDaysFromDate(start)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Call log
-    val callDuration: Long = dayRepository.getTotalCallDurationToday()
+    var callDuration: Long = 0
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
@@ -115,6 +115,10 @@ class AnalysisViewModel (
 
     // Rounds to the nearest integer.
     private fun round0(v: Float) = round(v)
+
+    fun setCallDuration() {
+        callDuration = dayRepository.getTotalCallDurationToday()
+    }
 
 
 }
