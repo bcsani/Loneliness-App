@@ -29,6 +29,8 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.charts.BarLineChartBase
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
+
 
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
@@ -84,49 +86,102 @@ fun AnalysisScreen(
 
     // ÄLÄ POISTA OIKEA VERSIO
     //Listen to the daily data provided by the ViewModel.
-    val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
     // Daily samples for the selected time.
-    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        buildSamplesForRange(daysEntity, selectedRange)
-    }
+    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        //buildSamplesForRange(daysEntity, selectedRange)
+    //}
 
     //Creating data for charts.
+    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    // ÄLÄ POISTA OIKEA VERSIO
+
+// ====================== TESTIDATA ALKAA ======================/
+
+// 1. LUODAAN KUVITTEELLINEN TESTIDATA
+// Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
+    val testSamples: List<DaySample> = remember {
+        val today = LocalDate.now()
+        listOf(
+            // 6 päivää sitten – dataa
+            DaySample(
+                date = today.minusDays(6),
+                loneliness = 9,
+                nightMinutes = 60,
+                dayMinutes = 120,
+                steps = 5000
+            ),
+
+            // 5 päivää sitten – EI DATAA → aukko (NaN)
+            DaySample(
+                date = today.minusDays(5),
+                loneliness = -1,   // tulkitaan "ei vastausta"
+                nightMinutes = 0,
+                dayMinutes = 0,
+                steps = 0
+            ),
+
+            // 4 päivää sitten – dataa
+            DaySample(
+                date = today.minusDays(4),
+                loneliness = 7,
+                nightMinutes = 45,
+                dayMinutes = 100,
+                steps = 4500
+            ),
+
+            // 3 päivää sitten – EI DATAA → toinen aukko
+            DaySample(
+                date = today.minusDays(3),
+                loneliness = 0,    // myös <= 0 -> NaN
+                nightMinutes = 0,
+                dayMinutes = 0,
+                steps = 0
+            ),
+
+            // 2 päivää sitten – dataa
+            DaySample(
+                date = today.minusDays(2),
+                loneliness = 5,
+                nightMinutes = 80,
+                dayMinutes = 180,
+                steps = 7500
+            ),
+
+            // eilen – dataa
+            DaySample(
+                date = today.minusDays(1),
+                loneliness = 3,
+                nightMinutes = 120,
+                dayMinutes = 240,
+                steps = 9500
+            ),
+
+            // tänään – dataa
+            DaySample(
+                date = today,
+                loneliness = 6,
+                nightMinutes = 55,
+                dayMinutes = 110,
+                steps = 5200
+            )
+        )
+    }
+
+    // `samples`-muuttuja on nyt meidän testidatamme.
+    val samples = testSamples
+
+    // 2. MUUNNETAAN TESTIDATA KAAVIOIDEN MUUTTUJIIN
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
     val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
     val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
     val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
-    // ÄLÄ POISTA OIKEA VERSIO
 
-    // ====================== TESTIDATA ALKAA ======================/
-
-    // 1. LUODAAN KUVITTEELLINEN TESTIDATA
-    // Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
-    //val testSamples: List<DaySample> = remember {
-        //listOf(
-        //DaySample(LocalDate.now().minusDays(6), loneliness = 9, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-        //DaySample(LocalDate.now().minusDays(5), loneliness = 9, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-        //DaySample(LocalDate.now().minusDays(4), loneliness = 9, nightMinutes = 45, dayMinutes = 100, steps = 4500),
-        //DaySample(LocalDate.now().minusDays(3), loneliness = 5, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-    //DaySample(LocalDate.now().minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 180, steps = 7500),
-   // DaySample(LocalDate.now().minusDays(1), loneliness = 9, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-    //DaySample(LocalDate.now(), loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-    //)
-   // }
-
-    // `samples`-muuttuja on nyt meidän testidatamme.
-    //val samples = testSamples
-
-    // 2. MUUNNETAAN TESTIDATA KAAVIOIDEN MUUTTUJIIN
-    // Tämä on sama koodi kuin ennen, mutta se käyttää nyt `testSamples`-dataa.
-    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-   // val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
-
-    // ======================= TESTIDATA LOPPUU =======================
-
-
+// ======================= TESTIDATA LOPPUU =======================
 
     // Pie chart demo data. Replace with real app analytics when available.
     val commPie       = remember { analysisViewModel.communicationPieHours() }
@@ -303,16 +358,20 @@ val stepsMonthly = remember(monthlyAgg) { monthlyAgg.map { it.stepsAvg } }
                             chart.lockZoomPanKeepTap()
                             chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f", y) }
                             //chart.enableTapToShowValue(dayLabels) { y -> "%d".format(y.toInt()) }
-                            val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
-                            val set = LineDataSet(entries, "Loneliness").apply {
-                                color = COLOR_PRIMARY_HEX
-                                setCircleColor(COLOR_PRIMARY_HEX)
-                                lineWidth = 3f
-                                circleRadius = 5f
-                                mode = LineDataSet.Mode.LINEAR
-                                setDrawValues(false)
-                            }
-                            chart.data = LineData(set)
+                            //val entries = lonelinessPts.mapIndexed { i, p -> Entry(i.toFloat(), p.y) }
+                            //val set = LineDataSet(entries, "Loneliness").apply {
+                                //color = COLOR_PRIMARY_HEX
+                                //setCircleColor(COLOR_PRIMARY_HEX)
+                                //lineWidth = 3f
+                                //circleRadius = 5f
+                                //mode = LineDataSet.Mode.LINEAR
+                                //setDrawValues(false)
+                            //}
+                            //chart.data = LineData(set)
+
+                            val dataSets = buildLonelinessDataSets(lonelinessPts)
+                            chart.data = LineData(dataSets)
+
                             chart.data.notifyDataChanged()
                             chart.notifyDataSetChanged()
                             chart.invalidate()
@@ -1113,7 +1172,7 @@ private fun buildSamplesForRange(
                 e?.toSample()
                     ?: DaySample(
                         date = date,
-                        loneliness = 0,
+                        loneliness = -1, // vaihdettu (ennen 0)
                         nightMinutes = 0,
                         dayMinutes = 0,
                         steps = 0
@@ -1132,7 +1191,7 @@ private fun buildSamplesForRange(
                 e?.toSample()
                     ?: DaySample(
                         date = date,
-                        loneliness = 0,
+                        loneliness = -1, // ennnen 0
                         nightMinutes = 0,
                         dayMinutes = 0,
                         steps = 0
@@ -1225,4 +1284,43 @@ private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
     isDoubleTapToZoomEnabled = false
     isHighlightPerTapEnabled = true
     isHighlightPerDragEnabled = false
+}
+
+// Luo useita LineDataSettejä, yksi "katkeamaton pätkä" kerrallaan.
+// Päivä, jonka y on NaN, aiheuttaa katkoksen.
+private fun buildLonelinessDataSets(
+    points: List<AnalysisViewModel.LinePoint>
+): List<ILineDataSet> {
+    val sets = mutableListOf<ILineDataSet>()
+    var current = mutableListOf<Entry>()
+
+    fun flushSegment() {
+        if (current.isNotEmpty()) {
+            val set = LineDataSet(current, "Loneliness").apply {
+                color = COLOR_PRIMARY_HEX
+                setCircleColor(COLOR_PRIMARY_HEX)
+                lineWidth = 3f
+                circleRadius = 5f
+                mode = LineDataSet.Mode.LINEAR
+                setDrawValues(false)
+            }
+            sets.add(set)
+            current = mutableListOf()
+        }
+    }
+
+    points.forEachIndexed { index, p ->
+        if (p.y.isNaN()) {
+            // katkaise viiva
+            flushSegment()
+        } else {
+            // jatka nykyistä pätkää
+            current.add(Entry(index.toFloat(), p.y))
+        }
+    }
+
+    // viimeinen pätkä
+    flushSegment()
+
+    return sets
 }

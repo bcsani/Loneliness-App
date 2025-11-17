@@ -73,22 +73,28 @@ class AnalysisViewModel (
 
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> {
         return data.map { d ->
-            // Haetaan raaka-arvo (esim. 3, 9 tai null)
             val rawLoneliness = d.loneliness
 
-            // Muunnetaan arvo uuteen asteikkoon (0-7)
-            val displayValue = when (rawLoneliness) {
-                // `loneliness` on Int, joten null-tarkistusta ei tarvita,
-                // mutta oletetaan että 0 on "ei vastausta"
-                0 -> 0f
-                in 3..9 -> (rawLoneliness - 2).toFloat() // Muunnetaan 3-9 -> 1-7
-                else -> 0f   // Kaikki muut tapaukset, näytetään 0
+            // Päätellään mitä piirretään:
+            val displayValue = when {
+                // 0 = "ei vastausta" -> ei pisteitä, ei viivaa
+                rawLoneliness <= 0 -> Float.NaN
+
+                // Normaali UCLA 3–9 -> muunnetaan 1–7 -asteikolle
+                rawLoneliness in 3..9 -> (rawLoneliness - 2).toFloat()
+
+                // Kaikki muut roskat -> myös aukko
+                else -> Float.NaN
             }
 
-            // Luodaan kaavion piste
-            LinePoint(d.date.dayOfWeek.name.take(3), displayValue)
+            // X-akselin label: ma, ti, ke...
+            LinePoint(
+                d.date.dayOfWeek.name.take(3),
+                displayValue
+            )
         }
     }
+
 
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
