@@ -35,6 +35,7 @@ import fi.tuni.lonelinessapp.data.repository.DayRepository
 import fi.tuni.lonelinessapp.domain.service.PermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
+import fi.tuni.lonelinessapp.ui.screens.settings.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 showPermissionDeniedMessage()
             }
         )
+        val settingsViewModel = SettingsViewModel(dayRepository)
 
 
         enableEdgeToEdge()
@@ -88,6 +90,7 @@ class MainActivity : ComponentActivity() {
                 MainScreen(
                     surveyViewModel=surveyViewModel,
                     analysisViewModel=analysisViewModel,
+                    settingsViewModel=settingsViewModel,
                     homeViewModel=homeViewModel
                 )
             }
@@ -131,12 +134,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel = viewModel(),
-    surveyViewModel: SurveyViewModel,
-    analysisViewModel: AnalysisViewModel,
-    homeViewModel: HomeViewModel
-) {
+fun MainScreen(viewModel: MainViewModel = viewModel(),
+               surveyViewModel: SurveyViewModel,
+               analysisViewModel: AnalysisViewModel,
+               settingsViewModel: SettingsViewModel,
+               homeViewModel: HomeViewModel
+    ) {
 
     // Selected bottom tab
     val selectedTab by viewModel.selectedTab
@@ -176,7 +179,7 @@ fun MainScreen(
                     1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
-                SettingsScreen()
+                SettingsScreen(settingsViewModel=settingsViewModel)
             }
 
             // Show survey dialog
