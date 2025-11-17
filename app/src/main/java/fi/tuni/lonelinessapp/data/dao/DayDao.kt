@@ -40,7 +40,7 @@ interface DayDao {
     suspend fun updateTelegram(date: LocalDate, telegram: Int)
 
     @Query("SELECT * FROM dayTable ORDER BY date ASC")
-    fun getAllDays(): Flow<List<DayEntity>?>
+    fun getAllDays(): Flow<List<DayEntity>>
 
     @Query("SELECT * FROM dayTable WHERE date = :date")
     fun getDayByDate(date: LocalDate): Flow<DayEntity?>

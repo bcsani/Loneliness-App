@@ -11,7 +11,7 @@ class DayDataSource (
 ) {
     fun insertDay(day: DayEntity) =
         dayDao.insertDay(day)
-    fun getAllDays(): Flow<List<DayEntity>?> =
+    fun getAllDays(): Flow<List<DayEntity>> =
         dayDao.getAllDays()
     fun getDayByDate(date: LocalDate): Flow<DayEntity?> =
         dayDao.getDayByDate(date)
