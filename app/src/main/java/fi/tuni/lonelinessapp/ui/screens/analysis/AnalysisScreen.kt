@@ -328,7 +328,6 @@ fun AnalysisScreen(
 
 
         // Chart 5: Communication Apps Usage (pie chart).
-        // Chart 5: Communication Apps Usage (pie chart).
         item {
             ChartCard(title = "Communication Apps Usage (hours)") {
                 AndroidView(
@@ -437,7 +436,7 @@ fun AnalysisScreen(
 
 // The 'Chartcard' function creates a uniform card template for graphs.
 @Composable
-private fun ChartCard(
+fun ChartCard(
     title: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -457,7 +456,7 @@ private fun ChartCard(
 }
 
 // Common settings for all bar charts.
-private fun BarChart.applyBarDefaults(xLabels: List<String>) {
+fun BarChart.applyBarDefaults(xLabels: List<String>) {
 
     // No description text.
     description = Description().apply { text = "" }
