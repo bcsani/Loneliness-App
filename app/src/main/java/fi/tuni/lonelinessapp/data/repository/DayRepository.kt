@@ -4,9 +4,6 @@ import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.entity.DayEntity
 import fi.tuni.lonelinessapp.domain.repository.DayRepositoryInterface
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDate
 
 class DayRepository  (
@@ -22,6 +19,16 @@ class DayRepository  (
         dayDataSource.saveDayMinutes(date, dayMinutes)
     override suspend fun saveSteps(date: LocalDate, steps: Int) =
         dayDataSource.saveSteps(date, steps)
+    suspend fun saveWhatApp(date: LocalDate, whatApps: Int) =
+        dayDataSource.saveWhatApp(date, whatApps)
+    suspend fun saveMessages(date: LocalDate, messages: Int) =
+        dayDataSource.saveMessages(date, messages)
+    suspend fun saveCalls(date: LocalDate, calls: Int) =
+        dayDataSource.saveCalls(date, calls)
+    suspend fun saveSignal(date: LocalDate, signal: Int) =
+        dayDataSource.saveSignal(date, signal)
+    suspend fun saveTelegram(date: LocalDate, telegram: Int) =
+        dayDataSource.saveTelegram(date, telegram)
     override fun getAllDays(): Flow<List<DayEntity>> =
         dayDataSource.getAllDays()
     override fun getDayByDate(date: LocalDate): Flow<DayEntity?> =

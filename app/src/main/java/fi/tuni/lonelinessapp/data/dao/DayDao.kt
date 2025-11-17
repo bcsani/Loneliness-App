@@ -28,6 +28,17 @@ interface DayDao {
     @Query("UPDATE dayTable SET steps = :steps WHERE date = :date")
     suspend fun updateSteps(date: LocalDate, steps: Int)
 
+    @Query("UPDATE dayTable SET whatApps = :whatApps WHERE date = :date")
+    suspend fun updateWhatApps(date: LocalDate, whatApps: Int)
+    @Query("UPDATE dayTable SET messages = :messages WHERE date = :date")
+    suspend fun updateMessages(date: LocalDate, messages: Int)
+    @Query("UPDATE dayTable SET calls = :calls WHERE date = :date")
+    suspend fun updateCalls(date: LocalDate, calls: Int)
+    @Query("UPDATE dayTable SET signal = :signal WHERE date = :date")
+    suspend fun updateSignal(date: LocalDate, signal: Int)
+    @Query("UPDATE dayTable SET telegram = :telegram WHERE date = :date")
+    suspend fun updateTelegram(date: LocalDate, telegram: Int)
+
     @Query("SELECT * FROM dayTable ORDER BY date ASC")
     fun getAllDays(): Flow<List<DayEntity>>
 
