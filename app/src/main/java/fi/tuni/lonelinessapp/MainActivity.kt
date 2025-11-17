@@ -36,6 +36,7 @@ import fi.tuni.lonelinessapp.data.utils.CallDurationHelper
 import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
+import fi.tuni.lonelinessapp.ui.screens.settings.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity() {
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
+        val settingsViewModel = SettingsViewModel(dayRepository)
         checkAllPermissions(analysisViewModel)
 
         enableEdgeToEdge()
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 MainScreen(
                     surveyViewModel=surveyViewModel,
                     analysisViewModel=analysisViewModel,
+                    settingsViewModel=settingsViewModel,
                     homeViewModel=homeViewModel
                 )
             }
@@ -140,12 +143,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel = viewModel(),
-    surveyViewModel: SurveyViewModel,
-    analysisViewModel: AnalysisViewModel,
-    homeViewModel: HomeViewModel
-) {
+fun MainScreen(viewModel: MainViewModel = viewModel(),
+               surveyViewModel: SurveyViewModel,
+               analysisViewModel: AnalysisViewModel,
+               settingsViewModel: SettingsViewModel,
+               homeViewModel: HomeViewModel
+    ) {
 
     // Selected bottom tab
     val selectedTab by viewModel.selectedTab
