@@ -37,11 +37,11 @@ abstract class AppDatabase : RoomDatabase() {
         private val MIGRATION_1_2: Migration = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Add new columns
-                db.execSQL("ALTER TABLE day_entity ADD COLUMN whatApps INTEGER DEFAULT 0")
-                db.execSQL("ALTER TABLE day_entity ADD COLUMN messages INTEGER DEFAULT 0")
-                db.execSQL("ALTER TABLE day_entity ADD COLUMN calls INTEGER DEFAULT 0")
-                db.execSQL("ALTER TABLE day_entity ADD COLUMN signal INTEGER DEFAULT 0")
-                db.execSQL("ALTER TABLE day_entity ADD COLUMN telegram INTEGER DEFAULT 0")
+                db.execSQL("ALTER TABLE dayTable ADD COLUMN whatApps INTEGER DEFAULT 0")
+                db.execSQL("ALTER TABLE dayTable ADD COLUMN messages INTEGER DEFAULT 0")
+                db.execSQL("ALTER TABLE dayTable ADD COLUMN calls INTEGER DEFAULT 0")
+                db.execSQL("ALTER TABLE dayTable ADD COLUMN signal INTEGER DEFAULT 0")
+                db.execSQL("ALTER TABLE dayTable ADD COLUMN telegram INTEGER DEFAULT 0")
             }
         }
 
