@@ -86,100 +86,100 @@ fun AnalysisScreen(
 
     // ÄLÄ POISTA OIKEA VERSIO
     //Listen to the daily data provided by the ViewModel.
-    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    val daysEntity by analysisViewModel.daysEntity.collectAsState()
 
     // Daily samples for the selected time.
-    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        //buildSamplesForRange(daysEntity, selectedRange)
-    //}
+    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        buildSamplesForRange(daysEntity, selectedRange)
+    }
 
     //Creating data for charts.
-    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     // ÄLÄ POISTA OIKEA VERSIO
 
 // ====================== TESTIDATA ALKAA ======================/
 
 // 1. LUODAAN KUVITTEELLINEN TESTIDATA
 // Tämä korvaa tietokannasta tulevan datan väliaikaisesti.
-    val testSamples: List<DaySample> = remember {
-        val today = LocalDate.now()
-        listOf(
+    //val testSamples: List<DaySample> = remember {
+        //val today = LocalDate.now()
+        //listOf(
             // 6 päivää sitten – dataa
-            DaySample(
-                date = today.minusDays(6),
-                loneliness = 9,
-                nightMinutes = 60,
-                dayMinutes = 120,
-                steps = 5000
-            ),
+            //DaySample(
+                //date = today.minusDays(6),
+                //loneliness = 9,
+                //nightMinutes = 60,
+                //dayMinutes = 120,
+                //steps = 5000
+            //),
 
             // 5 päivää sitten – EI DATAA → aukko (NaN)
-            DaySample(
-                date = today.minusDays(5),
-                loneliness = -1,   // tulkitaan "ei vastausta"
-                nightMinutes = 0,
-                dayMinutes = 0,
-                steps = 0
-            ),
+            //DaySample(
+                //date = today.minusDays(5),
+                //loneliness = -1,   // tulkitaan "ei vastausta"
+                //nightMinutes = 0,
+                //dayMinutes = 0,
+                //steps = 0
+            //),
 
             // 4 päivää sitten – dataa
-            DaySample(
-                date = today.minusDays(4),
-                loneliness = 7,
-                nightMinutes = 45,
-                dayMinutes = 100,
-                steps = 4500
-            ),
+            //DaySample(
+                //date = today.minusDays(4),
+                //loneliness = 7,
+                //nightMinutes = 45,
+                //dayMinutes = 100,
+                //steps = 4500
+            //),
 
             // 3 päivää sitten – EI DATAA → toinen aukko
-            DaySample(
-                date = today.minusDays(3),
-                loneliness = 0,    // myös <= 0 -> NaN
-                nightMinutes = 0,
-                dayMinutes = 0,
-                steps = 0
-            ),
+            //DaySample(
+                //date = today.minusDays(3),
+                //loneliness = 0,    // myös <= 0 -> NaN
+                //nightMinutes = 0,
+                //dayMinutes = 0,
+                //steps = 0
+            //),
 
             // 2 päivää sitten – dataa
-            DaySample(
-                date = today.minusDays(2),
-                loneliness = 5,
-                nightMinutes = 80,
-                dayMinutes = 180,
-                steps = 7500
-            ),
+            //DaySample(
+                //date = today.minusDays(2),
+                //loneliness = 5,
+                //nightMinutes = 80,
+                //dayMinutes = 180,
+                //steps = 7500
+            //),
 
             // eilen – dataa
-            DaySample(
-                date = today.minusDays(1),
-                loneliness = 3,
-                nightMinutes = 120,
-                dayMinutes = 240,
-                steps = 9500
-            ),
+            //DaySample(
+                //date = today.minusDays(1),
+                //loneliness = 3,
+                //nightMinutes = 120,
+                //dayMinutes = 240,
+                //steps = 9500
+            //),
 
             // tänään – dataa
-            DaySample(
-                date = today,
-                loneliness = 6,
-                nightMinutes = 55,
-                dayMinutes = 110,
-                steps = 5200
-            )
-        )
-    }
+            //DaySample(
+                //date = today,
+                //loneliness = 6,
+                //nightMinutes = 55,
+                //dayMinutes = 110,
+                //steps = 5200
+            //)
+        //)
+    //}
 
     // `samples`-muuttuja on nyt meidän testidatamme.
-    val samples = testSamples
+    //val samples = testSamples
 
     // 2. MUUNNETAAN TESTIDATA KAAVIOIDEN MUUTTUJIIN
-    val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
-    val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
-    val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
-    val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
+    //val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
+    //val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
+    //val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
+    //val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
 
 // ======================= TESTIDATA LOPPUU =======================
 
