@@ -8,7 +8,11 @@ import android.provider.CallLog
 import java.util.Calendar
 
 class CallDurationHelper(private val context: Context) {
-    fun getTotalCallDurationToday(): Long {
+    fun getTotalCallDurationToday(): Float {
+        /*
+        * This function will get the call duration from the CALL_LOG.
+        *
+        */
         var totalDuration: Long = 0
 
         // Check if we have permission
@@ -52,24 +56,10 @@ class CallDurationHelper(private val context: Context) {
             }
         }
 
-        return totalDuration
-    }
+        val totalDurationMin = totalDuration / 60f
+        println("TotalDurationMin: $totalDurationMin")
 
-    fun getTotalCallDurationTodayFormatted(): String {
-        val totalSeconds = getTotalCallDurationToday()
-        return formatDuration(totalSeconds)
-    }
-
-    private fun formatDuration(totalSeconds: Long): String {
-        val hours = totalSeconds / 3600
-        val minutes = (totalSeconds % 3600) / 60
-        val seconds = totalSeconds % 60
-
-        return if (hours > 0) {
-            String.format("%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            String.format("%02d:%02d", minutes, seconds)
-        }
+        return totalDurationMin
     }
 
     private fun hasCallLogPermission(): Boolean {

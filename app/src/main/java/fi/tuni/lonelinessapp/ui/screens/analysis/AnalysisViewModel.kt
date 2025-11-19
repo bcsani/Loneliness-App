@@ -71,7 +71,7 @@ class AnalysisViewModel (
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Call log
-    var callDuration: Long = 0
+    var callDuration: Float = 0f
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
@@ -100,7 +100,7 @@ class AnalysisViewModel (
     ): List<PieSlice>? = listOf(
         PieSlice("WhatsApp", minutesToHours(whatApps.toFloat())),
         PieSlice("Messages", minutesToHours(messages.toFloat())),
-        PieSlice("Calls",    minutesToHours(callDuration.toFloat())),
+        PieSlice("Calls",    minutesToHours(callDuration)),
         PieSlice("Signal",   minutesToHours(signal.toFloat())),
         PieSlice("Telegram",  minutesToHours(telegram.toFloat()))
     )

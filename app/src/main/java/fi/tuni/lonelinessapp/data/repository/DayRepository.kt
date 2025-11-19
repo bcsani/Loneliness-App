@@ -38,6 +38,6 @@ class DayRepository  (
         dayDataSource.getDayByDate(date)
     override fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDataSource.getDaysFromDate(startDate)
-    fun getTotalCallDurationToday(): Long =
+    fun getTotalCallDurationToday(): Float =
         dayDataSource.getTotalCallDurationToday()
 }

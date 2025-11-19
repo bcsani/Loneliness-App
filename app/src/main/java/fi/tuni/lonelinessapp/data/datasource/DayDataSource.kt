@@ -144,7 +144,7 @@ class DayDataSource (
         ))
     }
 
-    fun getTotalCallDurationToday(): Long {
+    fun getTotalCallDurationToday(): Float {
         return callDurationHelper.getTotalCallDurationToday()
     }
 }
