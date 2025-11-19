@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import com.github.mikephil.charting.charts.BarLineChartBase
 import kotlin.math.roundToInt
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 
 
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
@@ -41,9 +42,16 @@ private val PIE_COLORS = listOf(
     0xFFA855F7.toInt(),
     0xFFEF4444.toInt()
 )
+// User selectable time ranges in the analysis view.
 
 enum class TimeRange { Week, Month, ThreeMonths, Year, All }
-
+/**
+ * Composable that displays the analysis page: it builds the data series for the
+ * selected time range and displays 5 daily charts (Week/Month) or monthly
+ * aggregates (3 Months / Year / All).
+ * Data is provided by AnalysisViewModel via StateFlow and re-computed whenever
+ * the selected time range changes.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(
@@ -53,11 +61,40 @@ fun AnalysisScreen(
     var selectedRange by remember { mutableStateOf(TimeRange.Week) }
     var infoDialogMessage by remember { mutableStateOf<String?>(null) }
 
+    // ====================== TEST DATA (WEEK VIEW) ======================
+    // This block provides hardcoded data for the "Week" view to test how null/zero values are rendered.
+     //o restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
-
     val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        buildSamplesForRange(daysEntity, selectedRange)
+        if (selectedRange == TimeRange.Week) {
+            val today = LocalDate.now()
+            val testData = listOf(
+                DaySample(today.minusDays(6), loneliness = 5, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+                DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+                DaySample(today.minusDays(4), loneliness = 0, nightMinutes = 0, dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
+                DaySample(today.minusDays(3), loneliness = 4, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+                DaySample(today.minusDays(2), loneliness = 6, nightMinutes = 80, dayMinutes = 0, steps = 0),     // <-- Zero day usage and steps
+                DaySample(today.minusDays(1), loneliness = 8, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+                DaySample(today, loneliness = 3, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+            )
+            val testDataMap = testData.associateBy { it.date }
+            val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
+            wantedDates.map { date ->
+                testDataMap[date] ?: DaySample(date, -1, -1, -1, -1)
+}
+        } else {
+            buildSamplesForRange(daysEntity, selectedRange)
+       }
     }
+    // ======================= END OF TEST DATA =======================
+
+    // ================= ORIGINAL DATA LOADING (Commented out) ================
+    // val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+      //  buildSamplesForRange(daysEntity, selectedRange)
+     //}
+    // ========================================================================
+
 
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
     val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
@@ -186,7 +223,7 @@ fun AnalysisScreen(
             }
         } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
             item {
-                val infoText = "Shows the monthly average of your UCLA Loneliness Scale scores. Higher values indicate greater feelings of loneliness."
+                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period. Higher values indicate greater feelings of loneliness."
                 ChartCard(
                     title = "UCLA Loneliness Scale",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -227,7 +264,9 @@ fun AnalysisScreen(
                                 mode = LineDataSet.Mode.LINEAR
                                 setDrawValues(false)
                             }
-                            chart.data = LineData(set)
+                            val dataSets = buildLonelinessDataSets(lonelinessPts)
+                            chart.data = LineData(dataSets)
+
                             chart.data.notifyDataChanged()
                             chart.notifyDataSetChanged()
                             chart.invalidate()
@@ -237,7 +276,7 @@ fun AnalysisScreen(
             }
 
             item {
-                val infoText = "Shows the time spent on your phone in the night."
+                val infoText = "Shows the time spent on your phone at night."
                 ChartCard(
                     title = "Night time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -395,7 +434,7 @@ fun AnalysisScreen(
             }
         } else {
             val xAxisFormatter = if (selectedRange == TimeRange.All) {
-                StartEndValueFormatter(monthLabels)
+                StartEndValueFormatter(monthLabels.firstOrNull() ?: "")
             } else {
                 IndexAxisValueFormatter(monthLabels)
             }
@@ -422,9 +461,9 @@ fun AnalysisScreen(
                                 xAxis.setDrawGridLines(true)
                                 xAxis.enableGridDashedLine(10f, 10f, 0f)
                                 axisLeft.axisMinimum = 0f
-                                axisLeft.axisMaximum = 9f
+                                axisLeft.axisMaximum = 7.05f
                                 axisLeft.granularity = 1f
-                                axisLeft.setLabelCount(10, true)
+                                axisLeft.setLabelCount(8, true)
                                 axisLeft.setDrawGridLines(true)
                                 axisLeft.enableGridDashedLine(10f, 10f, 0f)
                             }
@@ -438,7 +477,7 @@ fun AnalysisScreen(
                                 setCircleColor(COLOR_PRIMARY_HEX)
                                 lineWidth = 3f
                                 circleRadius = 5f
-                                mode = LineDataSet.Mode.CUBIC_BEZIER
+                                mode = LineDataSet.Mode.LINEAR // Use LINEAR for gaps
                                 setDrawValues(false)
                             }
                             chart.data = LineData(set)
@@ -451,7 +490,7 @@ fun AnalysisScreen(
             }
 
             item {
-                val infoText = "Shows the monthly average of the time spent on your phone in the night."
+                val infoText = "Shows the monthly average of the time spent on your phone at night."
                 ChartCard(
                     title = "Night Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -596,11 +635,13 @@ fun AnalysisScreen(
                                 }
                                 pie.data = PieData(set)
                             }
+
                             pie.data.notifyDataChanged(); pie.notifyDataSetChanged(); pie.invalidate()
                         }
                     )
                 }
             }
+
         }
     }
 
@@ -760,16 +801,43 @@ private data class MonthBucket(
 
 private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
     if (samples.isEmpty()) return emptyList()
-    val byMonth = samples.groupBy { YearMonth.from(it.date) }.toSortedMap()
-    return byMonth.map { (ym, days) ->
-        val label = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-        val lon   = days.mapNotNull { it.loneliness }.filter { it > 0 }.map { (it - 2).coerceIn(1, 7) }.average().toFloat()
-        val night = days.mapNotNull { it.nightMinutes }.average().toFloat() / 60f
-        val day   = days.mapNotNull { it.dayMinutes }.average().toFloat() / 60f
-        val steps = days.mapNotNull { it.steps }.average().toFloat()
-        MonthBucket(label, lon, night, day, steps)
+
+    val sortedSamples = samples.sortedBy { it.date }
+    val firstMonth = YearMonth.from(sortedSamples.first().date)
+    val lastMonth = YearMonth.from(sortedSamples.last().date)
+    val samplesByMonth = sortedSamples.groupBy { YearMonth.from(it.date) }
+
+    val monthBuckets = mutableListOf<MonthBucket>()
+    var currentMonth = firstMonth
+    while (!currentMonth.isAfter(lastMonth)) {
+        val daysInMonth = samplesByMonth[currentMonth] ?: emptyList()
+
+        val label = currentMonth.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+
+        val lonValues = daysInMonth.mapNotNull { it.loneliness }.filter { it > 0 }
+        val lonAvg = if (lonValues.isNotEmpty()) {
+            lonValues.map { (it - 2).coerceIn(1, 7) }.average().toFloat()
+        } else {
+            Float.NaN
+        }
+
+        val night = daysInMonth.mapNotNull { it.nightMinutes }.average().toFloat() / 60f
+        val day = daysInMonth.mapNotNull { it.dayMinutes }.average().toFloat() / 60f
+        val steps = daysInMonth.mapNotNull { it.steps }.average().toFloat()
+
+        monthBuckets.add(MonthBucket(
+            label = label,
+            lonAvg = if(lonAvg.isNaN()) Float.NaN else lonAvg,
+            nightH = if(night.isNaN()) 0f else night,
+            dayH = if(day.isNaN()) 0f else day,
+            stepsAvg = if(steps.isNaN()) 0f else steps
+        ))
+
+        currentMonth = currentMonth.plusMonths(1)
     }
+    return monthBuckets
 }
+
 
 private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
@@ -792,7 +860,7 @@ private fun buildSamplesForRange(
             val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
             val byDate = sorted.associateBy { it.date }
             wantedDates.map { date ->
-                byDate[date]?.toSample() ?: DaySample(date, 0, 0, 0, 0)
+                byDate[date]?.toSample() ?: DaySample(date,-1, -1, -1, -1)
             }
         }
         TimeRange.Month -> {
@@ -800,7 +868,7 @@ private fun buildSamplesForRange(
             val byDate = sorted.associateBy { it.date }
             (0..29).map { i ->
                 val date = from.plusDays(i.toLong())
-                byDate[date]?.toSample() ?: DaySample(date, 0, 0, 0, 0)
+                byDate[date]?.toSample() ?: DaySample(date, -1, -1, -1, -1)
             }
         }
         TimeRange.ThreeMonths -> {
@@ -871,13 +939,50 @@ private fun PieChart.noZoomNoPanKeepTap() {
     isHighlightPerTapEnabled = true
 }
 
-class StartEndValueFormatter(private val labels: List<String>) : ValueFormatter() {
+class StartEndValueFormatter(private val firstLabel: String) : ValueFormatter() {
     override fun getFormattedValue(value: Float): String {
-        val index = value.toInt()
-        return when (index) {
-            0 -> labels.firstOrNull() ?: ""
-            labels.size - 1 -> "Now"
+        return when (value.toInt()) {
+            0 -> firstLabel
+            11 -> "Now"
             else -> ""
         }
     }
+}
+// Luo useita LineDataSettejä, yksi "katkeamaton pätkä" kerrallaan.
+// Päivä, jonka y on NaN, aiheuttaa katkoksen.
+private fun buildLonelinessDataSets(
+    points: List<AnalysisViewModel.LinePoint>
+): List<ILineDataSet> {
+    val sets = mutableListOf<ILineDataSet>()
+    var current = mutableListOf<Entry>()
+
+    fun flushSegment() {
+        if (current.isNotEmpty()) {
+            val set = LineDataSet(current, "Loneliness").apply {
+                color = COLOR_PRIMARY_HEX
+                setCircleColor(COLOR_PRIMARY_HEX)
+                lineWidth = 3f
+                circleRadius = 5f
+                mode = LineDataSet.Mode.LINEAR
+                setDrawValues(false)
+            }
+            sets.add(set)
+            current = mutableListOf()
+        }
+    }
+
+    points.forEachIndexed { index, p ->
+        if (p.y.isNaN()) {
+            // katkaise viiva
+            flushSegment()
+        } else {
+            // jatka nykyistä pätkää
+            current.add(Entry(index.toFloat(), p.y))
+        }
+    }
+
+    // viimeinen pätkä
+    flushSegment()
+
+    return sets
 }
