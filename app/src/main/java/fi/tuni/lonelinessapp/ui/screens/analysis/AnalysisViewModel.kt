@@ -42,7 +42,7 @@ class AnalysisViewModel (
         val date: LocalDate,
 
         // Query result (UCLA 0–9).
-        val loneliness: Int,
+        val loneliness: Int?,
 
         // Phone usage at night (in minutes).
         // POSSIBLE CHANGE? Depending on the format of the results.
@@ -79,30 +79,17 @@ class AnalysisViewModel (
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
+    // Convert the day's data to fit a line chart (date + value).
+    fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
+        data.map { d ->
+            val y = d.loneliness
+                ?.takeIf { it in 3..9 }
+                ?.let { (it - 2).toFloat() }   // skaalataan 1–7
+                ?: Float.NaN                   // null/roska -> aukko
 
-    fun lonelinessLine(data: List<DaySample>): List<LinePoint> {
-        return data.map { d ->
-            val rawLoneliness = d.loneliness
-
-            // Päätellään mitä piirretään:
-            val displayValue = when {
-                // 0 = "ei vastausta" -> ei pisteitä, ei viivaa
-                rawLoneliness <= 0 -> Float.NaN
-
-                // Normaali UCLA 3–9 -> muunnetaan 1–7 -asteikolle
-                rawLoneliness in 3..9 -> (rawLoneliness - 2).toFloat()
-
-                // Kaikki muut roskat -> myös aukko
-                else -> Float.NaN
-            }
-
-            // X-akselin label: ma, ti, ke...
-            LinePoint(
-                d.date.dayOfWeek.name.take(3),
-                displayValue
-            )
+            LinePoint(d.date.dayOfWeek.name.take(3), y)
         }
-    }
+
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
