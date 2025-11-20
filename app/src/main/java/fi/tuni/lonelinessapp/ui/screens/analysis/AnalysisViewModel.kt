@@ -160,7 +160,7 @@ class AnalysisViewModel (
 
                 buckets.add(PeriodBucket(label, lonAvg, nightH, dayH, stepsAvg))
             } else {
-                 buckets.add(PeriodBucket(label, Float.NaN, 0f, 0f, 0f))
+                buckets.add(PeriodBucket(label, Float.NaN, 0f, 0f, 0f))
             }
         }
         return buckets
