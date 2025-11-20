@@ -102,15 +102,19 @@ fun AnalysisScreen(
     val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
+    // Corrected code
     val dayLabels = remember(samples, selectedRange) {
         when (selectedRange) {
             TimeRange.Week -> samples.map {
                 it.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
             }
             TimeRange.Month -> List(samples.size) { (it + 1).toString() }
-            else -> emptyList()
+            // Explicitly type the empty list to ensure the 'when' expression's
+            // result is always List<String>.
+            else -> emptyList<String>()
         }
     }
+
 
     val monthlyAgg = remember(samples, selectedRange) {
         if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) emptyList()
@@ -434,7 +438,7 @@ fun AnalysisScreen(
             }
         } else {
             val xAxisFormatter = if (selectedRange == TimeRange.All) {
-                StartEndValueFormatter(monthLabels.firstOrNull() ?: "")
+                StartEndValueFormatter(monthLabels) // <-- FIX: This is a List<String>
             } else {
                 IndexAxisValueFormatter(monthLabels)
             }
@@ -469,7 +473,7 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = xAxisFormatter
+                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f", y) }
                             val entries = lonMonthly.mapIndexed { i, v -> Entry(i.toFloat(), v) }
                             val set = LineDataSet(entries, "Loneliness").apply {
@@ -505,7 +509,7 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = xAxisFormatter
+                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
                             chart.applyNiceYAxis(nightMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
@@ -535,7 +539,7 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = xAxisFormatter
+                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
                             chart.applyNiceYAxis(dayMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
@@ -568,7 +572,8 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = xAxisFormatter
+                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
+
                             chart.applyNiceYAxis(stepsMonthly, ::stepStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> "%,d".format(y.toInt()) }
                             val set = makeBarDataSet(
@@ -659,6 +664,7 @@ fun AnalysisScreen(
     }
 }
 
+// Adding the card to the backround of chart
 @Composable
 private fun ChartCard(
     title: String, onInfoClick: (() -> Unit)? = null,
@@ -706,7 +712,6 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     isHighlightPerTapEnabled = false
     isHighlightPerDragEnabled = false
     xAxis.position = XAxis.XAxisPosition.BOTTOM
-    xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
     xAxis.textSize = 12f
     xAxis.granularity = 1f
     xAxis.setDrawGridLines(true)
@@ -939,15 +944,23 @@ private fun PieChart.noZoomNoPanKeepTap() {
     isHighlightPerTapEnabled = true
 }
 
-class StartEndValueFormatter(private val firstLabel: String) : ValueFormatter() {
+/**
+ * Muotoilija, joka näyttää X-akselilla vain ensimmäisen ja viimeisen tarran.
+ * @param labels Koko lista tarroista, joita kaaviossa käytetään.
+ */
+class StartEndValueFormatter(private val labels: List<String>) : ValueFormatter() {
     override fun getFormattedValue(value: Float): String {
-        return when (value.toInt()) {
-            0 -> firstLabel
-            11 -> "Now"
-            else -> ""
-        }
+        val index = value.toInt()
+        val lastIndex = labels.lastIndex
+
+        if (index == 0) return labels.firstOrNull() ?: ""
+        if (index == lastIndex) return "Now"
+
+        return ""
     }
 }
+
+
 // Luo useita LineDataSettejä, yksi "katkeamaton pätkä" kerrallaan.
 // Päivä, jonka y on NaN, aiheuttaa katkoksen.
 private fun buildLonelinessDataSets(
