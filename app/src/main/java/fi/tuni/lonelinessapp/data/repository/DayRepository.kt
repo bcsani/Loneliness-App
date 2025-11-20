@@ -35,4 +35,6 @@ class DayRepository  (
         dayDataSource.getDayByDate(date)
     override fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDataSource.getDaysFromDate(startDate)
+    suspend fun resetData() =
+        dayDataSource.resetData()
 }

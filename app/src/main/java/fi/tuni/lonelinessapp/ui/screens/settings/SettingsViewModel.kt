@@ -9,6 +9,7 @@ import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val dayRepository: DayRepository
@@ -29,4 +30,10 @@ class SettingsViewModel(
     // Data
     val daysEntity : StateFlow<List<DayEntity>?> = dayRepository.getAllDays()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun resetData() {
+        viewModelScope.launch {
+            dayRepository.resetData()
+        }
+    }
 }
