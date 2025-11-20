@@ -9,7 +9,7 @@ import java.time.LocalDate
 class DayDataSource (
     private val dayDao: DayDao
 ) {
-    fun insertDay(day: DayEntity) =
+    suspend fun insertDay(day: DayEntity) =
         dayDao.insertDay(day)
     fun getAllDays(): Flow<List<DayEntity>> =
         dayDao.getAllDays()
@@ -116,7 +116,7 @@ class DayDataSource (
         }
     }
 
-    private fun insertDayWithData(
+    suspend private fun insertDayWithData(
         date: LocalDate,
         loneliness: Int = 0,
         nightMinutes: Int = 0,

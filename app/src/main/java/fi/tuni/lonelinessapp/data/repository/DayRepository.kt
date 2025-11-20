@@ -9,7 +9,7 @@ import java.time.LocalDate
 class DayRepository  (
     private val dayDataSource: DayDataSource
 ): DayRepositoryInterface {
-    override fun insertDay(day: DayEntity) =
+    override suspend fun insertDay(day: DayEntity) =
         dayDataSource.insertDay(day)
     override suspend fun saveLoneliness(date: LocalDate, loneliness: Int) =
         dayDataSource.saveLoneliness(date, loneliness)
