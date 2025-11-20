@@ -113,7 +113,13 @@ class AnalysisViewModel (
 
 
     fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<PeriodBucket> {
-        val validSamples = samples.filter { it.loneliness != null || it.nightMinutes != null || it.dayMinutes != null || it.steps != null }
+        val validSamples = samples.filter {
+            (it.loneliness != null && it.loneliness in 3..9) ||
+                    it.nightMinutes > 0 ||
+                    it.dayMinutes > 0 ||
+                    it.steps > 0
+        }
+
         if (validSamples.isEmpty()) return emptyList()
 
         val firstDate = validSamples.minOf { it.date }
