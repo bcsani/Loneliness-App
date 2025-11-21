@@ -49,6 +49,53 @@ private val PIE_COLORS = listOf(
 )
 // User selectable time ranges in the analysis view.
 enum class TimeRange { Week, Month, ThreeMonths, Year, All }
+
+
+private fun XAxis.applyDomainAndLabels(labels: List<String>, useStartEndOnly: Boolean = false) {
+    valueFormatter = if (useStartEndOnly) StartEndValueFormatter(labels) else IndexAxisValueFormatter(labels)
+    axisMinimum = 0f
+    axisMaximum = (labels.size - 1).coerceAtLeast(1).toFloat()
+    setLabelCount(if (useStartEndOnly) 2 else labels.size.coerceAtMost(12), true)
+    granularity = 1f
+    setDrawGridLines(true)
+    enableGridDashedLine(10f, 10f, 0f)
+}
+
+// Y-akselin “nice” – jos maksimi on 0/puuttuu, näytä järkevä fallback-alue.
+private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
+    val maxVal = values.maxOrNull() ?: 0f
+    if (maxVal <= 0f) {
+        val step = stepFn(1f)
+        axisLeft.apply {
+            axisMinimum = 0f
+            axisMaximum = step * 4f
+            granularity = step
+            setLabelCount(5, true)
+            setDrawGridLines(true)
+            enableGridDashedLine(10f, 10f, 0f)
+        }
+        return
+    }
+    val step   = stepFn(maxVal)
+    val axisMax = niceCeil(maxVal * 1.15f, step)
+    axisLeft.apply {
+        axisMinimum = 0f
+        axisMaximum = axisMax
+        granularity = step
+        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
+        setDrawGridLines(true)
+        enableGridDashedLine(10f, 10f, 0f)
+    }
+}
+
+// Päivälabelit valitulle jaksolle, vaikka kaikki päivän arvot olisivat tyhjiä.
+private fun fallbackDayLabels(range: TimeRange, samplesCount: Int): List<String> = when (range) {
+    TimeRange.Week  -> listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+    TimeRange.Month -> (1..samplesCount.coerceAtLeast(30)).map { it.toString() }
+    else -> emptyList()
+}
+
+
 /**
  * Composable that displays the analysis page: it builds the data series for the
  * selected time range and displays 5 daily charts (Week/Month) or monthly
@@ -106,33 +153,30 @@ fun AnalysisScreen(
     val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
-    // Corrected code
+    // Päivä- ja kuukausilabelit (näkyvät myös tyhjällä datalla)
     val dayLabels = remember(samples, selectedRange) {
         when (selectedRange) {
-            TimeRange.Week -> samples.map {
+            TimeRange.Week  -> (samples.takeIf { it.isNotEmpty() } ?: emptyList()).map {
                 it.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-            }
-            TimeRange.Month -> List(samples.size) { (it + 1).toString() }
+            }.ifEmpty { fallbackDayLabels(TimeRange.Week, 7) }
 
-            // Explicitly type the empty list to ensure the 'when' expression's
-            // result is always List<String>.
-            else -> emptyList<String>()
+            TimeRange.Month -> (if (samples.isNotEmpty()) List(samples.size) { (it + 1).toString() } else fallbackDayLabels(TimeRange.Month, 30))
+
+            else -> emptyList()
         }
     }
 
-
     val monthlyAgg = remember(samples, selectedRange) {
-        if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) emptyList()
-        else if (selectedRange == TimeRange.All) {
-            analysisViewModel.aggregateIntoTwelvePeriods(samples)
-        } else {
-            aggregateMonthly(samples)
+        when (selectedRange) {
+            TimeRange.ThreeMonths, TimeRange.Year -> aggregateMonthly(samples)
+            TimeRange.All -> analysisViewModel.aggregateIntoTwelvePeriods(samples)
+            else -> emptyList()
         }
     }
 
     val monthLabels = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
-            is AnalysisViewModel.PeriodBucket -> (monthlyAgg as List<AnalysisViewModel.PeriodBucket>).map { it.label }
+            is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.label }
             is MonthBucket -> (monthlyAgg as List<MonthBucket>).map { it.label }
             else -> emptyList()
         }
@@ -140,28 +184,28 @@ fun AnalysisScreen(
 
     val lonMonthly = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
-            is AnalysisViewModel.PeriodBucket -> (monthlyAgg as List<AnalysisViewModel.PeriodBucket>).map { it.lonAvg }
+            is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.lonAvg }
             is MonthBucket -> (monthlyAgg as List<MonthBucket>).map { it.lonAvg }
             else -> emptyList()
         }
     }
     val nightMonthly = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
-            is AnalysisViewModel.PeriodBucket -> (monthlyAgg as List<AnalysisViewModel.PeriodBucket>).map { it.nightH }
+            is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.nightH }
             is MonthBucket -> (monthlyAgg as List<MonthBucket>).map { it.nightH }
             else -> emptyList()
         }
     }
     val dayMonthly = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
-            is AnalysisViewModel.PeriodBucket -> (monthlyAgg as List<AnalysisViewModel.PeriodBucket>).map { it.dayH }
+            is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.dayH }
             is MonthBucket -> (monthlyAgg as List<MonthBucket>).map { it.dayH }
             else -> emptyList()
         }
     }
     val stepsMonthly = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
-            is AnalysisViewModel.PeriodBucket -> (monthlyAgg as List<AnalysisViewModel.PeriodBucket>).map { it.stepsAvg }
+            is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.stepsAvg }
             is MonthBucket -> (monthlyAgg as List<MonthBucket>).map { it.stepsAvg }
             else -> emptyList()
         }
@@ -237,7 +281,7 @@ fun AnalysisScreen(
                 }
             }
 
-        // Daily view (Week / Month): show 5 charts using per-day data.
+            // Daily view (Week / Month): show 5 charts using per-day data.
         } else if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
 
             // 1) Loneliness(line chart).
@@ -247,6 +291,8 @@ fun AnalysisScreen(
                     title = "UCLA Loneliness Scale",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
+
+                    val hasAnyLon = lonelinessPts.any { !it.y.isNaN() }
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -271,7 +317,8 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                            // PAKOTA domain ja labelit näkyviin myös ilman dataa
+                            chart.xAxis.applyDomainAndLabels(dayLabels)
                             chart.lockZoomPanKeepTap()
                             chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f", y) }
 
@@ -305,7 +352,8 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                            // PAKOTA domain ja labelit näkyviin myös ilman dataa
+                            chart.xAxis.applyDomainAndLabels(dayLabels)
                             chart.applyNiceYAxis(nightPts.map { it.y }, ::hourStepFor)
                             chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
@@ -336,7 +384,8 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                            // PAKOTA domain ja labelit näkyviin myös ilman dataa
+                            chart.xAxis.applyDomainAndLabels(dayLabels)
                             chart.applyNiceYAxis(dayPts.map { it.y }, ::hourStepFor)
                             chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
@@ -373,7 +422,8 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = IndexAxisValueFormatter(dayLabels)
+                            // PAKOTA domain ja labelit näkyviin myös ilman dataa
+                            chart.xAxis.applyDomainAndLabels(dayLabels)
                             chart.applyNiceYAxis(stepsPts.map { it.y }, ::stepStepFor)
                             chart.enableTapToShowValue(dayLabels) { y -> "%,d".format(y.toInt()) }
                             val set = makeBarDataSet(
@@ -450,7 +500,7 @@ fun AnalysisScreen(
                 }
             }
 
-        // 3 months, 1 year.
+            // 3 months, 1 year.
         } else {
             val xAxisFormatter = if (selectedRange == TimeRange.All) {
                 StartEndValueFormatter(monthLabels) // <-- FIX: This is a List<String>
@@ -495,7 +545,11 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
+                            // PAKOTA domain ja labelit (All = vain alku ja “Now”)
+                            chart.xAxis.applyDomainAndLabels(
+                                labels = monthLabels,
+                                useStartEndOnly = (selectedRange == TimeRange.All)
+                            )
 
                             val segmentedSets = buildLonelinessDataSets(
                                 lonMonthly.mapIndexed { i, v ->
@@ -513,7 +567,6 @@ fun AnalysisScreen(
                             }
 
                             chart.lockZoomPanKeepTap()
-                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f", y) }
 
                             chart.data.notifyDataChanged()
@@ -541,7 +594,10 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
+                            chart.xAxis.applyDomainAndLabels(
+                                labels = monthLabels,
+                                useStartEndOnly = (selectedRange == TimeRange.All)
+                            )
                             chart.applyNiceYAxis(nightMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
@@ -572,7 +628,10 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
+                            chart.xAxis.applyDomainAndLabels(
+                                labels = monthLabels,
+                                useStartEndOnly = (selectedRange == TimeRange.All)
+                            )
                             chart.applyNiceYAxis(dayMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
@@ -606,7 +665,10 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-                            chart.xAxis.valueFormatter = StartEndValueFormatter(monthLabels)
+                            chart.xAxis.applyDomainAndLabels(
+                                labels = monthLabels,
+                                useStartEndOnly = (selectedRange == TimeRange.All)
+                            )
 
                             chart.applyNiceYAxis(stepsMonthly, ::stepStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> "%,d".format(y.toInt()) }
@@ -767,10 +829,15 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
 /** BarChart.applyNiceYAxis:
  * Auto-picks a “nice” max and tick step for Y-axis based on the data values.
  */
-private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
-    val maxVal = (values.maxOrNull() ?: 0f).coerceAtLeast(0f)
+// NOTE: tämä oli duplikaatti – vaihdoin _tämän_ funktion nimen,
+// jotta kääntäjä ei valita. Pidin alkuperäisen kommentin koskematta.
+private fun BarChart.applyNiceYAxisStrict(values: List<Float>, stepFn: (Float) -> Float) {
+    val maxVal = values.filter { !it.isNaN() }.maxOrNull() ?: 0f
     val step   = stepFn(maxVal)
-    val axisMax = niceCeil(maxVal * 1.15f, step)
+    val axisMaxRaw = niceCeil(maxVal * 1.15f, step)
+    val minAxisMax = (step * 2f).coerceAtLeast(step) // vähintään 2 tikkua
+    val axisMax = maxOf(axisMaxRaw, minAxisMax)
+
     axisLeft.apply {
         axisMinimum = 0f
         axisMaximum = axisMax

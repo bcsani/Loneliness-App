@@ -45,16 +45,15 @@ class AnalysisViewModel (
         val loneliness: Int?,
 
         // Phone usage at night (in minutes).
-        // POSSIBLE CHANGE? Depending on the format of the results.
         val nightMinutes: Int,
 
         // Phone usage per day (in minutes).
-        // POSSIBLE CHANGE? Depending on the format in which the results come.
         val dayMinutes: Int,
 
         // Steps.
         val steps: Int
     )
+
     // Single point data to line chart.
     data class LinePoint(val xLabel: String, val y: Float)
 
@@ -65,13 +64,14 @@ class AnalysisViewModel (
     data class PieSlice (val label: String, val value: Float)
 
 
-    data class PeriodBucket(
-        val label: String,      // e.g., "Jan 24 - Mar 24"
+    data class AggregateBucket(
+        val label: String,
         val lonAvg: Float,
         val nightH: Float,
         val dayH: Float,
         val stepsAvg: Float
     )
+
 
     val daysEntity: StateFlow<List<DayEntity>?> =
         dayRepository.getAllDays()
@@ -112,61 +112,51 @@ class AnalysisViewModel (
     )
 
 
-    fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<PeriodBucket> {
-        val validSamples = samples.filter {
+    fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {
+        val valid = samples.filter {
             (it.loneliness != null && it.loneliness in 3..9) ||
-                    it.nightMinutes > 0 ||
-                    it.dayMinutes > 0 ||
-                    it.steps > 0
+                    it.nightMinutes > 0 || it.dayMinutes > 0 || it.steps > 0
         }
+        if (valid.isEmpty()) return emptyList()
 
-        if (validSamples.isEmpty()) return emptyList()
-
-        val firstDate = validSamples.minOf { it.date }
+        val firstDate = valid.minOf { it.date }
         val lastDate = LocalDate.now()
-
         val totalDays = ChronoUnit.DAYS.between(firstDate, lastDate) + 1
         if (totalDays <= 0) return emptyList()
 
         val numPeriods = 12
-        val periodLengthDays = (totalDays.toFloat() / numPeriods).coerceAtLeast(1.0f)
+        val periodLen = (totalDays.toFloat() / numPeriods).coerceAtLeast(1f)
+        val fmt = DateTimeFormatter.ofPattern("MMM yy", Locale.getDefault())
 
-        val buckets = mutableListOf<PeriodBucket>()
-        val monthYearFormatter = DateTimeFormatter.ofPattern("MMM yy", Locale.getDefault())
-
+        val out = mutableListOf<AggregateBucket>()
         for (i in 0 until numPeriods) {
-            val periodStartDate = firstDate.plusDays((i * periodLengthDays).toLong())
-            val periodEndDate = firstDate.plusDays(((i + 1) * periodLengthDays).toLong() - 1).coerceAtMost(lastDate)
+            val start = firstDate.plusDays((i * periodLen).toLong())
+            val end   = firstDate.plusDays(((i + 1) * periodLen).toLong() - 1).coerceAtMost(lastDate)
 
-            val samplesInPeriod = validSamples.filter {
-                !it.date.isBefore(periodStartDate) && !it.date.isAfter(periodEndDate)
+            val inPeriod = valid.filter { !it.date.isBefore(start) && !it.date.isAfter(end) }
+            val label = start.format(fmt).let { a ->
+                val b = end.format(fmt); if (a == b) a else "$a - $b"
             }
 
-            val startLabel = periodStartDate.format(monthYearFormatter)
-            val endLabel = periodEndDate.format(monthYearFormatter)
-            val label = if (startLabel == endLabel) startLabel else "$startLabel - $endLabel"
-
-            if (samplesInPeriod.isNotEmpty()) {
-                val lonValues = samplesInPeriod.mapNotNull { it.loneliness }.filter { it > 0 }
-                val lonAvg = if (lonValues.isNotEmpty()) {
-                    lonValues.map { (it - 2).coerceIn(1, 7) }.average().toFloat()
-                } else {
-                    Float.NaN
-                }
-
-                val nightH = samplesInPeriod.mapNotNull { it.nightMinutes }.average().toFloat() / 60f
-                val dayH = samplesInPeriod.mapNotNull { it.dayMinutes }.average().toFloat() / 60f
-                val stepsAvg = samplesInPeriod.mapNotNull { it.steps }.average().toFloat()
-
-                buckets.add(PeriodBucket(label, lonAvg, nightH, dayH, stepsAvg))
+            if (inPeriod.isEmpty()) {
+                out += AggregateBucket(label, Float.NaN, 0f, 0f, 0f)
             } else {
-                buckets.add(PeriodBucket(label, Float.NaN, 0f, 0f, 0f))
+                val lonAvg = inPeriod.mapNotNull { it.loneliness }
+                    .filter { it in 3..9 }
+                    .map { (it - 2).coerceIn(1, 7) }
+                    .average().toFloat().let { if (it.isNaN()) Float.NaN else it }
+
+                val nightH   = (inPeriod.map { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
+                val dayH     = (inPeriod.map { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
+                val stepsAvg =  inPeriod.map { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
+
+                out += AggregateBucket(label, lonAvg, nightH, dayH, stepsAvg)
             }
         }
-        return buckets
+        return out
     }
-    // Convert minutes to hours.
 
+    // Convert minutes to hours.
     private fun minutesToHours(mins: Float): Float = mins / 60f
     // Rounds a number to one decimal place.
     private fun round1(v: Float) = (round(v * 10f) / 10f)
