@@ -53,8 +53,6 @@ enum class TimeRange { Week, Month, ThreeMonths, Year, All }
 
 private fun XAxis.applyDomainAndLabels(labels: List<String>, useStartEndOnly: Boolean = false) {
     valueFormatter = if (useStartEndOnly) StartEndValueFormatter(labels) else IndexAxisValueFormatter(labels)
-    axisMinimum = 0f
-    axisMaximum = (labels.size - 1).coerceAtLeast(1).toFloat()
     setLabelCount(if (useStartEndOnly) 2 else labels.size.coerceAtMost(12), true)
     granularity = 1f
     setDrawGridLines(true)
@@ -103,6 +101,7 @@ private fun fallbackDayLabels(range: TimeRange, samplesCount: Int): List<String>
  * Data is provided by AnalysisViewModel via StateFlow and re-computed whenever
  * the selected time range changes.
  */
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(
@@ -292,7 +291,7 @@ fun AnalysisScreen(
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
 
-                    val hasAnyLon = lonelinessPts.any { !it.y.isNaN() }
+                    lonelinessPts.any { !it.y.isNaN() }
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
@@ -341,17 +340,19 @@ fun AnalysisScreen(
                 ChartCard(
                     title = "Night time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
+
                 ) {
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
-                                applyBarDefaults(emptyList())
+                                applyBarDefaults()
                                 setTouchEnabled(false)
                                 setPinchZoom(false)
                             }
                         },
                         update = { chart ->
+
                             // PAKOTA domain ja labelit näkyviin myös ilman dataa
                             chart.xAxis.applyDomainAndLabels(dayLabels)
                             chart.applyNiceYAxis(nightPts.map { it.y }, ::hourStepFor)
@@ -361,6 +362,8 @@ fun AnalysisScreen(
                                 entries = toBarEntries(nightPts),
                             )
                             chart.data = BarData(set).apply { barWidth = 0.7f }
+
+
                             chart.data.notifyDataChanged(); chart.notifyDataSetChanged(); chart.invalidate()
                         }
                     )
@@ -378,23 +381,40 @@ fun AnalysisScreen(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
-                                applyBarDefaults(emptyList())
+                                applyBarDefaults()
                                 setTouchEnabled(false)
                                 setPinchZoom(false)
                             }
                         },
                         update = { chart ->
-                            // PAKOTA domain ja labelit näkyviin myös ilman dataa
                             chart.xAxis.applyDomainAndLabels(dayLabels)
                             chart.applyNiceYAxis(dayPts.map { it.y }, ::hourStepFor)
                             chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
+
+                            val entries = toBarEntries(dayPts)
+
                             val set = makeBarDataSet(
                                 label = "Daytime usage",
-                                entries = toBarEntries(dayPts),
+                                entries = entries,
                             )
-                            chart.data = BarData(set).apply { barWidth = 0.7f }
-                            chart.data.notifyDataChanged(); chart.notifyDataSetChanged(); chart.invalidate()
+
+                            val barData = BarData(set).apply { barWidth = 0.7f }
+                            chart.data = barData
+
+                            // TÄMÄ KORJAA ENSIMMÄISEN & VIIMEISEN PALKKIN LEIKKAUTUMISEN
+                            val minX = entries.minOfOrNull { it.x } ?: 0f
+                            val maxX = entries.maxOfOrNull { it.x } ?: 0f
+                            val halfWidth = barData.barWidth / 2f
+
+                            chart.xAxis.axisMinimum = minX - halfWidth
+                            chart.xAxis.axisMaximum = maxX + halfWidth
+
+                            // chart.setFitBars(true) ei ole enää tarpeen
+                            chart.data.notifyDataChanged()
+                            chart.notifyDataSetChanged()
+                            chart.invalidate()
                         }
+
                     )
                 }
             }
@@ -410,7 +430,7 @@ fun AnalysisScreen(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
-                                applyBarDefaults(emptyList())
+                                applyBarDefaults()
                                 setTouchEnabled(false)
                                 setPinchZoom(false)
                                 axisLeft.axisMinimum = 0f
@@ -502,7 +522,7 @@ fun AnalysisScreen(
 
             // 3 months, 1 year.
         } else {
-            val xAxisFormatter = if (selectedRange == TimeRange.All) {
+            if (selectedRange == TimeRange.All) {
                 StartEndValueFormatter(monthLabels) // <-- FIX: This is a List<String>
             } else {
                 IndexAxisValueFormatter(monthLabels)
@@ -588,7 +608,7 @@ fun AnalysisScreen(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
-                                applyBarDefaults(emptyList())
+                                applyBarDefaults()
                                 setTouchEnabled(true)
                                 setPinchZoom(false)
                             }
@@ -622,22 +642,28 @@ fun AnalysisScreen(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
-                                applyBarDefaults(emptyList())
+                                applyBarDefaults()
                                 setTouchEnabled(true)
                                 setPinchZoom(false)
+                                setExtraOffsets(20f, 0f, 16f, 0f)
+
                             }
                         },
                         update = { chart ->
                             chart.xAxis.applyDomainAndLabels(
                                 labels = monthLabels,
                                 useStartEndOnly = (selectedRange == TimeRange.All)
+
                             )
+
                             chart.applyNiceYAxis(dayMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
                             val set = makeBarDataSet(
                                 label = "Day usage",
                                 entries = toBarEntriesFromFloats(dayMonthly),
+
                             )
+
                             chart.data = BarData(set).apply { barWidth = 0.7f }
                             chart.data.notifyDataChanged(); chart.notifyDataSetChanged(); chart.invalidate()
                         }
@@ -656,7 +682,7 @@ fun AnalysisScreen(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
                             BarChart(ctx).apply {
-                                applyBarDefaults(emptyList())
+                                applyBarDefaults()
                                 setTouchEnabled(true)
                                 setPinchZoom(false)
                                 axisLeft.valueFormatter = object : ValueFormatter() {
@@ -806,7 +832,7 @@ private fun ChartCard(
 /** BarChart.applyBarDefaults:
  * Common baseline for bar charts so we don’t repeat ourselves.
  */
-private fun BarChart.applyBarDefaults(xLabels: List<String>) {
+private fun BarChart.applyBarDefaults() {
     description = Description().apply { text = "" }
     axisRight.isEnabled = false
     legend.isEnabled = false
@@ -824,26 +850,6 @@ private fun BarChart.applyBarDefaults(xLabels: List<String>) {
     xAxis.enableGridDashedLine(10f, 10f, 0f)
     axisLeft.textSize = 12f
     axisLeft.enableGridDashedLine(10f, 10f, 0f)
-}
-
-/** BarChart.applyNiceYAxis:
- * Auto-picks a “nice” max and tick step for Y-axis based on the data values.
- */
-// NOTE: tämä oli duplikaatti – vaihdoin _tämän_ funktion nimen,
-// jotta kääntäjä ei valita. Pidin alkuperäisen kommentin koskematta.
-private fun BarChart.applyNiceYAxisStrict(values: List<Float>, stepFn: (Float) -> Float) {
-    val maxVal = values.filter { !it.isNaN() }.maxOrNull() ?: 0f
-    val step   = stepFn(maxVal)
-    val axisMaxRaw = niceCeil(maxVal * 1.15f, step)
-    val minAxisMax = (step * 2f).coerceAtLeast(step) // vähintään 2 tikkua
-    val axisMax = maxOf(axisMaxRaw, minAxisMax)
-
-    axisLeft.apply {
-        axisMinimum = 0f
-        axisMaximum = axisMax
-        granularity = step
-        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
-    }
 }
 
 /** toBarEntries:
@@ -882,7 +888,7 @@ private fun PieChart.enableToastOnSliceClick() {
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
         override fun onValueSelected(
-            e: com.github.mikephil.charting.data.Entry?,
+            e: Entry?,
             h: com.github.mikephil.charting.highlight.Highlight?
         ) {
             if (e is PieEntry) {
@@ -967,9 +973,9 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
             Float.NaN
         }
 
-        val night = daysInMonth.mapNotNull { it.nightMinutes }.average().toFloat() / 60f
-        val day = daysInMonth.mapNotNull { it.dayMinutes }.average().toFloat() / 60f
-        val steps = daysInMonth.mapNotNull { it.steps }.average().toFloat()
+        val night = daysInMonth.map { it.nightMinutes }.average().toFloat() / 60f
+        val day = daysInMonth.map { it.dayMinutes }.average().toFloat() / 60f
+        val steps = daysInMonth.map { it.steps }.average().toFloat()
 
         monthBuckets.add(MonthBucket(
             label = label,
@@ -1057,7 +1063,7 @@ private fun BarChart.enableTapToShowValue(
     lockZoomPanKeepTap()
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
+        override fun onValueSelected(e: Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
             if (e is BarEntry) {
                 val i = e.x.toInt().coerceIn(labels.indices)
                 val label = labels.getOrElse(i) { "" }
@@ -1075,7 +1081,7 @@ private fun LineChart.enableTapToShowValue(
     lockZoomPanKeepTap()
     setOnChartValueSelectedListener(object :
         com.github.mikephil.charting.listener.OnChartValueSelectedListener {
-        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
+        override fun onValueSelected(e: Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
             if (e != null) {
                 val i = e.x.toInt().coerceIn(labels.indices)
                 val label = labels.getOrElse(i) { "" }
@@ -1090,18 +1096,12 @@ private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
     setTouchEnabled(true)
     setDragEnabled(false)
     setScaleEnabled(false)
-    setScaleXEnabled(false)
-    setScaleYEnabled(false)
+    isScaleXEnabled = false
+    isScaleYEnabled = false
     setPinchZoom(false)
-    setDoubleTapToZoomEnabled(false)
+    isDoubleTapToZoomEnabled = false
     isHighlightPerTapEnabled = true
     isHighlightPerDragEnabled = false
-}
-
-private fun PieChart.noZoomNoPanKeepTap() {
-    setTouchEnabled(true)
-    isRotationEnabled = false
-    isHighlightPerTapEnabled = true
 }
 
 
@@ -1141,14 +1141,3 @@ private fun buildLonelinessDataSets(points: List<AnalysisViewModel.LinePoint>): 
     return sets
 }
 
-private fun buildSegmentedLineDataFromFloats(values: List<Float>): List<ILineDataSet> {
-    val sets = mutableListOf<ILineDataSet>()
-    var run = mutableListOf<Entry>()
-    fun flush(){ if(run.isNotEmpty()){
-        sets += LineDataSet(run, "Loneliness").apply {
-            color = COLOR_PRIMARY_HEX; setCircleColor(COLOR_PRIMARY_HEX)
-            lineWidth = 3f; circleRadius = 5f; mode = LineDataSet.Mode.LINEAR; setDrawValues(false)
-        }; run = mutableListOf() } }
-    values.forEachIndexed { i, y -> if (y.isNaN()) flush() else run += Entry(i.toFloat(), y) }
-    flush(); return sets
-}

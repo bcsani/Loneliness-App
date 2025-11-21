@@ -12,10 +12,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
-import kotlin.math.round
 
 class AnalysisViewModel (
-    private val dayRepository: DayRepository
+    dayRepository: DayRepository
 ) : ViewModel() {
 
     // Display (UI) state (expanded when data is connected).
@@ -158,10 +157,5 @@ class AnalysisViewModel (
 
     // Convert minutes to hours.
     private fun minutesToHours(mins: Float): Float = mins / 60f
-    // Rounds a number to one decimal place.
-    private fun round1(v: Float) = (round(v * 10f) / 10f)
-
-    // Rounds to the nearest integer.
-    private fun round0(v: Float) = round(v)
 
 }
