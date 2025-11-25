@@ -2,6 +2,8 @@ package fi.tuni.lonelinessapp.ui.screens.analysis
 
 // Compose
 import android.annotation.SuppressLint
+import android.graphics.Color
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -18,6 +20,7 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Description
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
@@ -33,6 +36,12 @@ import java.time.LocalDate
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import com.github.mikephil.charting.charts.BarLineChartBase
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import kotlin.math.roundToInt
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.PieSlice
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 
@@ -1157,7 +1166,7 @@ private fun PieChart.enableToastOnSliceClick() {
  */
 private fun niceCeil(value: Float, step: Float): Float {
     if (step <= 0f) return value
-    val k = kotlin.math.ceil(value / step)
+    val k = ceil(value / step)
     return (k * step)
 }
 

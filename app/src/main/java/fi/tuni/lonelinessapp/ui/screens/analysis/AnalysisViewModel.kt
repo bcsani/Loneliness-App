@@ -102,12 +102,18 @@ class AnalysisViewModel (
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps.toFloat()) }
 
     // Create the communication application hours for the pie chart.
-    fun communicationPieHours(): List<PieSlice> = listOf(
-        PieSlice("WhatsApp", 2.3f),
-        PieSlice("Messages", 1.7f),
-        PieSlice("Calls",    0.9f),
-        PieSlice("Signal",   0.6f),
-        PieSlice("Telegram",  0.5f)
+    fun communicationPieHours(
+        whatApps: Int,
+        messages: Int,
+        calls: Int,
+        signal: Int,
+        telegram: Int
+    ): List<PieSlice>? = listOf(
+        PieSlice("WhatsApp", minutesToHours(whatApps.toFloat())),
+        PieSlice("Messages", minutesToHours(messages.toFloat())),
+        PieSlice("Calls",    minutesToHours(calls.toFloat())),
+        PieSlice("Signal",   minutesToHours(signal.toFloat())),
+        PieSlice("Telegram",  minutesToHours(telegram.toFloat()))
     )
 
 
