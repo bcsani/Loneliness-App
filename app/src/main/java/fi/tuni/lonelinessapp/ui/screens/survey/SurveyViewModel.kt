@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fi.tuni.lonelinessapp.data.repository.DayRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -68,7 +69,7 @@ class SurveyViewModel(
         val date = LocalDate.now()
         val loneliness = _answers.sumOf{it ?: 0}
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             dayRepository.saveLoneliness(date, loneliness)
         }
     }
