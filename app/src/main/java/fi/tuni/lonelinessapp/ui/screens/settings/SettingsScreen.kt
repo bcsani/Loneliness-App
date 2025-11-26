@@ -94,7 +94,7 @@ fun SettingsScreen(
         // About App -item
         item {
             Button(
-                onClick = { settingsViewModel.toggleShowAbout() },
+                onClick = { settingsViewModel.openShowAbout() },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -105,21 +105,12 @@ fun SettingsScreen(
                     fontSize = 24.sp
                 )
             }
-
-            AnimatedVisibility(visible = showAboutApp) {
-                Text(
-                    text = "Information about app:\n" +
-                            "Something about app and how it works",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
         }
 
         // About Data -item
         item {
             Button(
-                onClick = { settingsViewModel.toggleShowData() },
+                onClick = { settingsViewModel.openShowData() },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -128,15 +119,6 @@ fun SettingsScreen(
                 Text(
                     text = "About Data",
                     fontSize = 24.sp
-                )
-            }
-
-            AnimatedVisibility(visible = showAboutData) {
-                Text(
-                    text = "Information about data:\n" +
-                            "Something about data and what data is collected",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
         }
@@ -199,9 +181,15 @@ fun SettingsScreen(
             }
         }
     }
-
+    // Open popups when activated
     if(showResetDialog) {
         ResetDialog(onDismiss = {settingsViewModel.closeResetDialog()}, settingsViewModel)
+    }
+    if(showAboutApp) {
+        AboutApp(onDismiss = {settingsViewModel.closeShowAbout()})
+    }
+    if(showAboutData) {
+        AboutData(onDismiss = {settingsViewModel.closeShowData()})
     }
 }
 
@@ -344,6 +332,124 @@ fun ResetDialog(
                         ) {
                             Text("Cancel")
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AboutApp(
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                // top row with title and close button
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    //title
+                    Text(
+                        text = "About App",
+                        modifier = Modifier.weight(2f)
+                            .padding(4.dp),
+                        style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    )
+                    Button(
+                        onClick = {
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Close")
+                    }
+
+                }
+                // LazyColumn for text content
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    item{
+                        Text(
+                            text = "Information about app:\n" +
+                                    "Something about app and how it works",
+                            modifier = Modifier.weight(1f)
+
+                                .padding(4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AboutData(
+    onDismiss: () -> Unit,
+
+    ) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                // top row with title and close button
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // title
+                    Text(
+                        text = "About App",
+                        modifier = Modifier.weight(2f)
+                            .padding(4.dp),
+                        style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    )
+
+                    Button(
+                        onClick = {
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Close")
+                    }
+
+                }
+                // LazyColumn for text content
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    item{
+                        Text(
+                            text = "Information about data:\n" +
+                                    "Something about data and what data is collected",
+                            modifier = Modifier.weight(1f)
+
+                                .padding(4.dp)
+                        )
                     }
                 }
             }

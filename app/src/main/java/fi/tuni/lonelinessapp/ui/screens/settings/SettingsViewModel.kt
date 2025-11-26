@@ -35,12 +35,20 @@ class SettingsViewModel(
         _showResetDialog.value = false
     }
 
-    fun toggleShowAbout() {
-        _showAboutApp.value = !_showAboutApp.value
+    fun openShowAbout() {
+        _showAboutApp.value = true
     }
 
-    fun toggleShowData() {
-        _showAboutData.value = !_showAboutData.value
+    fun closeShowAbout() {
+        _showAboutApp.value = false
+    }
+
+    fun openShowData() {
+        _showAboutData.value = true
+    }
+
+    fun closeShowData() {
+        _showAboutData.value = false
     }
 
     // Data
