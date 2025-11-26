@@ -6,6 +6,7 @@ import android.os.CountDownTimer
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,7 +58,8 @@ fun SettingsScreen(
     val days by settingsViewModel.daysEntity.collectAsState()
     var enableShare = false
     val showResetDialog by settingsViewModel.showResetDialog
-
+    val showAboutApp by settingsViewModel.showAboutApp
+    val showAboutData by settingsViewModel.showAboutData
 
     val createFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv"),
@@ -91,6 +91,56 @@ fun SettingsScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ){
+        // About App -item
+        item {
+            Button(
+                onClick = { settingsViewModel.toggleShowAbout() },
+                shape = MaterialTheme.shapes.medium,
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+            ) {
+                Text(
+                    text = "About App",
+                    fontSize = 24.sp
+                )
+            }
+
+            AnimatedVisibility(visible = showAboutApp) {
+                Text(
+                    text = "Information about app:\n" +
+                            "Something about app and how it works",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+
+        // About Data -item
+        item {
+            Button(
+                onClick = { settingsViewModel.toggleShowData() },
+                shape = MaterialTheme.shapes.medium,
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+            ) {
+                Text(
+                    text = "About Data",
+                    fontSize = 24.sp
+                )
+            }
+
+            AnimatedVisibility(visible = showAboutData) {
+                Text(
+                    text = "Information about data:\n" +
+                            "Something about data and what data is collected",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+
         item {
             Button(
                 onClick = {

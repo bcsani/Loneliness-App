@@ -19,12 +19,28 @@ class SettingsViewModel(
     private val _showResetDialog = mutableStateOf(false)
     val showResetDialog: State<Boolean> = _showResetDialog
 
+    // About app -text visibility
+    private val _showAboutApp = mutableStateOf(false)
+    val showAboutApp: State<Boolean> = _showAboutApp
+
+    // About data -text visibility
+    private val _showAboutData = mutableStateOf(false)
+    val showAboutData: State<Boolean> = _showAboutData
+
     fun openResetDialog() {
         _showResetDialog.value = true
     }
 
     fun closeResetDialog() {
         _showResetDialog.value = false
+    }
+
+    fun toggleShowAbout() {
+        _showAboutApp.value = !_showAboutApp.value
+    }
+
+    fun toggleShowData() {
+        _showAboutData.value = !_showAboutData.value
     }
 
     // Data
