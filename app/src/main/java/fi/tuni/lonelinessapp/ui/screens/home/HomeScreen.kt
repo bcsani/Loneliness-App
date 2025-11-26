@@ -145,7 +145,8 @@ fun HomeScreen(
                         BarChart(context).apply {
 
                             // Common basic settings.
-                            applyBarDefaults(labels)
+                            //applyBarDefaults(labels)
+                            applyBarDefaults()
 
                             axisLeft.apply {
                                 // Left Y-axis limits

@@ -2,7 +2,6 @@ package fi.tuni.lonelinessapp.ui.screens.analysis
 
 // Compose
 import android.annotation.SuppressLint
-import android.graphics.Color
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,7 +24,6 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
-import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import fi.tuni.lonelinessapp.data.entity.DayEntity
 import com.github.mikephil.charting.components.AxisBase
 
@@ -653,7 +651,7 @@ fun AnalysisScreen(
                             val entries = commPie.filter { it.value > 0f }
                                 .map { PieEntry(it.value, it.label) }
                             if (entries.isEmpty()) {
-                                pie.centerText = "No chart data available"
+                                //pie.centerText = "No chart data available"
                                 pie.setCenterTextSize(16f)
                                 pie.setCenterTextColor(android.graphics.Color.BLACK)
                                 pie.legend.isEnabled = false
@@ -1044,7 +1042,7 @@ fun AnalysisScreen(
  * Small helper to standardize chart container look
  */
 @Composable
-private fun ChartCard(
+fun ChartCard(
     title: String, onInfoClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -1085,7 +1083,7 @@ private fun ChartCard(
 /** BarChart.applyBarDefaults:
  * Common baseline for bar charts so we don’t repeat ourselves.
  */
-private fun BarChart.applyBarDefaults() {
+fun BarChart.applyBarDefaults() {
     description = Description().apply { text = "" }
     axisRight.isEnabled = false
     legend.isEnabled = false
