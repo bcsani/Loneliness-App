@@ -2,7 +2,6 @@ package fi.tuni.lonelinessapp.ui.screens.analysis
 
 // Compose
 import android.annotation.SuppressLint
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -19,7 +18,6 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
@@ -34,13 +32,9 @@ import java.time.LocalDate
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import com.github.mikephil.charting.charts.BarLineChartBase
-import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
-import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.PieSlice
 import kotlin.math.ceil
-import kotlin.math.roundToInt
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 
 // Color configuration for charts.
@@ -235,42 +229,42 @@ fun AnalysisScreen(
     // ====================== TEST DATA (WEEK VIEW) ======================
     // This block provides hardcoded data for the "Week" view to test how null/zero values are rendered.
     //o restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
-    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
-    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        //if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month
-            //) {
-            //val today = LocalDate.now()
-            //val testData = listOf(
-                //DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-                //DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-                //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
-                //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-                //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
-                //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-                //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-            //)
-            //val testDataMap = testData.associateBy { it.date }
-            //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
-            //wantedDates.map { date ->
-                //testDataMap[date] ?: DaySample(
-                    //date = date,
-                    //loneliness = null,
-                    //nightMinutes = 0,
-                    //dayMinutes = 0,
-                    //steps = 0
-                //)
-           // }
-        //} else {
-            //buildSamplesForRange(daysEntity, selectedRange)
-        //}
-    //}
+    val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month
+            ) {
+            val today = LocalDate.now()
+            val testData = listOf(
+                DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+                DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+                DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
+                DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+                DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
+                DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+                DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+            )
+            val testDataMap = testData.associateBy { it.date }
+            val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
+            wantedDates.map { date ->
+                testDataMap[date] ?: DaySample(
+                    date = date,
+                    loneliness = null,
+                    nightMinutes = 0,
+                    dayMinutes = 0,
+                    steps = 0
+                )
+           }
+        } else {
+            buildSamplesForRange(daysEntity, selectedRange)
+        }
+    }
     // ======================= END OF TEST DATA =======================
 
     // ================= ORIGINAL DATA LOADING (Commented out) ================
-    val daysEntity by analysisViewModel.daysEntity.collectAsState()
-    val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        buildSamplesForRange(daysEntity, selectedRange)
-    }
+    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
+        //buildSamplesForRange(daysEntity, selectedRange)
+    //}
     // ========================================================================
 
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }

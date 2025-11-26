@@ -83,8 +83,9 @@ class AnalysisViewModel (
         data.map { d ->
             val y = d.loneliness
                 ?.takeIf { it in 3..9 }
-                ?.let { (it - 2).toFloat() }   // skaalataan 1–7
-                ?: Float.NaN                   // null-> aukko
+                ?.let { (it - 3).toFloat() }   // skaalataan 1–7
+                ?: Float.NaN
+
 
             LinePoint(d.date.dayOfWeek.name.take(3), y)
         }
