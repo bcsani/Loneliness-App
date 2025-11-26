@@ -45,7 +45,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
+                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), //  reunus lisätty ,
                 shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
             ) {

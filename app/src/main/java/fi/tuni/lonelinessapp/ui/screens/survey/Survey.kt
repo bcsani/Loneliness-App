@@ -11,14 +11,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.RadioButtonDefaults
+
+
+//import fi.tuni.lonelinessapp.ui.screens.home.COLOR_PRIMARY_HEX
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 
 @Composable
 fun SurveyDialog(
@@ -82,11 +89,16 @@ fun SurveyDialog(
                         RadioButton(
                             selected = currentAnswer == optionValues[index],
                             onClick = {
+
                                 surveyViewModel.setAnswer(
                                     currentStep,
                                     optionValues[index]
+
                                 )
-                            }
+
+                            }, colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(COLOR_PRIMARY_HEX), // väri kun valittu
+                            )
                         )
                         Text(text = option,
                             modifier = Modifier.
@@ -105,6 +117,7 @@ fun SurveyDialog(
                     // Back-button
                     Button(onClick = {
                             if (currentStep == 1) {
+
                                 surveyViewModel.resetSurvey()
                                 onDismiss()
                             } else {
@@ -112,7 +125,9 @@ fun SurveyDialog(
                                 surveyViewModel.previousStep()
                             }
                         },
-                        modifier = Modifier.weight(1f)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX)),
+
+                                modifier = Modifier.weight(1f)
                     ) {
                         if (currentStep == 1) {
                             Text("Cancel")
@@ -135,6 +150,8 @@ fun SurveyDialog(
                                 surveyViewModel.nextStep()
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX)),
+
                         enabled = currentAnswer != null,
                         modifier = Modifier.weight(1f)
                     ) {
