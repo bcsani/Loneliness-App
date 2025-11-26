@@ -6,7 +6,6 @@ import android.os.CountDownTimer
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,8 +42,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.data.entity.DayEntity
+import java.io.File
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -56,7 +57,6 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val days by settingsViewModel.daysEntity.collectAsState()
-    var enableShare = false
     val showResetDialog by settingsViewModel.showResetDialog
     val showAboutApp by settingsViewModel.showAboutApp
     val showAboutData by settingsViewModel.showAboutData
@@ -69,15 +69,6 @@ fun SettingsScreen(
                 val content = formatContent(days)
                 context.contentResolver.openOutputStream(uri)?.use {
                     it.write(content.toByteArray())
-                }
-                if (enableShare) {
-                    // Share sheet
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, it)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share file"))
                 }
                 // Notification
                 Toast.makeText(context, "Export successful", Toast.LENGTH_LONG).show()
@@ -126,7 +117,6 @@ fun SettingsScreen(
         item {
             Button(
                 onClick = {
-                    enableShare = false
                     createFileLauncher.launch("data_${LocalDate.now()
                         .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}" +
                             "_${LocalTime.now().format(
@@ -146,11 +136,24 @@ fun SettingsScreen(
         item {
             Button(
                 onClick = {
-                    enableShare = true
-                    createFileLauncher.launch("data_${LocalDate.now()
+                    val cacheFile = File(context.cacheDir, "data_${LocalDate.now()
                         .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}" +
                             "_${LocalTime.now().format(
-                        DateTimeFormatter.ofPattern("HH-mm"))}.csv")
+                                DateTimeFormatter.ofPattern("HH-mm"))}.csv")
+                    cacheFile.writeText(formatContent(days))
+
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        cacheFile
+                    )
+
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Share file"))
                 },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
@@ -158,7 +161,7 @@ fun SettingsScreen(
                     .height(100.dp)
             ) {
                 Text(
-                    text = "Export & Share Data",
+                    text = "Share Data",
                     fontSize = 24.sp
                 )
             }
@@ -225,7 +228,6 @@ fun formatContent(days: List<DayEntity>?): String {
 fun ResetDialog(
     onDismiss: () -> Unit,
     settingsViewModel: SettingsViewModel
-
 ){
     // Time left in seconds
     var timeLeft by remember { mutableIntStateOf(15) }
