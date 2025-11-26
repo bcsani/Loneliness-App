@@ -2,6 +2,9 @@ package fi.tuni.lonelinessapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+//Sininen jota on kaikkialla
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)
