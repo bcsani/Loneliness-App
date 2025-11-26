@@ -145,7 +145,7 @@ class AnalysisViewModel (
             } else {
                 val lonAvg = inPeriod.mapNotNull { it.loneliness }
                     .filter { it in 3..9 }
-                    .map { (it - 2).coerceIn(1, 7) }
+                    .map { (it - 3).coerceIn(0,6) }
                     .average().toFloat().let { if (it.isNaN()) Float.NaN else it }
 
                 val nightH   = (inPeriod.map { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
