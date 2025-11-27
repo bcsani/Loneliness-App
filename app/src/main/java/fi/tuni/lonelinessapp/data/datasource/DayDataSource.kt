@@ -141,4 +141,8 @@ class DayDataSource (
             telegram = telegram
         ))
     }
+
+    suspend fun resetData() {
+        dayDao.resetData()
+    }
 }
