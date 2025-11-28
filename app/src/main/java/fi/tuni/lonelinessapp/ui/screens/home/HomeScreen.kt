@@ -40,6 +40,8 @@ import androidx.compose.runtime.setValue
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.formatter.ValueFormatter
+
 
 
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
@@ -171,6 +173,13 @@ fun HomeScreen(
                             setTouchEnabled(true)
                             isHighlightPerTapEnabled = true
                             setScaleEnabled(false) // zoom not in use
+
+                            xAxis.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    val index = value.toInt()
+                                    return labels.getOrNull(index) ?: ""
+                                }
+                            }
 
                             axisLeft.apply {
                                 // Left Y-axis limits
