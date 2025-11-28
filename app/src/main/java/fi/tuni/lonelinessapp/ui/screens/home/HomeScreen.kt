@@ -37,12 +37,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.toArgb
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.formatter.ValueFormatter
 import fi.tuni.lonelinessapp.ui.theme.primaryBlue
 
 
@@ -55,12 +53,11 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     surveyViewModel: SurveyViewModel,
 
-) {
+    ) {
     val showDialog by mainViewModel.showSurvey
     val streakCount by homeViewModel.streakCount
     var infoDialogMessage by remember { mutableStateOf<String?>(null)}
     var selectedBarMessage by remember { mutableStateOf<String?>(null) }
-
 
 
 
@@ -101,7 +98,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)),
+                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
                 shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
             ) {
@@ -178,7 +175,12 @@ fun HomeScreen(
                             isHighlightPerTapEnabled = true
                             setScaleEnabled(false) // zoom not in use
 
-
+                            xAxis.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    val index = value.toInt()
+                                    return labels.getOrNull(index) ?: ""
+                                }
+                            }
 
                             axisLeft.apply {
                                 // Left Y-axis limits
@@ -239,7 +241,6 @@ fun HomeScreen(
             }
         }
     }
-    // info button
     if (infoDialogMessage != null) {
         AlertDialog(
             onDismissRequest = { infoDialogMessage = null },
@@ -253,8 +254,6 @@ fun HomeScreen(
             text = { Text(infoDialogMessage!!) }
         )
     }
-
-    // Touch on bar message
     if (selectedBarMessage != null) {
         AlertDialog(
             onDismissRequest = { selectedBarMessage = null },
@@ -269,4 +268,3 @@ fun HomeScreen(
     }
 
 }
-
