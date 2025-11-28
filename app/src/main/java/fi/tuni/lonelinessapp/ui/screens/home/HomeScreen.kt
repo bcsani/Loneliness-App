@@ -34,6 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 @Composable
@@ -42,9 +46,13 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = viewModel(),
     surveyViewModel: SurveyViewModel,
+
 ) {
     val showDialog by mainViewModel.showSurvey
     val streakCount by homeViewModel.streakCount
+    var infoDialogMessage by remember { mutableStateOf<String?>(null)}
+
+
 
     // Variable for loading correlation chart and showing loading bar
     val isLoading by homeViewModel.isLoading.collectAsState()
@@ -73,6 +81,7 @@ fun HomeScreen(
             item {
                 CircularProgressIndicator()
             }
+
         }
 
         //  Streak Card
@@ -134,7 +143,12 @@ fun HomeScreen(
         //  Loneliness Correlations Chart
         // Correlation chart
         item {
-            ChartCard(title = "Loneliness correlations") {
+
+            val infoText = "Loneliness correlations, shows how different things correlate with expereinced lonliness"
+            ChartCard(
+                title = "Exercise",
+                onInfoClick = { infoDialogMessage = infoText }
+            )  {
                 AndroidView(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -191,6 +205,19 @@ fun HomeScreen(
                 )
             }
         }
+    }
+    if (infoDialogMessage != null) {
+        AlertDialog(
+            onDismissRequest = { infoDialogMessage = null },
+            confirmButton = {
+                TextButton(onClick = { infoDialogMessage = null }) {
+                    Text("OK")
+
+                }
+            },
+            title = { Text("Info") },
+            text = { Text(infoDialogMessage!!) }
+        )
     }
 }
 
