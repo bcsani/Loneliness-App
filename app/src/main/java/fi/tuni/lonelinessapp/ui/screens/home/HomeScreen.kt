@@ -178,12 +178,7 @@ fun HomeScreen(
                             isHighlightPerTapEnabled = true
                             setScaleEnabled(false) // zoom not in use
 
-                            xAxis.valueFormatter = object : ValueFormatter() {
-                                override fun getFormattedValue(value: Float): String {
-                                    val index = value.toInt()
-                                    return labels.getOrNull(index) ?: ""
-                                }
-                            }
+
 
                             axisLeft.apply {
                                 // Left Y-axis limits

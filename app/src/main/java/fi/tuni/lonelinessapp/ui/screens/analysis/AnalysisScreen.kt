@@ -1119,9 +1119,10 @@ private fun makeBarDataSet(
     label: String,
     entries: List<BarEntry>,
 ): BarDataSet = BarDataSet(entries, label).apply {
-    setColor(primaryBlue.toArgb())
+    color = COLOR_PRIMARY_HEX
+
     valueTextSize = 12f
-    setColor(textPrimary.toArgb())
+    valueTextColor = COLOR_TEXT_HEX
     setDrawValues(false)
 }
 
