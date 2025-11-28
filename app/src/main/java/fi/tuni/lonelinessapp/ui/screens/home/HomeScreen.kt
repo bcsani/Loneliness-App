@@ -34,10 +34,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.data.Entry
+
 
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 @Composable
@@ -51,6 +54,8 @@ fun HomeScreen(
     val showDialog by mainViewModel.showSurvey
     val streakCount by homeViewModel.streakCount
     var infoDialogMessage by remember { mutableStateOf<String?>(null)}
+    var selectedBarMessage by remember { mutableStateOf<String?>(null) }
+
 
 
 
@@ -162,6 +167,11 @@ fun HomeScreen(
                             //applyBarDefaults(labels)
                             applyBarDefaults()
 
+                            //can touch
+                            setTouchEnabled(true)
+                            isHighlightPerTapEnabled = true
+                            setScaleEnabled(false) // zoom not in use
+
                             axisLeft.apply {
                                 // Left Y-axis limits
                                 axisMinimum = -0.1f
@@ -188,6 +198,21 @@ fun HomeScreen(
                                 xAxis.textSize = 14f
                                 barWidth = 0.8f
                             }
+                            setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
+                                override fun onValueSelected(e: Entry?, h: Highlight?) {
+                                    if (e != null && h != null) {
+                                        val index = h.x.toInt()
+                                        val variableName = labels[index]
+                                        val value = e.y
+
+                                        selectedBarMessage = "$variableName: correlation = $value"
+                                    }
+                                }
+
+                                override fun onNothingSelected() { }
+                            })
+
+
 
                             // Draw the graph.
                             invalidate()
@@ -219,6 +244,18 @@ fun HomeScreen(
             text = { Text(infoDialogMessage!!) }
         )
     }
-}
+    if (selectedBarMessage != null) {
+        AlertDialog(
+            onDismissRequest = { selectedBarMessage = null },
+            confirmButton = {
+                TextButton(onClick = { selectedBarMessage = null }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Correlation detail") },
+            text = { Text(selectedBarMessage!!) }
+        )
+    }
 
+}
 
