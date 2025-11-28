@@ -37,14 +37,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.toArgb
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.formatter.ValueFormatter
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
 
 
 
-private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+
 @Composable
 fun HomeScreen(
     mainViewModel: MainViewModel,
@@ -57,6 +60,7 @@ fun HomeScreen(
     val streakCount by homeViewModel.streakCount
     var infoDialogMessage by remember { mutableStateOf<String?>(null)}
     var selectedBarMessage by remember { mutableStateOf<String?>(null) }
+
 
 
 
@@ -97,7 +101,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
+                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)),
                 shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
             ) {
@@ -141,7 +145,7 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .height(70.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX))
+                colors = ButtonDefaults.buttonColors(Color(primaryBlue.value))
             ) {
                 Text("Fill Daily Survey", fontSize = 20.sp)
             }
@@ -240,6 +244,7 @@ fun HomeScreen(
             }
         }
     }
+    // info button
     if (infoDialogMessage != null) {
         AlertDialog(
             onDismissRequest = { infoDialogMessage = null },
@@ -253,6 +258,8 @@ fun HomeScreen(
             text = { Text(infoDialogMessage!!) }
         )
     }
+
+    // Touch on bar message
     if (selectedBarMessage != null) {
         AlertDialog(
             onDismissRequest = { selectedBarMessage = null },
