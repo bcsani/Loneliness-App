@@ -80,6 +80,7 @@ class AnalysisViewModel (
 
     var callDuration = 0.9f
 
+    // This function set the call duration for today when the user accept call log tracking
     fun setCallDuration() {
         try {
             viewModelScope.launch {
