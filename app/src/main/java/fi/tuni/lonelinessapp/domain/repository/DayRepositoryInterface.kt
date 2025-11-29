@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 interface DayRepositoryInterface {
-    fun insertDay(day: DayEntity)
+    suspend fun insertDay(day: DayEntity)
 
     suspend fun saveLoneliness(date: LocalDate, loneliness: Int)
 

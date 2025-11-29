@@ -11,7 +11,7 @@ class DayDataSource (
     private val dayDao: DayDao,
     private val callDurationHelper: CallDurationHelper
 ) {
-    fun insertDay(day: DayEntity) =
+    suspend fun insertDay(day: DayEntity) =
         dayDao.insertDay(day)
     fun getAllDays(): Flow<List<DayEntity>> =
         dayDao.getAllDays()
@@ -19,6 +19,8 @@ class DayDataSource (
         dayDao.getDayByDate(date)
     fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDao.getDaysFromDate(startDate)
+    fun getTotalCallDurationToday(): Float =
+        callDurationHelper.getTotalCallDurationToday()
     suspend fun saveLoneliness(date: LocalDate, loneliness: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
@@ -118,7 +120,7 @@ class DayDataSource (
         }
     }
 
-    private fun insertDayWithData(
+    suspend private fun insertDayWithData(
         date: LocalDate,
         loneliness: Int = 0,
         nightMinutes: Int = 0,
@@ -144,7 +146,7 @@ class DayDataSource (
         ))
     }
 
-    fun getTotalCallDurationToday(): Float {
-        return callDurationHelper.getTotalCallDurationToday()
+    suspend fun resetData() {
+        dayDao.resetData()
     }
 }

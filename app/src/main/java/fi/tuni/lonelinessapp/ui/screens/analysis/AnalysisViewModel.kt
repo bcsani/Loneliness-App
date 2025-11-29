@@ -9,10 +9,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
-import kotlin.math.round
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 class AnalysisViewModel (
-    private val dayRepository: DayRepository
+    dayRepository: DayRepository
 ) : ViewModel() {
 
     // Display (UI) state (expanded when data is connected).
@@ -32,7 +34,6 @@ class AnalysisViewModel (
     val ui: StateFlow<UiState> = _ui
 
     // Data structures.
-
     // One day's data (date, survey result, phone usage, steps).
     data class DaySample(
 
@@ -40,14 +41,12 @@ class AnalysisViewModel (
         val date: LocalDate,
 
         // Query result (UCLA 0–9).
-        val loneliness: Int,
+        val loneliness: Int?,
 
         // Phone usage at night (in minutes).
-        // POSSIBLE CHANGE? Depending on the format of the results.
         val nightMinutes: Int,
 
         // Phone usage per day (in minutes).
-        // POSSIBLE CHANGE? Depending on the format in which the results come.
         val dayMinutes: Int,
 
         // Steps.
@@ -63,20 +62,33 @@ class AnalysisViewModel (
     // Single slice data for pie chart.
     data class PieSlice (val label: String, val value: Float)
 
-    // Start date 6 days ago.
-    val start = LocalDate.now().minusDays(6)
 
-    // Example data.
-    val daysEntity : StateFlow<List<DayEntity>?> = dayRepository.getDaysFromDate(start)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    data class AggregateBucket(
+        val label: String,
+        val lonAvg: Float,
+        val nightH: Float,
+        val dayH: Float,
+        val stepsAvg: Float
+    )
 
-    // Call log
-    var callDuration: Float = 0f
+
+    val daysEntity: StateFlow<List<DayEntity>?> =
+        dayRepository.getAllDays()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
+    // Convert the day's data to fit a line chart (date + value).
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
-        data.map { d -> LinePoint(d.date.dayOfWeek.name.take(3), d.loneliness.toFloat()) }
+        data.map { d ->
+            val y = d.loneliness
+                ?.takeIf { it in 3..9 }
+                ?.let { (it - 3).toFloat() }   // skaalataan 1–7
+                ?: Float.NaN
+
+
+            LinePoint(d.date.dayOfWeek.name.take(3), y)
+        }
 
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
@@ -91,34 +103,62 @@ class AnalysisViewModel (
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps.toFloat()) }
 
     // Create the communication application hours for the pie chart.
-    fun communicationPieHours(
-        whatApps: Int,
-        messages: Int,
-        calls: Int,
-        signal: Int,
-        telegram: Int
-    ): List<PieSlice>? = listOf(
-        PieSlice("WhatsApp", minutesToHours(whatApps.toFloat())),
-        PieSlice("Messages", minutesToHours(messages.toFloat())),
-        PieSlice("Calls",    minutesToHours(callDuration)),
-        PieSlice("Signal",   minutesToHours(signal.toFloat())),
-        PieSlice("Telegram",  minutesToHours(telegram.toFloat()))
+    fun communicationPieHours(): List<PieSlice> = listOf(
+        PieSlice("WhatsApp", 2.3f),
+        PieSlice("Messages", 1.7f),
+        PieSlice("Calls",    0.9f),
+        PieSlice("Signal",   0.6f),
+        PieSlice("Telegram",  0.5f)
     )
 
-    // Helper functions.
+
+
+
+    fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {
+        val valid = samples.filter {
+            (it.loneliness != null && it.loneliness in 3..9) ||
+                    it.nightMinutes > 0 || it.dayMinutes > 0 || it.steps > 0
+        }
+        if (valid.isEmpty()) return emptyList()
+
+        val firstDate = valid.minOf { it.date }
+        val lastDate = LocalDate.now()
+        val totalDays = ChronoUnit.DAYS.between(firstDate, lastDate) + 1
+        if (totalDays <= 0) return emptyList()
+
+        val numPeriods = 12
+        val periodLen = (totalDays.toFloat() / numPeriods).coerceAtLeast(1f)
+        val fmt = DateTimeFormatter.ofPattern("MMM yy", Locale.getDefault())
+
+        val out = mutableListOf<AggregateBucket>()
+        for (i in 0 until numPeriods) {
+            val start = firstDate.plusDays((i * periodLen).toLong())
+            val end   = firstDate.plusDays(((i + 1) * periodLen).toLong() - 1).coerceAtMost(lastDate)
+
+            val inPeriod = valid.filter { !it.date.isBefore(start) && !it.date.isAfter(end) }
+            val label = start.format(fmt).let { a ->
+                val b = end.format(fmt); if (a == b) a else "$a - $b"
+            }
+
+            if (inPeriod.isEmpty()) {
+                out += AggregateBucket(label, Float.NaN, 0f, 0f, 0f)
+            } else {
+                val lonAvg = inPeriod.mapNotNull { it.loneliness }
+                    .filter { it in 3..9 }
+                    .map { (it - 3).coerceIn(0,6) }
+                    .average().toFloat().let { if (it.isNaN()) Float.NaN else it }
+
+                val nightH   = (inPeriod.map { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
+                val dayH     = (inPeriod.map { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
+                val stepsAvg =  inPeriod.map { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
+
+                out += AggregateBucket(label, lonAvg, nightH, dayH, stepsAvg)
+            }
+        }
+        return out
+    }
 
     // Convert minutes to hours.
     private fun minutesToHours(mins: Float): Float = mins / 60f
-
-    // Rounds a number to one decimal place.
-    private fun round1(v: Float) = (round(v * 10f) / 10f)
-
-    // Rounds to the nearest integer.
-    private fun round0(v: Float) = round(v)
-
-    fun setCallDuration() {
-        callDuration = dayRepository.getTotalCallDurationToday()
-    }
-
 
 }

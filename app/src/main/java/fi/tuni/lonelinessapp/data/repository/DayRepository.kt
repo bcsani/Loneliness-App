@@ -9,7 +9,7 @@ import java.time.LocalDate
 class DayRepository  (
     private val dayDataSource: DayDataSource
 ): DayRepositoryInterface {
-    override fun insertDay(day: DayEntity) =
+    override suspend fun insertDay(day: DayEntity) =
         dayDataSource.insertDay(day)
     override suspend fun saveLoneliness(date: LocalDate, loneliness: Int) =
         dayDataSource.saveLoneliness(date, loneliness)
@@ -35,6 +35,8 @@ class DayRepository  (
         dayDataSource.getDayByDate(date)
     override fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDataSource.getDaysFromDate(startDate)
+    suspend fun resetData() =
+        dayDataSource.resetData()
     fun getTotalCallDurationToday(): Float =
         dayDataSource.getTotalCallDurationToday()
 }

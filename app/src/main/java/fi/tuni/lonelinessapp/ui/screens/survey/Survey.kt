@@ -19,6 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.RadioButtonDefaults
+
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 
 @Composable
 fun SurveyDialog(
@@ -86,7 +91,8 @@ fun SurveyDialog(
                                     currentStep,
                                     optionValues[index]
                                 )
-                            }
+                            },  colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(COLOR_PRIMARY_HEX)),
                         )
                         Text(text = option,
                             modifier = Modifier.
@@ -112,6 +118,8 @@ fun SurveyDialog(
                                 surveyViewModel.previousStep()
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(COLOR_PRIMARY_HEX)),
                         modifier = Modifier.weight(1f)
                     ) {
                         if (currentStep == 1) {
@@ -135,7 +143,9 @@ fun SurveyDialog(
                                 surveyViewModel.nextStep()
                             }
                         },
-                        enabled = currentAnswer != null,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX)),
+
+                                enabled = currentAnswer != null,
                         modifier = Modifier.weight(1f)
                     ) {
                         if (currentStep == 3) {

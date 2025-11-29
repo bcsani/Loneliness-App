@@ -15,10 +15,9 @@ interface DayDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAllDays(days: List<DayEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertDay(day: DayEntity)
+    suspend fun insertDay(day: DayEntity)
     @Query("UPDATE dayTable SET loneliness = :loneliness WHERE date = :date")
     suspend fun updateLoneliness(date: LocalDate, loneliness: Int)
-
     @Query("UPDATE dayTable SET nightMinutes = :nightMinutes WHERE date = :date")
     suspend fun updateNightMinutes(date: LocalDate, nightMinutes: Int)
 
@@ -47,4 +46,7 @@ interface DayDao {
 
     @Query("SELECT * FROM daytable WHERE date >= :startDate ORDER BY date ASC")
     fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?>
+
+    @Query("DELETE FROM dayTable")
+    suspend fun resetData()
 }
