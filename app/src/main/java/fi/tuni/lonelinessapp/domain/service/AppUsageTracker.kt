@@ -4,88 +4,113 @@ import android.app.AppOpsManager
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import android.provider.Settings
-import androidx.annotation.RequiresApi
+import fi.tuni.lonelinessapp.domain.model.AppUsageData
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class AppUsageTracker(
     private val context: Context
 ) {
-    private val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    private val usageStatsManager: UsageStatsManager by lazy {
+        context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    }
 
-    private val targetApps = listOf(
+    private val telegramPackages = listOf(
         "org.telegram.messenger",
-        "com.whatsapp"
     )
 
-    fun hasUsageStatsPermission(): Boolean {
+    private val whatsappPackages = listOf(
+        "com.whatsapp",
+        "com.whatsapp.w4b",
+        "com.whatsapp.business"
+    )
+
+    fun isUsageStatsPermissionGranted(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = appOps.checkOpNoThrow(
             AppOpsManager.OPSTR_GET_USAGE_STATS,
             android.os.Process.myUid(),
             context.packageName
         )
+
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    fun requestUsageStatsPermission() {
-        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        context.startActivity(intent)
+    fun startTracking() {
+        if (!isUsageStatsPermissionGranted()) {
+            return
+        }
+
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
-    fun getAppUsageStats(days: Int = 1): Map<String, Long> {
-        val calendar = Calendar.getInstance()
-        val endTime = calendar.timeInMillis
-        calendar.add(Calendar.DAY_OF_YEAR, -days)
-        val startTime = calendar.timeInMillis
+    fun getAppUsageStats(daysBack: Int = 1): AppUsageData {
+        val calendar = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_WEEK, -daysBack)
+        }
 
         val usageStats = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            startTime,
-            endTime
-        )
+            UsageStatsManager.INTERVAL_BEST,
+            calendar.timeInMillis,
+            System.currentTimeMillis()
+        ) ?: return AppUsageData()
 
-        val appUsage = mutableMapOf<String, Long>()
+        return processUsageStats(usageStats)
+    }
 
-        usageStats?.forEach { stat ->
-            if (targetApps.contains(stat.packageName) && stat.totalTimeInForeground > 0) {
-                appUsage[stat.packageName] = (appUsage[stat.packageName] ?: 0) + stat.totalTimeInForeground
+    private fun processUsageStats(usageStats: List<UsageStats>): AppUsageData {
+        var telegramTime = 0L
+        var whatsappTime = 0L
+
+        println("=== PROCESSING USAGE STATS ===")
+
+        // Sum usage across all package variations
+        usageStats.forEach { stats ->
+            val packageName = stats.packageName
+            val usageTime = stats.totalTimeInForeground
+
+            // Only process if there's actual usage time
+            if (usageTime > 0) {
+                // println("Processing: $packageName - ${usageTime}ms")
+
+                when {
+                    telegramPackages.any { it == packageName } -> {
+                        // println("✓ FOUND TELEGRAM: $packageName - ${usageTime}ms")
+                        telegramTime += usageTime
+                    }
+                    whatsappPackages.any { it == packageName } -> {
+                        // println("✓ FOUND WHATSAPP: $packageName - ${usageTime}ms")
+                        whatsappTime += usageTime
+                    }
+                    else -> {
+                        // Debug: print other apps with significant usage
+                        if (usageTime > 60000) { // More than 1 minute
+                            println("  Other app: $packageName - ${usageTime}ms")
+                        }
+                    }
+                }
             }
         }
 
-        return appUsage
+
+        /*
+        println("FINAL RESULTS:")
+        println("Telegram time: ${telegramTime}ms (${TimeUnit.MILLISECONDS.toMinutes(telegramTime)} minutes)")
+        println("WhatsApp time: ${whatsappTime}ms (${TimeUnit.MILLISECONDS.toMinutes(whatsappTime)} minutes)")
+        println("=== END PROCESSING ===")
+         */
+
+        // Convert milliseconds to minutes
+        val telegramMinutes = TimeUnit.MILLISECONDS.toMinutes(telegramTime)
+        val whatsappMinutes = TimeUnit.MILLISECONDS.toMinutes(whatsappTime)
+
+        return AppUsageData(
+            telegramUsageTime = telegramMinutes,
+            whatsappUsageTime = whatsappMinutes,
+            lastUpdated = System.currentTimeMillis()
+        )
     }
 
-    fun getAppUsageStatsForToday(): Map<String, Long> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-            getAppUsageStats(1)
-        } else {
-            emptyMap()
-        }
-    }
-
-    fun formatTime(milliseconds: Long): String {
-        val seconds = milliseconds / 1000
-        val hours = seconds / 3600
-        val minutes = (seconds % 3600) / 60
-        val secs = seconds % 60
-
-        return when {
-            hours > 0 -> String.format("%dh %02dm %02ds", hours, minutes, secs)
-            minutes > 0 -> String.format("%dm %02ds", minutes, secs)
-            else -> String.format("%ds", secs)
-        }
-    }
-
-    fun getAppName(packageName: String): String {
-        return when (packageName) {
-            "org.telegram.messenger" -> "Telegram"
-            "com.whatsapp" -> "WhatsApp"
-            else -> packageName
-        }
+    fun getCurrentUsage(): AppUsageData {
+        return getAppUsageStats(1) // Last 24 hours
     }
 }

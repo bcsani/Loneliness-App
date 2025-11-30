@@ -84,22 +84,6 @@ class SequentialPermissionManager(
         currentRequest = permissionQueue.removeAt(0)
         val request = currentRequest!!
 
-        /*
-        when {
-            ContextCompat.checkSelfPermission(activity, request.permission) == PackageManager.PERMISSION_GRANTED -> {
-                request.onGranted()
-                processNext()
-            }
-            ActivityCompat.shouldShowRequestPermissionRationale(activity, request.permission) -> {
-                // Show rationale and then request permission
-                showRationale(request)
-            }
-            else -> {
-                permissionLauncher.launch(request.permission)
-            }
-        }
-        */
-
         val allGranted = request.permissions.all { permission ->
             ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
         }

@@ -79,6 +79,8 @@ class AnalysisViewModel (
 
 
     var callDuration = 0.9f
+    var whatAppsDuration = 2.3f
+    var telegramDuration = 0.5f
 
     // This function set the call duration for today when the user accept call log tracking
     fun setCallDuration() {
@@ -88,6 +90,27 @@ class AnalysisViewModel (
             }
         } catch (e: Exception) {
             callDuration = 0.9f
+        }
+    }
+
+    fun setWhatappsDuration(whatapps: Long) {
+        try {
+            viewModelScope.launch {
+                whatAppsDuration = whatapps.toFloat()
+            }
+        } catch (e: Exception) {
+            whatAppsDuration = 2.3f
+        }
+    }
+
+    // This function set the telegram's usage duration for today when user accept app tracking
+    fun setTelegramDuration(telegram: Long) {
+        try {
+            viewModelScope.launch {
+                telegramDuration = telegram.toFloat()
+            }
+        } catch (e: Exception) {
+            telegramDuration = 0.5f
         }
     }
 
@@ -118,11 +141,11 @@ class AnalysisViewModel (
 
     // Create the communication application hours for the pie chart.
     fun communicationPieHours(): List<PieSlice> = listOf(
-        PieSlice("WhatsApp", 2.3f),
+        PieSlice("WhatsApp", minutesToHours(whatAppsDuration)),
         PieSlice("Messages", 1.7f),
-        PieSlice("Calls",    callDuration),
+        PieSlice("Calls",    minutesToHours(callDuration)),
         PieSlice("Signal",   0.6f),
-        PieSlice("Telegram",  0.5f)
+        PieSlice("Telegram",  minutesToHours(telegramDuration))
     )
 
 

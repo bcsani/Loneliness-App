@@ -1,11 +1,14 @@
 package fi.tuni.lonelinessapp
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -34,6 +37,7 @@ import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
 import fi.tuni.lonelinessapp.data.utils.CallDurationHelper
+import fi.tuni.lonelinessapp.domain.service.AppUsageTracker
 import fi.tuni.lonelinessapp.domain.service.BluetoothProximityManager
 import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
@@ -47,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
     private lateinit var bluetoothManager: BluetoothProximityManager
+    private lateinit var appUsageTracker: AppUsageTracker
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -76,6 +81,7 @@ class MainActivity : ComponentActivity() {
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
         val settingsViewModel = SettingsViewModel(dayRepository)
+        appUsageTracker = AppUsageTracker(this)
         checkAllPermissions(analysisViewModel)
 
         enableEdgeToEdge()
@@ -172,6 +178,18 @@ class MainActivity : ComponentActivity() {
             rationaleMessage = "We need call log permission to track call durations."
         )
 
+        permissionManager.addPermission(
+            permission = Manifest.permission.PACKAGE_USAGE_STATS,
+            onGranted = {
+                // Initialize app usage tracking for Telegram and WhatsApp
+                // initializeAppUsageTracking()
+            },
+            onDenied = {
+                showPermissionDeniedMessage("Usage Access")
+            },
+            rationaleMessage = "We need usage access permission to track your app usage time for apps like Telegram and WhatsApp."
+        )
+
         val bluetoothPermissions = listOf(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
@@ -190,6 +208,47 @@ class MainActivity : ComponentActivity() {
         )
 
         permissionManager.start()
+
+        checkUsageStatsPermission(analysisViewModel)
+    }
+
+    private fun checkUsageStatsPermission(analysisViewModel: AnalysisViewModel){
+        if (appUsageTracker.isUsageStatsPermissionGranted()) {
+            appUsageTracker.startTracking()
+            println("App Usage tracker start tracking")
+
+            val appUsageData = appUsageTracker.getCurrentUsage()
+            analysisViewModel.setTelegramDuration(appUsageData.telegramUsageTime)
+            analysisViewModel.setWhatappsDuration(appUsageData.whatsappUsageTime)
+        } else {
+            showUsageStatsPermissionDialog()
+        }
+    }
+
+    private fun showUsageStatsPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Usage Access Permission Needed")
+            .setMessage("To track time usage of Telegram and WhatsApp, you need to enable Usage Access in Settings.\n\nPlease enable 'Usage access' for this app in the next screen.")
+            .setPositiveButton("Open Settings") { _, _ ->
+                openUsageStatsSettings()
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                showPermissionDeniedMessage("Usage Access")
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun openUsageStatsSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+            startActivity(intent)
+        } catch (e: Exception) {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+        }
     }
 }
 
