@@ -1084,8 +1084,11 @@ fun BarChart.applyBarDefaults() {
     setTouchEnabled(true)
     isHighlightPerTapEnabled = false
     isHighlightPerDragEnabled = false
+
+    setExtraOffsets(20f, 0f, 20f, 8f)
+
     xAxis.position = XAxis.XAxisPosition.BOTTOM
-    xAxis.textSize = 12f
+    xAxis.textSize = 14f
     xAxis.granularity = 1f
     xAxis.setDrawGridLines(true)
     xAxis.granularity = 1f
