@@ -8,13 +8,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 class AnalysisViewModel (
-    dayRepository: DayRepository
+    val dayRepository: DayRepository
 ) : ViewModel() {
 
     // Display (UI) state (expanded when data is connected).
@@ -76,8 +77,21 @@ class AnalysisViewModel (
         dayRepository.getAllDays()
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+
+    var callDuration = 0.9f
+
+    // This function set the call duration for today when the user accept call log tracking
+    fun setCallDuration() {
+        try {
+            viewModelScope.launch {
+                callDuration = dayRepository.getTotalCallDurationToday()
+            }
+        } catch (e: Exception) {
+            callDuration = 0.9f
+        }
+    }
+
     // Let's do the conversions for charts.
-    // Convert the day's data to fit a line chart (date + value).
     // Convert the day's data to fit a line chart (date + value).
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> =
         data.map { d ->
@@ -106,12 +120,10 @@ class AnalysisViewModel (
     fun communicationPieHours(): List<PieSlice> = listOf(
         PieSlice("WhatsApp", 2.3f),
         PieSlice("Messages", 1.7f),
-        PieSlice("Calls",    0.9f),
+        PieSlice("Calls",    callDuration),
         PieSlice("Signal",   0.6f),
         PieSlice("Telegram",  0.5f)
     )
-
-
 
 
     fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {
