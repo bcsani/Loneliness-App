@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -33,6 +34,7 @@ import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
 import fi.tuni.lonelinessapp.data.utils.CallDurationHelper
+import fi.tuni.lonelinessapp.domain.service.BluetoothProximityManager
 import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
@@ -44,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var dayRepository: DayRepository
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
+    private lateinit var bluetoothManager: BluetoothProximityManager
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -100,10 +103,40 @@ class MainActivity : ComponentActivity() {
 
     }
 
+    private fun initializeBluetoothManager() {
+        println("Initialize bluetooth manager")
+        bluetoothManager = BluetoothProximityManager(this,
+            onDeviceDetected = { deviceInfo ->
+                // Update UI when device is detected
+//                deviceAdapter.addDevice(deviceInfo)
+                println("Device detected: ${deviceInfo.name}")
+            },
+            onScanStatusChanged = { isScanning ->
+                println(if (isScanning) "Scanning..." else "Scanning stopped")
+            },
+            onError = { errorMessage ->
+                showError(errorMessage)
+            }
+        )
+    }
+
+//    private fun updateStatus(message: String) {
+//        runOnUiThread {
+//            findViewById<TextVie>(R.id.tvStatus).text = message
+//        }
+//    }
+
+    private fun showError(errorMessage: String) {
+        runOnUiThread {
+            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun showPermissionDeniedMessage(text: String) {
         Toast.makeText(this, text, Toast.LENGTH_LONG).show()
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onDestroy() {
         super.onDestroy()
         // Unbind service but don't stop (continues in background)
@@ -111,6 +144,7 @@ class MainActivity : ComponentActivity() {
             unbindService(serviceConnection)
             isServiceBound = false
         }
+        bluetoothManager.cleanup()
     }
 
     private fun checkAllPermissions(analysisViewModel: AnalysisViewModel) {
@@ -136,6 +170,23 @@ class MainActivity : ComponentActivity() {
                 showPermissionDeniedMessage("Call log permission denied")
             },
             rationaleMessage = "We need call log permission to track call durations."
+        )
+
+        val bluetoothPermissions = listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        permissionManager.addMultiplePermissions(
+            permissions = bluetoothPermissions,
+            onGranted = {
+                initializeBluetoothManager()
+            },
+            onDenied = {
+                showPermissionDeniedMessage("Bluetooth proximity detection")
+            },
+            rationaleMessage = "We need Bluetooth and location permissions to detect nearby devices and measure social interactions."
         )
 
         permissionManager.start()

@@ -11,7 +11,21 @@ import androidx.core.content.ContextCompat
 class SequentialPermissionManager(
     private val activity: ComponentActivity
 ) {
-    private val permissionLauncher = activity.registerForActivityResult(
+    private val multiplePermissionsLauncher = activity.registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        currentRequest?.let { request ->
+            val allGranted = results.values.all { it }
+            if (allGranted) {
+                request.onGranted()
+            } else {
+                request.onDenied()
+            }
+            processNext()
+        }
+    }
+
+    private val singlePermissionLauncher = activity.registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         currentRequest?.let { request ->
@@ -29,10 +43,11 @@ class SequentialPermissionManager(
     private var isProcessing = false
 
     data class PermissionRequest(
-        val permission: String,
+        val permissions: List<String>,
         val onGranted: () -> Unit,
         val onDenied: () -> Unit,
-        val rationaleMessage: String? = null
+        val rationaleMessage: String? = null,
+        val isMultiple: Boolean = false
     )
 
     fun addPermission(
@@ -41,7 +56,16 @@ class SequentialPermissionManager(
         onDenied: () -> Unit = {},
         rationaleMessage: String? = null
     ) {
-        permissionQueue.add(PermissionRequest(permission, onGranted, onDenied, rationaleMessage))
+        permissionQueue.add(PermissionRequest(listOf(permission), onGranted, onDenied, rationaleMessage, false))
+    }
+
+    fun addMultiplePermissions(
+        permissions: List<String>,
+        onGranted: () -> Unit = {},
+        onDenied: () -> Unit = {},
+        rationaleMessage: String? = null
+    ) {
+        permissionQueue.add(PermissionRequest(permissions, onGranted, onDenied, rationaleMessage, true))
     }
 
     fun start() {
@@ -60,6 +84,7 @@ class SequentialPermissionManager(
         currentRequest = permissionQueue.removeAt(0)
         val request = currentRequest!!
 
+        /*
         when {
             ContextCompat.checkSelfPermission(activity, request.permission) == PackageManager.PERMISSION_GRANTED -> {
                 request.onGranted()
@@ -73,6 +98,31 @@ class SequentialPermissionManager(
                 permissionLauncher.launch(request.permission)
             }
         }
+        */
+
+        val allGranted = request.permissions.all { permission ->
+            ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (allGranted) {
+            request.onGranted()
+            processNext()
+        } else {
+            // Check if we should show rationale for any permission
+            val shouldShowRationale = request.permissions.any { permission ->
+                ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+            }
+
+            if (shouldShowRationale) {
+                showRationale(request)
+            } else {
+                if (request.isMultiple) {
+                    multiplePermissionsLauncher.launch(request.permissions.toTypedArray())
+                } else {
+                    singlePermissionLauncher.launch(request.permissions.first())
+                }
+            }
+        }
     }
 
     private fun showRationale(request: PermissionRequest) {
@@ -80,7 +130,11 @@ class SequentialPermissionManager(
             .setTitle("Permission Needed")
             .setMessage(request.rationaleMessage ?: "This permission is required to use this feature.")
             .setPositiveButton("OK") { _, _ ->
-                permissionLauncher.launch(request.permission)
+                if (request.isMultiple) {
+                    multiplePermissionsLauncher.launch(request.permissions.toTypedArray())
+                } else {
+                    singlePermissionLauncher.launch(request.permissions.first())
+                }
             }
             .setNegativeButton("Cancel") { _, _ ->
                 request.onDenied()
