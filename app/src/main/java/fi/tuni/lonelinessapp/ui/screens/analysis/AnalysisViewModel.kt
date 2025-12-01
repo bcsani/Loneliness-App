@@ -92,7 +92,8 @@ class AnalysisViewModel (
 
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
+        data.map { d ->
+            BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
 
     // Convert day minutes to hours for the bar chart.
     fun dayUsageBarsHours(data: List<DaySample>): List<BarPoint> =

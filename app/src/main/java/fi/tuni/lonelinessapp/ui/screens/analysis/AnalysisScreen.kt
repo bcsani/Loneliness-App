@@ -192,11 +192,13 @@ private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Floa
     }
     val step   = stepFn(maxVal)
     val axisMax = niceCeil(maxVal * 1.15f, step)
+    val labelCount = (axisMax / step).toInt() + 1
+
     axisLeft.apply {
         axisMinimum = 0f
         axisMaximum = axisMax
         granularity = step
-        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
+        setLabelCount(labelCount, true)
         setDrawGridLines(true)
         enableGridDashedLine(10f, 10f, 0f)
     }
@@ -229,34 +231,34 @@ fun AnalysisScreen(
     // ====================== TEST DATA (WEEK VIEW) ======================
     // This block provides hardcoded data for the "Week" view to test how null/zero values are rendered.
     //o restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
-   //val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
     //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-      //  if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month
-        //    ) {
-         //   val today = LocalDate.now()
-           // val testData = listOf(
-             //   DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-               // DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-                //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
-                //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-                //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
-                //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-                //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-            //)
-            //val testDataMap = testData.associateBy { it.date }
-            //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
-            //wantedDates.map { date ->
-              //  testDataMap[date] ?: DaySample(
-                //    date = date,
-                  //  loneliness = null,
-                    //nightMinutes = 0,
-                    //dayMinutes = 0,
-                    //steps = 0
-                //)
-           //}
-        //} else {
-          //  buildSamplesForRange(daysEntity, selectedRange)
-        //}
+    //  if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month
+    //    ) {
+    //   val today = LocalDate.now()
+    // val testData = listOf(
+    //   DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+    // DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+    //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
+    //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+    //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
+    //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+    //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+    //)
+    //val testDataMap = testData.associateBy { it.date }
+    //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
+    //wantedDates.map { date ->
+    //  testDataMap[date] ?: DaySample(
+    //    date = date,
+    //  loneliness = null,
+    //nightMinutes = 0,
+    //dayMinutes = 0,
+    //steps = 0
+    //)
+    //}
+    //} else {
+    //  buildSamplesForRange(daysEntity, selectedRange)
+    //}
     //}
     // ======================= END OF TEST DATA =======================
 
