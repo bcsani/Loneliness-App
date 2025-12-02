@@ -28,8 +28,7 @@ class BluetoothProximityManager(
 
     companion object {
         private const val PROXIMITY_RSSI_THRESHOLD = -70
-        private const val SCAN_PERIOD: Long = 10000
-        private const val REQUEST_PERMISSIONS = 100
+        private const val SCAN_PERIOD: Long = 100000
     }
 
     private val leScanCallback = object : ScanCallback() {
@@ -132,16 +131,6 @@ class BluetoothProximityManager(
         return ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
-
-
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    fun handlePermissionResult(requestCode: Int, grantResults: IntArray) {
-        if (requestCode == REQUEST_PERMISSIONS && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            startScanning()
-        } else {
-            onError("Permissions denied - cannot scan for Bluetooth devices")
-        }
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)

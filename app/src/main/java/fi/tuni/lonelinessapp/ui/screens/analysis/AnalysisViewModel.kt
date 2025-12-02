@@ -86,7 +86,9 @@ class AnalysisViewModel (
     fun setCallDuration() {
         try {
             viewModelScope.launch {
-                callDuration = dayRepository.getTotalCallDurationToday()
+                val callDurationMin = dayRepository.getTotalCallDurationToday()
+                dayRepository.saveCalls(LocalDate.now(), callDurationMin.toInt())
+                callDuration = minutesToHours(callDurationMin)
             }
         } catch (e: Exception) {
             callDuration = 0.9f
