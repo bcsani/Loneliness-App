@@ -58,9 +58,6 @@ fun HomeScreen(
     var infoDialogMessage by remember { mutableStateOf<String?>(null)}
     var selectedBarMessage by remember { mutableStateOf<String?>(null) }
 
-
-
-
     // Variable for loading correlation chart and showing loading bar
     val isLoading by homeViewModel.isLoading.collectAsState()
 
@@ -72,17 +69,6 @@ fun HomeScreen(
 
     val correlationValues = correlationResults.map { it.correlationValue }
     val labels = correlationResults.map { it.variableName }
-
-    val correlationResultsChunks = listOf(
-        correlationValues.take(3),
-        correlationValues.drop(3).take(3),
-        correlationValues.drop(6).take(3)
-    )
-    val labelsChunks = listOf(
-        labels.take(3),
-        labels.drop(3).take(3),
-        labels.drop(6).take(2)
-    )
 
     LazyColumn(
         modifier = modifier
@@ -156,104 +142,9 @@ fun HomeScreen(
         }
 
         //  Loneliness Correlations Chart
-        // Correlation chart
-        correlationResultsChunks.forEachIndexed { index, chunk ->
-            if (chunk.isNotEmpty()) {
-                item {
-                    val chunkLabels = labelsChunks.get(index)
-                    val infoText = "Loneliness correlations, shows how different things correlate with expereinced lonliness"
-                    var title = "Exercise"
-                    if (index != 0) {
-                        title = "App Usage"
-                    }
-                    ChartCard(
-                        title = title,
-                        onInfoClick = { infoDialogMessage = infoText }
-                    )  {
-                        AndroidView(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            factory = { context ->
-
-                                // Creating a bar chart.
-                                BarChart(context).apply {
-
-                                    // Common basic settings.
-                                    //applyBarDefaults(labels)
-                                    applyBarDefaults()
-
-                                    //can touch
-                                    setTouchEnabled(true)
-                                    isHighlightPerTapEnabled = true
-                                    setScaleEnabled(false) // zoom not in use
-
-                                    xAxis.valueFormatter = object : ValueFormatter() {
-                                        override fun getFormattedValue(value: Float): String {
-                                            val index = value.toInt()
-                                            return chunkLabels.getOrNull(index) ?: ""
-                                        }
-                                    }
-
-                                    axisLeft.apply {
-                                        // Left Y-axis limits
-                                        axisMinimum = -0.1f
-                                        axisMaximum = 0.1f
-
-                                        // Step
-                                        granularity = 0.05f
-
-                                        textSize = 14f
-
-                                        // Add zero line configuration
-                                        setDrawZeroLine(true)
-                                        zeroLineWidth = 2f
-                                    }
-
-                                    val entries = chunk.mapIndexed { index, value ->
-                                        BarEntry(index.toFloat(), value.toFloat())
-                                    }
-
-                                    val dataSet = BarDataSet(entries, "Correlation").apply {
-                                        setDrawValues(false)
-                                        color = 0xFF4169E1.toInt()
-                                    }
-
-
-                                    // Set the data and width.
-                                    data = BarData(dataSet).apply {
-                                        xAxis.textSize = 14f
-                                        barWidth = 0.8f
-                                    }
-                                    setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
-                                        override fun onValueSelected(e: Entry?, h: Highlight?) {
-                                            if (e != null && h != null) {
-                                                val index = h.x.toInt()
-                                                val variableName = labels[index]
-                                                val value = e.y
-
-                                                selectedBarMessage = "$variableName: correlation = $value"
-                                            }
-                                        }
-
-                                        override fun onNothingSelected() { }
-                                    })
-
-
-
-                                    // Draw the graph.
-                                    invalidate()
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
         item {
             val infoText = "Loneliness correlations, shows how different things correlate with expereinced lonliness"
-            val title = "Exercise"
+            val title = "Correlation"
             ChartCard(
                 title = title,
                 onInfoClick = { infoDialogMessage = infoText }
@@ -276,12 +167,14 @@ fun HomeScreen(
                             isHighlightPerTapEnabled = true
                             setScaleEnabled(false) // zoom not in use
 
+                            /*
                             xAxis.valueFormatter = object : ValueFormatter() {
                                 override fun getFormattedValue(value: Float): String {
                                     val index = value.toInt()
                                     return labels.getOrNull(index) ?: ""
                                 }
                             }
+                            */
 
                             axisLeft.apply {
                                 // Left Y-axis limits
@@ -326,8 +219,6 @@ fun HomeScreen(
 
                                 override fun onNothingSelected() { }
                             })
-
-
 
                             // Draw the graph.
                             invalidate()
