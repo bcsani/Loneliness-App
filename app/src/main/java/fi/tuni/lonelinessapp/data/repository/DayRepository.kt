@@ -37,4 +37,6 @@ class DayRepository  (
         dayDataSource.getDaysFromDate(startDate)
     suspend fun resetData() =
         dayDataSource.resetData()
+    fun getTotalCallDurationToday(): Float =
+        dayDataSource.getTotalCallDurationToday()
 }
