@@ -108,7 +108,6 @@ class MainActivity : ComponentActivity() {
         bluetoothManager = BluetoothProximityManager(this,
             onDeviceDetected = { deviceInfo ->
                 // Update UI when device is detected
-//                deviceAdapter.addDevice(deviceInfo)
                 println("Device detected: ${deviceInfo.name}")
             },
             onScanStatusChanged = { isScanning ->
@@ -120,12 +119,6 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-//    private fun updateStatus(message: String) {
-//        runOnUiThread {
-//            findViewById<TextVie>(R.id.tvStatus).text = message
-//        }
-//    }
-
     private fun showError(errorMessage: String) {
         runOnUiThread {
             Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
@@ -134,6 +127,13 @@ class MainActivity : ComponentActivity() {
 
     private fun showPermissionDeniedMessage(text: String) {
         Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+    override fun onResume() {
+        super.onResume()
+        // Restart scanning when activity comes to foreground
+        bluetoothManager.startScanning()
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
