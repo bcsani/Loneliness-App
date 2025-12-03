@@ -34,6 +34,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.formatter.ValueFormatter
+
+
 
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 @Composable
@@ -42,9 +51,12 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = viewModel(),
     surveyViewModel: SurveyViewModel,
+
 ) {
     val showDialog by mainViewModel.showSurvey
     val streakCount by homeViewModel.streakCount
+    var infoDialogMessage by remember { mutableStateOf<String?>(null)}
+    var selectedBarMessage by remember { mutableStateOf<String?>(null) }
 
     // Variable for loading correlation chart and showing loading bar
     val isLoading by homeViewModel.isLoading.collectAsState()
@@ -56,9 +68,6 @@ fun HomeScreen(
     }
 
     val correlationValues = correlationResults.map { it.correlationValue }
-    val entries = correlationValues.mapIndexed { index, value ->
-        BarEntry(index.toFloat(), value.toFloat())
-    }
     val labels = correlationResults.map { it.variableName }
 
     LazyColumn(
@@ -73,6 +82,7 @@ fun HomeScreen(
             item {
                 CircularProgressIndicator()
             }
+
         }
 
         //  Streak Card
@@ -132,9 +142,13 @@ fun HomeScreen(
         }
 
         //  Loneliness Correlations Chart
-        // Correlation chart
         item {
-            ChartCard(title = "Loneliness correlations") {
+            val infoText = "Loneliness correlations, shows how different things correlate with expereinced lonliness"
+            val title = "Correlation"
+            ChartCard(
+                title = title,
+                onInfoClick = { infoDialogMessage = infoText }
+            )  {
                 AndroidView(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -147,6 +161,20 @@ fun HomeScreen(
                             // Common basic settings.
                             //applyBarDefaults(labels)
                             applyBarDefaults()
+
+                            //can touch
+                            setTouchEnabled(true)
+                            isHighlightPerTapEnabled = true
+                            setScaleEnabled(false) // zoom not in use
+
+                            /*
+                            xAxis.valueFormatter = object : ValueFormatter() {
+                                override fun getFormattedValue(value: Float): String {
+                                    val index = value.toInt()
+                                    return labels.getOrNull(index) ?: ""
+                                }
+                            }
+                            */
 
                             axisLeft.apply {
                                 // Left Y-axis limits
@@ -163,6 +191,10 @@ fun HomeScreen(
                                 zeroLineWidth = 2f
                             }
 
+                            val entries = correlationValues.mapIndexed { index, value ->
+                                BarEntry(index.toFloat(), value.toFloat())
+                            }
+
                             val dataSet = BarDataSet(entries, "Correlation").apply {
                                 setDrawValues(false)
                                 color = 0xFF4169E1.toInt()
@@ -174,6 +206,19 @@ fun HomeScreen(
                                 xAxis.textSize = 14f
                                 barWidth = 0.8f
                             }
+                            setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
+                                override fun onValueSelected(e: Entry?, h: Highlight?) {
+                                    if (e != null && h != null) {
+                                        val index = h.x.toInt()
+                                        val variableName = labels[index]
+                                        val value = e.y
+
+                                        selectedBarMessage = "$variableName: correlation = $value"
+                                    }
+                                }
+
+                                override fun onNothingSelected() { }
+                            })
 
                             // Draw the graph.
                             invalidate()
@@ -182,6 +227,7 @@ fun HomeScreen(
                 )
             }
         }
+
 
         if (showDialog) {
             item {
@@ -192,6 +238,31 @@ fun HomeScreen(
             }
         }
     }
-}
+    if (infoDialogMessage != null) {
+        AlertDialog(
+            onDismissRequest = { infoDialogMessage = null },
+            confirmButton = {
+                TextButton(onClick = { infoDialogMessage = null }) {
+                    Text("OK")
 
+                }
+            },
+            title = { Text("Info") },
+            text = { Text(infoDialogMessage!!) }
+        )
+    }
+    if (selectedBarMessage != null) {
+        AlertDialog(
+            onDismissRequest = { selectedBarMessage = null },
+            confirmButton = {
+                TextButton(onClick = { selectedBarMessage = null }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Correlation detail") },
+            text = { Text(selectedBarMessage!!) }
+        )
+    }
+
+}
 
