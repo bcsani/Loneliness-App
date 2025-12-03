@@ -1099,12 +1099,20 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
 
         val label = currentMonth.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
-        val lonValues = daysInMonth.mapNotNull { it.loneliness }.filter { it > 0 }
+        val lonValues = daysInMonth
+            .mapNotNull { it.loneliness }
+            .filter { it in 3..9 }
+
         val lonAvg = if (lonValues.isNotEmpty()) {
-            lonValues.map { (it - 2).coerceIn(1, 7) }.average().toFloat()
+            lonValues
+                .map { (it - 3).coerceIn(0, 6) }  // 3 -> 0, 9 -> 6
+                .average()
+                .toFloat()
+                .let { if (it.isNaN()) Float.NaN else it }
         } else {
             Float.NaN
         }
+
 
         val night = daysInMonth.map { it.nightMinutes }.average().toFloat() / 60f
         val day = daysInMonth.map { it.dayMinutes }.average().toFloat() / 60f
