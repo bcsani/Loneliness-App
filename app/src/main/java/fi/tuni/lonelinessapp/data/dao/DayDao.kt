@@ -46,4 +46,7 @@ interface DayDao {
 
     @Query("SELECT * FROM daytable WHERE date >= :startDate ORDER BY date ASC")
     fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?>
+
+    @Query("DELETE FROM dayTable")
+    suspend fun resetData()
 }

@@ -2,12 +2,14 @@ package fi.tuni.lonelinessapp.data.datasource
 
 import fi.tuni.lonelinessapp.data.dao.DayDao
 import fi.tuni.lonelinessapp.data.entity.DayEntity
+import fi.tuni.lonelinessapp.data.utils.CallDurationHelper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
 class DayDataSource (
-    private val dayDao: DayDao
+    private val dayDao: DayDao,
+    private val callDurationHelper: CallDurationHelper
 ) {
     suspend fun insertDay(day: DayEntity) =
         dayDao.insertDay(day)
@@ -17,6 +19,8 @@ class DayDataSource (
         dayDao.getDayByDate(date)
     fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDao.getDaysFromDate(startDate)
+    fun getTotalCallDurationToday(): Float =
+        callDurationHelper.getTotalCallDurationToday()
     suspend fun saveLoneliness(date: LocalDate, loneliness: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
@@ -140,5 +144,9 @@ class DayDataSource (
             signal = signal,
             telegram = telegram
         ))
+    }
+
+    suspend fun resetData() {
+        dayDao.resetData()
     }
 }
