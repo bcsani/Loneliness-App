@@ -402,7 +402,7 @@ fun AnalysisScreen(
 
             // 1) Loneliness(line chart).
             item {
-                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period. Higher values indicate greater feelings of loneliness."
+                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period of time. Higher values indicate greater feelings of loneliness. Zero equals to not feeling lonely."
                 ChartCard(
                     title = "UCLA Loneliness Scale",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -454,7 +454,7 @@ fun AnalysisScreen(
 
             // 2) Night usage (bar chart).
             item {
-                val infoText = "Shows the time spent on your phone at night."
+                val infoText = "Shows the time spent on your phone at night during the selected period of time."
                 ChartCard(
                     title = "Night time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
