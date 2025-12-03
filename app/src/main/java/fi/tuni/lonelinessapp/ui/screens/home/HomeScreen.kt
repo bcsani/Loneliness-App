@@ -37,11 +37,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.toArgb
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import fi.tuni.lonelinessapp.ui.theme.primaryBlue
+import androidx.core.content.ContextCompat
 
 
 
@@ -170,6 +172,7 @@ fun HomeScreen(
                             //applyBarDefaults(labels)
                             applyBarDefaults()
 
+
                             //can touch
                             setTouchEnabled(true)
                             isHighlightPerTapEnabled = true
@@ -199,7 +202,7 @@ fun HomeScreen(
 
                             val dataSet = BarDataSet(entries, "Correlation").apply {
                                 setDrawValues(false)
-                                color = 0xFF4169E1.toInt()
+                                color = primaryBlue.toArgb()
                             }
 
 

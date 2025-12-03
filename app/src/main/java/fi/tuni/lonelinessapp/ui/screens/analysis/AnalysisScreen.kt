@@ -31,16 +31,19 @@ import java.util.Locale
 import java.time.LocalDate
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.ui.graphics.toArgb
 import com.github.mikephil.charting.charts.BarLineChartBase
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.ceil
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
+import fi.tuni.lonelinessapp.ui.theme.textPrimary
+
+
 
 // Color configuration for charts.
 // The colors are now hardcoded. Later we will move under the theme (?)
-private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
-private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 
 // pie chart colors.
 private val PIE_COLORS = listOf(
@@ -665,7 +668,7 @@ fun AnalysisScreen(
                                     colors = PIE_COLORS
                                     sliceSpace = 2f
                                     valueTextSize = 14f
-                                    valueTextColor = COLOR_TEXT_HEX
+                                    valueTextColor = textPrimary.toArgb()
                                     valueFormatter = object : ValueFormatter() {
                                         @SuppressLint("DefaultLocale")
                                         override fun getFormattedValue(value: Float) =
@@ -1000,7 +1003,7 @@ fun AnalysisScreen(
                                     colors = PIE_COLORS
                                     sliceSpace = 2f
                                     valueTextSize = 14f
-                                    valueTextColor = COLOR_TEXT_HEX
+                                    valueTextColor = textPrimary.toArgb()
                                     valueFormatter = object : ValueFormatter() {
                                         @SuppressLint("DefaultLocale")
                                         override fun getFormattedValue(value: Float) = String.format("%.1f h", value)
@@ -1119,10 +1122,10 @@ private fun makeBarDataSet(
     label: String,
     entries: List<BarEntry>,
 ): BarDataSet = BarDataSet(entries, label).apply {
-    color = COLOR_PRIMARY_HEX
+    color = primaryBlue.toArgb()
 
     valueTextSize = 12f
-    valueTextColor = COLOR_TEXT_HEX
+    valueTextColor = textPrimary.toArgb()
     setDrawValues(false)
 }
 
@@ -1362,8 +1365,8 @@ private fun buildLonelinessDataSets(points: List<AnalysisViewModel.LinePoint>): 
     fun flush() {
         if (run.isNotEmpty()) {
             sets += LineDataSet(run, "Loneliness").apply {
-                color = COLOR_PRIMARY_HEX
-                setCircleColor(COLOR_PRIMARY_HEX)
+                color = primaryBlue.toArgb()
+                setCircleColor(primaryBlue.toArgb())
                 lineWidth = 3f
                 circleRadius = 5f
                 mode = LineDataSet.Mode.LINEAR
