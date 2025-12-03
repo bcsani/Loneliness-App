@@ -233,39 +233,40 @@ fun AnalysisScreen(
     //o restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
     //val daysEntity by analysisViewModel.daysEntity.collectAsState()
     //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-    //  if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month
-    //    ) {
-    //   val today = LocalDate.now()
-    // val testData = listOf(
-    //   DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-    // DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-    //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
-    //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-    //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
-    //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-    //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-    //)
-    //val testDataMap = testData.associateBy { it.date }
-    //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
-    //wantedDates.map { date ->
-    //  testDataMap[date] ?: DaySample(
-    //    date = date,
-    //  loneliness = null,
-    //nightMinutes = 0,
-    //dayMinutes = 0,
-    //steps = 0
-    //)
-    //}
-    //} else {
-    //  buildSamplesForRange(daysEntity, selectedRange)
-    //}
+        //if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths
+        //) {
+            //val today = LocalDate.now()
+            //val testData = listOf(
+                //DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+                //DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+                //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
+                //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+                //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
+                //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+                //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+            //)
+            //val testDataMap = testData.associateBy { it.date }
+            //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
+            //wantedDates.map { date ->
+                //testDataMap[date] ?: DaySample(
+                    //date = date,
+                    //loneliness = null,
+                    //nightMinutes = 0,
+                    //dayMinutes = 0,
+                    //steps = 0
+                //)
+            //}
+        //}
+        //else {
+            //buildSamplesForRange(daysEntity, selectedRange)
+        //}
     //}
     // ======================= END OF TEST DATA =======================
 
     // ================= ORIGINAL DATA LOADING (Commented out) ================
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
     val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-        buildSamplesForRange(daysEntity, selectedRange)
+    buildSamplesForRange(daysEntity, selectedRange)
     }
     // ========================================================================
 
@@ -402,7 +403,7 @@ fun AnalysisScreen(
 
             // 1) Loneliness(line chart).
             item {
-                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period of time. Higher values indicate greater feelings of loneliness. Zero equals to not feeling lonely."
+                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period. Higher values indicate greater feelings of loneliness."
                 ChartCard(
                     title = "UCLA Loneliness Scale",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -454,7 +455,7 @@ fun AnalysisScreen(
 
             // 2) Night usage (bar chart).
             item {
-                val infoText = "Shows the time spent on your phone at night during the selected period of time."
+                val infoText = "Shows the time spent on your phone at night."
                 ChartCard(
                     title = "Night time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -686,11 +687,6 @@ fun AnalysisScreen(
 
             // 3 months, 1 year.
         } else {
-            if (selectedRange == TimeRange.All) {
-                StartEndValueFormatter(monthLabels) // <-- FIX: This is a List<String>
-            } else {
-                IndexAxisValueFormatter(monthLabels)
-            }
 
             // 1) Loneliness(line chart).
             item {
@@ -1091,8 +1087,6 @@ fun BarChart.applyBarDefaults() {
 
     xAxis.position = XAxis.XAxisPosition.BOTTOM
     xAxis.textSize = 14f
-    xAxis.granularity = 1f
-    xAxis.setDrawGridLines(true)
     xAxis.granularity = 1f
     xAxis.setDrawGridLines(true)
     axisLeft.setDrawAxisLine(true)
