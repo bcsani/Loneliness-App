@@ -41,6 +41,8 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.components.XAxis
+
 
 
 
@@ -167,14 +169,23 @@ fun HomeScreen(
                             isHighlightPerTapEnabled = true
                             setScaleEnabled(false) // zoom not in use
 
-                            /*
-                            xAxis.valueFormatter = object : ValueFormatter() {
-                                override fun getFormattedValue(value: Float): String {
-                                    val index = value.toInt()
-                                    return labels.getOrNull(index) ?: ""
+                            // X-akseli näyttää labelit pystysuunnassa
+                            xAxis.apply {
+                                valueFormatter = object : ValueFormatter() {
+                                    override fun getFormattedValue(value: Float): String {
+                                        val index = value.toInt()
+                                        return labels.getOrNull(index) ?: ""
+                                    }
                                 }
+
+                                position = XAxis.XAxisPosition.BOTTOM
+                                granularity = 1f
+                                setDrawGridLines(false)
+
+                                textSize = 12f
+                                labelRotationAngle = -90f  // <- kääntää tekstin pystysuuntaan
                             }
-                            */
+
 
                             axisLeft.apply {
                                 // Left Y-axis limits
