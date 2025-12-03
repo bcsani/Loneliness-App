@@ -17,10 +17,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import fi.tuni.lonelinessapp.R
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
 
 
 
-private val COLOR_PRIMARY = Color(0xFF2563EB)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
@@ -75,7 +76,7 @@ fun BottomNavigation(
             onClick: () -> Unit
         ) {
             val isSelected = index >= 0 && currentTab == index && !showSettingsScreen
-            val iconColor = if (isSelected) COLOR_PRIMARY else Color.Gray
+            val iconColor = if (isSelected) primaryBlue else Color.Gray
 
             NavigationBarItem(
                 icon = {
@@ -100,7 +101,7 @@ fun BottomNavigation(
                                 modifier = Modifier
                                     .height(2.dp)
                                     .width(24.dp)
-                                    .background(COLOR_PRIMARY)
+                                    .background(primaryBlue)
                             )
                         } else {
                             Spacer(modifier = Modifier.height(6.dp))

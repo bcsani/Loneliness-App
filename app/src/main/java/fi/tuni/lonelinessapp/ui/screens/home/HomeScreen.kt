@@ -37,14 +37,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.toArgb
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.formatter.ValueFormatter
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
+import androidx.core.content.ContextCompat
 
 
 
-private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+
 @Composable
 fun HomeScreen(
     mainViewModel: MainViewModel,
@@ -52,7 +55,7 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     surveyViewModel: SurveyViewModel,
 
-) {
+    ) {
     val showDialog by mainViewModel.showSurvey
     val streakCount by homeViewModel.streakCount
     var infoDialogMessage by remember { mutableStateOf<String?>(null)}
@@ -135,7 +138,7 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .height(70.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX))
+                colors = ButtonDefaults.buttonColors(Color(primaryBlue.value))
             ) {
                 Text("Fill Daily Survey", fontSize = 20.sp)
             }
@@ -161,6 +164,7 @@ fun HomeScreen(
                             // Common basic settings.
                             //applyBarDefaults(labels)
                             applyBarDefaults()
+
 
                             //can touch
                             setTouchEnabled(true)
@@ -197,7 +201,7 @@ fun HomeScreen(
 
                             val dataSet = BarDataSet(entries, "Correlation").apply {
                                 setDrawValues(false)
-                                color = 0xFF4169E1.toInt()
+                                color = primaryBlue.toArgb()
                             }
 
 
@@ -265,4 +269,3 @@ fun HomeScreen(
     }
 
 }
-
