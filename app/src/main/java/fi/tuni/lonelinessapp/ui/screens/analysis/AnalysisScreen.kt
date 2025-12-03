@@ -403,9 +403,11 @@ fun AnalysisScreen(
 
             // 1) Loneliness(line chart).
             item {
-                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period. Higher values indicate greater feelings of loneliness."
+                val infoText = "Shows your Loneliness scale scores from answers given to survey.\n" +
+                        "Higher values indicate greater feelings of loneliness. Zero equals not feeling lonely. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "UCLA Loneliness Scale",
+                    title = "Loneliness Score",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
 
@@ -455,7 +457,9 @@ fun AnalysisScreen(
 
             // 2) Night usage (bar chart).
             item {
-                val infoText = "Shows the time spent on your phone at night."
+                val infoText = "Shows the time spent on your phone at night in hours. \n" +
+                        "Night usage is 10.00 pm - 06.00 am. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
                     title = "Night time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -511,8 +515,11 @@ fun AnalysisScreen(
 
             // 3) Daytime usage (bar chart).
             item {
-                val infoText = "Shows the time spent on your phone during the day."
-                ChartCard(
+                val infoText = "Shows the time spent on your phone during the day in hours.\n" +
+                        "Daily usage is 06.00 am - 10.00 pm.\n" +
+                        "Shows values from selected period of time. "
+
+                        ChartCard(
                     title = "Day time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
@@ -565,9 +572,10 @@ fun AnalysisScreen(
 
             // 4) Steps (bar chart).
             item {
-                val infoText = "Shows the number of steps taken during the selected period."
+                val infoText = "Shows the number of steps taken during the selected period of time.\n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "Steps taken",
+                    title = "Steps",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
@@ -624,7 +632,8 @@ fun AnalysisScreen(
 
             // 5) Communications (pie chart).
             item {
-                val infoText = "Shows how your communication app usage is distributed. The chart displays the total hours spent on each app during the selected period."
+                val infoText = "Shows how your communication app usage is distributed. \n" +
+                        "The chart displays the total hours spent on each app during the selected time period."
                 ChartCard(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -690,9 +699,11 @@ fun AnalysisScreen(
 
             // 1) Loneliness(line chart).
             item {
-                val infoText = "Shows the monthly average of your UCLA Loneliness Scale scores. Higher values indicate greater feelings of loneliness."
+                val infoText = "Shows your Loneliness scale scores from answers given to survey.\n" +
+                        "Higher values indicate greater feelings of loneliness. Zero equals not feeling lonely. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "UCLA Loneliness Scale",
+                    title = "Loneliness Score",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
@@ -760,7 +771,9 @@ fun AnalysisScreen(
 
             // 2) Night usage (bar chart).
             item {
-                val infoText = "Shows the monthly average of the time spent on your phone at night."
+                val infoText = "Shows the time spent on your phone at night in hours. \n" +
+                        "Night usage is 10.00 pm - 06.00 am. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
                     title = "Night Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -827,7 +840,9 @@ fun AnalysisScreen(
 
             // 3) Daytime usage (bar chart).
             item {
-                val infoText = "Shows the monthly average of the time spent on your phone during the day."
+                val infoText = "Shows the time spent on your phone during the day in hours.\n" +
+                        "Daily usage is 06.00 am - 10.00 pm.\n" +
+                        "Shows values from selected period of time. "
                 ChartCard(
                     title = "Day Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -889,9 +904,10 @@ fun AnalysisScreen(
 
             // 4) Steps (bar chart).
             item {
-                val infoText = "Shows the monthly average of the number of steps taken."
+                val infoText = "Shows the number of steps taken during the selected period of time.\n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "Exercise",
+                    title = "Steps",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
@@ -954,7 +970,8 @@ fun AnalysisScreen(
 
             // 5) Communications (pie chart).
             item {
-                val infoText = "Shows how your communication app usage is distributed. The chart displays the total hours spent on each app during the selected period."
+                val infoText = "Shows how your communication app usage is distributed. \n" +
+                        "The chart displays the total hours spent on each app during the selected time period."
                 ChartCard(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
