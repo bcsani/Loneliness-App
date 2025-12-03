@@ -175,6 +175,33 @@ private fun XAxis.applyDomainAndLabels(
     enableGridDashedLine(10f, 10f, 0f)
 }
 
+private fun XAxis.applyMonthlyRangeLabels(
+    range: TimeRange,
+    labels: List<String>
+) {
+    if (range == TimeRange.All) {
+        val count = labels.size.coerceAtLeast(1)
+        axisMinimum = -0.5f
+        axisMaximum = (count - 1).toFloat() + 0.5f
+
+        valueFormatter = StartEndValueFormatter(labels)
+        setLabelCount(2, true)
+
+        granularity = 1f
+        isGranularityEnabled = true
+        setDrawGridLines(true)
+        enableGridDashedLine(10f, 10f, 0f)
+    } else {
+        applyDomainAndLabels(
+            labels = labels,
+            useStartEndOnly = false,
+            adjustForBars = true,
+            everyNthLabel = if (range == TimeRange.Year) 2 else 1
+        )
+    }
+}
+
+
 // Y-axis “nice” – if maximum is 0/missing, show a reasonable fallback range.
 private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
     val maxVal = values.maxOrNull() ?: 0f
@@ -230,7 +257,7 @@ fun AnalysisScreen(
 
     // ====================== TEST DATA (WEEK VIEW) ======================
     // This block provides hardcoded data for the "Week" view to test how null/zero values are rendered.
-    //o restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
+    // To restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
     //val daysEntity by analysisViewModel.daysEntity.collectAsState()
     //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
         //if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths
@@ -632,67 +659,23 @@ fun AnalysisScreen(
 
             // 5) Communications (pie chart).
             item {
-                val infoText = "Shows how your communication app usage is distributed. \n" +
+                val infoText = "Shows how your communication app usage is distributed.\n" +
                         "The chart displays the total hours spent on each app during the selected time period."
                 ChartCard(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
-                    AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(340.dp),
-                        factory = { ctx ->
-                            PieChart(ctx).apply {
-                                description = Description().apply { text = "" }
-                                legend.isEnabled = false
-                                setUsePercentValues(false)
-                                setDrawEntryLabels(false)
-                                isRotationEnabled = false
-                                rotationAngle = 0f
-                                animateY(0)
-                                holeRadius = 45f
-                                enableToastOnSliceClick()
-                            }
-                        },
-                        update = { pie ->
-                            val entries = commPie.filter { it.value > 0f }
-                                .map { PieEntry(it.value, it.label) }
-                            if (entries.isEmpty()) {
-                                //pie.centerText = "No chart data available"
-                                pie.setCenterTextSize(16f)
-                                pie.setCenterTextColor(android.graphics.Color.BLACK)
-                                pie.legend.isEnabled = false
-                                pie.data = PieData(PieDataSet(emptyList(), ""))
-                            } else {
-                                pie.legend.isEnabled = true
-                                pie.legend.apply {
-                                    textSize = 16f
-                                    isWordWrapEnabled = true
-                                    maxSizePercent = 0.80f
-                                    verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
-                                    horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
-                                    orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
-                                    setDrawInside(false)
-                                }
-                                val set = PieDataSet(entries, "").apply {
-                                    colors = PIE_COLORS
-                                    sliceSpace = 2f
-                                    valueTextSize = 14f
-                                    valueTextColor = COLOR_TEXT_HEX
-                                    valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
-                                        override fun getFormattedValue(value: Float) =
-                                            String.format("%.1f h", value)
-                                    }
-                                }
-                                pie.data = PieData(set)
-                            }
-                            pie.data.notifyDataChanged()
-                            pie.notifyDataSetChanged()
-                            pie.invalidate()
-                        }
+                    val entries = commPie
+                        .filter { it.value > 0f }
+                        .map { PieEntry(it.value, it.label) }
+
+                    CommunicationPieChart(
+                        entries = entries,
+                        showCenterTextWhenEmpty = false
                     )
                 }
             }
+
 
             // 3 months, 1 year.
         } else {
@@ -789,32 +772,7 @@ fun AnalysisScreen(
                         },
                         update = { chart ->
 
-                            if (selectedRange == TimeRange.All) {
-
-                                // ALL TIME: only "start" + "Now", but with little space on the edges for the columns.
-                                chart.xAxis.apply {
-                                    val count = monthLabels.size.coerceAtLeast(1)
-
-                                    axisMinimum = -0.5f
-                                    axisMaximum = (count - 1).toFloat() + 0.5f
-
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
-                                    setLabelCount(2, true)
-
-                                    granularity = 1f
-                                    isGranularityEnabled = true
-                                    setDrawGridLines(true)
-                                    enableGridDashedLine(10f, 10f, 0f)
-                                }
-                            } else {
-                                // YEAR / 3 MONTHS
-                                chart.xAxis.applyDomainAndLabels(
-                                    labels = monthLabels,
-                                    useStartEndOnly = false,
-                                    adjustForBars = true,
-                                    everyNthLabel = if (selectedRange == TimeRange.Year) 2 else 1
-                                )
-                            }
+                            chart.xAxis.applyMonthlyRangeLabels(selectedRange, monthLabels)
 
                             chart.applyNiceYAxis(nightMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
@@ -859,29 +817,7 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
-
-                            if (selectedRange == TimeRange.All) {
-                                chart.xAxis.apply {
-                                    val count = monthLabels.size.coerceAtLeast(1)
-                                    axisMinimum = -0.5f
-                                    axisMaximum = (count - 1).toFloat() + 0.5f
-
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
-                                    setLabelCount(2, true)
-
-                                    granularity = 1f
-                                    isGranularityEnabled = true
-                                    setDrawGridLines(true)
-                                    enableGridDashedLine(10f, 10f, 0f)
-                                }
-                            } else {
-                                chart.xAxis.applyDomainAndLabels(
-                                    labels = monthLabels,
-                                    useStartEndOnly = false,
-                                    adjustForBars = true,
-                                    everyNthLabel = if (selectedRange == TimeRange.Year) 2 else 1
-                                )
-                            }
+                            chart.xAxis.applyMonthlyRangeLabels(selectedRange, monthLabels)
 
                             chart.applyNiceYAxis(dayMonthly, ::hourStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> String.format("%.1f h", y) }
@@ -924,28 +860,7 @@ fun AnalysisScreen(
                         },
                         update = { chart ->
 
-                            if (selectedRange == TimeRange.All) {
-                                chart.xAxis.apply {
-                                    val count = monthLabels.size.coerceAtLeast(1)
-                                    axisMinimum = -0.5f
-                                    axisMaximum = (count - 1).toFloat() + 0.5f
-
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
-                                    setLabelCount(2, true)
-
-                                    granularity = 1f
-                                    isGranularityEnabled = true
-                                    setDrawGridLines(true)
-                                    enableGridDashedLine(10f, 10f, 0f)
-                                }
-                            } else {
-                                chart.xAxis.applyDomainAndLabels(
-                                    labels = monthLabels,
-                                    useStartEndOnly = false,
-                                    adjustForBars = true,
-                                    everyNthLabel = if (selectedRange == TimeRange.Year) 2 else 1
-                                )
-                            }
+                            chart.xAxis.applyMonthlyRangeLabels(selectedRange, monthLabels)
 
                             chart.applyNiceYAxis(stepsMonthly, ::stepStepFor)
                             chart.enableTapToShowValue(monthLabels) { y -> "%,d".format(y.toInt()) }
@@ -970,68 +885,25 @@ fun AnalysisScreen(
 
             // 5) Communications (pie chart).
             item {
-                val infoText = "Shows how your communication app usage is distributed. \n" +
+                val infoText = "Shows how your communication app usage is distributed.\n" +
                         "The chart displays the total hours spent on each app during the selected time period."
                 ChartCard(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
-                    AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(340.dp),
-                        factory = { ctx ->
-                            PieChart(ctx).apply {
-                                description = Description().apply { text = "" }
-                                legend.isEnabled = false
-                                setUsePercentValues(false)
-                                setDrawEntryLabels(false)
-                                isRotationEnabled = false
-                                rotationAngle = 0f
-                                animateY(0)
-                                holeRadius = 45f
-                                enableToastOnSliceClick()
-                            }
-                        },
-                        update = { pie ->
-                            val entries = commPie.filter { it.value > 0f }.map { PieEntry(it.value, it.label) }
+                    val entries = commPie
+                        .filter { it.value > 0f }
+                        .map { PieEntry(it.value, it.label) }
 
-                            if (entries.isEmpty()) {
-                                pie.centerText = "No chart data available"
-                                pie.setCenterTextSize(16f)
-                                pie.setCenterTextColor(android.graphics.Color.BLACK)
-                                pie.legend.isEnabled = false
-                                pie.data = PieData(PieDataSet(emptyList(), ""))
-                            } else {
-                                pie.legend.isEnabled = true
-                                pie.legend.apply {
-                                    textSize = 16f
-                                    isWordWrapEnabled = true
-                                    maxSizePercent = 0.80f
-                                    verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
-                                    horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
-                                    orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
-                                    setDrawInside(false)
-                                }
-                                val set = PieDataSet(entries, "").apply {
-                                    colors = PIE_COLORS
-                                    sliceSpace = 2f
-                                    valueTextSize = 14f
-                                    valueTextColor = COLOR_TEXT_HEX
-                                    valueFormatter = object : ValueFormatter() {
-                                        @SuppressLint("DefaultLocale")
-                                        override fun getFormattedValue(value: Float) = String.format("%.1f h", value)
-                                    }
-                                }
-                                pie.data = PieData(set)
-                            }
-
-                            pie.data.notifyDataChanged(); pie.notifyDataSetChanged(); pie.invalidate()
-                        }
+                    CommunicationPieChart(
+                        entries = entries,
+                        showCenterTextWhenEmpty = true
                     )
                 }
             }
-
         }
     }
+
 
     if (infoDialogMessage != null) {
         AlertDialog(
@@ -1252,8 +1124,10 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
 }
 
 /**
- * startDateFor: Computes an inclusive start date for the given range, anchored to anchorDate,
- * which must be the newest date we actually have in the database.
+ * Builds a list of DaySample for the selected time range.
+ *
+ * The range is always anchored to LocalDate.now() and missing days
+ * are filled with empty samples where needed (Week/Month).
  */
 private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
@@ -1391,4 +1265,67 @@ private fun buildLonelinessDataSets(points: List<AnalysisViewModel.LinePoint>): 
     points.forEachIndexed { i, p -> if (p.y.isNaN()) flush() else run += Entry(i.toFloat(), p.y) }
     flush()
     return sets
+}
+
+@Composable
+private fun CommunicationPieChart(
+    entries: List<PieEntry>,
+    showCenterTextWhenEmpty: Boolean
+) {
+    AndroidView(
+        modifier = Modifier.fillMaxWidth().height(340.dp),
+        factory = { ctx ->
+            PieChart(ctx).apply {
+                description = Description().apply { text = "" }
+                legend.isEnabled = false
+                setUsePercentValues(false)
+                setDrawEntryLabels(false)
+                isRotationEnabled = false
+                rotationAngle = 0f
+                animateY(0)
+                holeRadius = 45f
+                enableToastOnSliceClick()
+            }
+        },
+        update = { pie ->
+            if (entries.isEmpty()) {
+                if (showCenterTextWhenEmpty) {
+                    pie.centerText = "No chart data available"
+                    pie.setCenterTextSize(16f)
+                    pie.setCenterTextColor(android.graphics.Color.BLACK)
+                } else {
+                    pie.centerText = ""
+                }
+                pie.legend.isEnabled = false
+                pie.data = PieData(PieDataSet(emptyList(), ""))
+            } else {
+                pie.legend.isEnabled = true
+                pie.legend.apply {
+                    textSize = 16f
+                    isWordWrapEnabled = true
+                    maxSizePercent = 0.80f
+                    verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                    horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                    orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                    setDrawInside(false)
+                }
+                val set = PieDataSet(entries, "").apply {
+                    colors = PIE_COLORS
+                    sliceSpace = 2f
+                    valueTextSize = 14f
+                    valueTextColor = COLOR_TEXT_HEX
+                    valueFormatter = object : ValueFormatter() {
+                        @SuppressLint("DefaultLocale")
+                        override fun getFormattedValue(value: Float) =
+                            String.format("%.1f h", value)
+                    }
+                }
+                pie.data = PieData(set)
+            }
+
+            pie.data.notifyDataChanged()
+            pie.notifyDataSetChanged()
+            pie.invalidate()
+        }
+    )
 }
