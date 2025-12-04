@@ -399,11 +399,12 @@ fun AnalysisScreen(
                                 onClick = {
                                     selectedOptionText = selectionOption
                                     selectedRange = when (selectionOption) {
-                                        "Week" -> TimeRange.Week
+                                        "Last Week" -> TimeRange.Week
                                         "Last 30 Days" -> TimeRange.Month
                                         "Last 3 Months" -> TimeRange.ThreeMonths
-                                        "1 Year" -> TimeRange.Year
-                                        else -> TimeRange.All
+                                        "Past Year" -> TimeRange.Year
+                                        "All Time"       -> TimeRange.All
+                                        else             -> TimeRange.Week
                                     }
                                     expanded = false
                                 },
