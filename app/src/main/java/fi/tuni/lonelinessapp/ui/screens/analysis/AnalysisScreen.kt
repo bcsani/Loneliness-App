@@ -31,16 +31,19 @@ import java.util.Locale
 import java.time.LocalDate
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.ui.graphics.toArgb
 import com.github.mikephil.charting.charts.BarLineChartBase
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.ceil
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
+import fi.tuni.lonelinessapp.ui.theme.textPrimary
+
+
 
 // Color configuration for charts.
 // The colors are now hardcoded. Later we will move under the theme (?)
-private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
-private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 
 // pie chart colors.
 private val PIE_COLORS = listOf(
@@ -665,13 +668,58 @@ fun AnalysisScreen(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
-                    val entries = commPie
-                        .filter { it.value > 0f }
-                        .map { PieEntry(it.value, it.label) }
-
-                    CommunicationPieChart(
-                        entries = entries,
-                        showCenterTextWhenEmpty = false
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                        factory = { ctx ->
+                            PieChart(ctx).apply {
+                                description = Description().apply { text = "" }
+                                legend.isEnabled = false
+                                setUsePercentValues(false)
+                                setDrawEntryLabels(false)
+                                isRotationEnabled = false
+                                rotationAngle = 0f
+                                animateY(0)
+                                holeRadius = 45f
+                                enableToastOnSliceClick()
+                            }
+                        },
+                        update = { pie ->
+                            val entries = commPie.filter { it.value > 0f }
+                                .map { PieEntry(it.value, it.label) }
+                            if (entries.isEmpty()) {
+                                //pie.centerText = "No chart data available"
+                                pie.setCenterTextSize(16f)
+                                pie.setCenterTextColor(android.graphics.Color.BLACK)
+                                pie.legend.isEnabled = false
+                                pie.data = PieData(PieDataSet(emptyList(), ""))
+                            } else {
+                                pie.legend.isEnabled = true
+                                pie.legend.apply {
+                                    textSize = 16f
+                                    isWordWrapEnabled = true
+                                    maxSizePercent = 0.80f
+                                    verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                    horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                    orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                    setDrawInside(false)
+                                }
+                                val set = PieDataSet(entries, "").apply {
+                                    colors = PIE_COLORS
+                                    sliceSpace = 2f
+                                    valueTextSize = 14f
+                                    valueTextColor = textPrimary.toArgb()
+                                    valueFormatter = object : ValueFormatter() {
+                                        @SuppressLint("DefaultLocale")
+                                        override fun getFormattedValue(value: Float) =
+                                            String.format("%.1f h", value)
+                                    }
+                                }
+                                pie.data = PieData(set)
+                            }
+                            pie.data.notifyDataChanged()
+                            pie.notifyDataSetChanged()
+                            pie.invalidate()
+                        }
                     )
                 }
             }
@@ -891,9 +939,53 @@ fun AnalysisScreen(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
-                    val entries = commPie
-                        .filter { it.value > 0f }
-                        .map { PieEntry(it.value, it.label) }
+                    AndroidView(
+                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                        factory = { ctx ->
+                            PieChart(ctx).apply {
+                                description = Description().apply { text = "" }
+                                legend.isEnabled = false
+                                setUsePercentValues(false)
+                                setDrawEntryLabels(false)
+                                isRotationEnabled = false
+                                rotationAngle = 0f
+                                animateY(0)
+                                holeRadius = 45f
+                                enableToastOnSliceClick()
+                            }
+                        },
+                        update = { pie ->
+                            val entries = commPie.filter { it.value > 0f }.map { PieEntry(it.value, it.label) }
+
+                            if (entries.isEmpty()) {
+                                pie.centerText = "No chart data available"
+                                pie.setCenterTextSize(16f)
+                                pie.setCenterTextColor(android.graphics.Color.BLACK)
+                                pie.legend.isEnabled = false
+                                pie.data = PieData(PieDataSet(emptyList(), ""))
+                            } else {
+                                pie.legend.isEnabled = true
+                                pie.legend.apply {
+                                    textSize = 16f
+                                    isWordWrapEnabled = true
+                                    maxSizePercent = 0.80f
+                                    verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                                    horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                                    orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                                    setDrawInside(false)
+                                }
+                                val set = PieDataSet(entries, "").apply {
+                                    colors = PIE_COLORS
+                                    sliceSpace = 2f
+                                    valueTextSize = 14f
+                                    valueTextColor = textPrimary.toArgb()
+                                    valueFormatter = object : ValueFormatter() {
+                                        @SuppressLint("DefaultLocale")
+                                        override fun getFormattedValue(value: Float) = String.format("%.1f h", value)
+                                    }
+                                }
+                                pie.data = PieData(set)
+                            }
 
                     CommunicationPieChart(
                         entries = entries,
@@ -1007,9 +1099,10 @@ private fun makeBarDataSet(
     label: String,
     entries: List<BarEntry>,
 ): BarDataSet = BarDataSet(entries, label).apply {
-    color = COLOR_PRIMARY_HEX
+    color = primaryBlue.toArgb()
+
     valueTextSize = 12f
-    valueTextColor = COLOR_TEXT_HEX
+    valueTextColor = textPrimary.toArgb()
     setDrawValues(false)
 }
 
@@ -1259,8 +1352,8 @@ private fun buildLonelinessDataSets(points: List<AnalysisViewModel.LinePoint>): 
     fun flush() {
         if (run.isNotEmpty()) {
             sets += LineDataSet(run, "Loneliness").apply {
-                color = COLOR_PRIMARY_HEX
-                setCircleColor(COLOR_PRIMARY_HEX)
+                color = primaryBlue.toArgb()
+                setCircleColor(primaryBlue.toArgb())
                 lineWidth = 3f
                 circleRadius = 5f
                 mode = LineDataSet.Mode.LINEAR
