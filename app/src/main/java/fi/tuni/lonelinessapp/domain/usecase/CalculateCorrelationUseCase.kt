@@ -16,15 +16,15 @@ class CalculateCorrelationUseCase (
         val days = dayRepository.getAllDays().first()
 
         // Retrieve all data from days value
-        val lonelinessData = days.map { it.loneliness.toDouble() }
-        val nightMinutesData = days.map { it.nightMinutes.toDouble() }
-        val dayMinutesData = days.map { it.dayMinutes.toDouble() }
+        val lonelinessData = days.map { it.loneliness!!.toDouble() }
+        val nightMinutesData = days.map { it.nightMinutes!!.toDouble() }
+        val dayMinutesData = days.map { it.dayMinutes!!.toDouble() }
         val stepsData = days.map { it.steps.toDouble()}
-        val whatApps = days.map {it.whatApps.toDouble()}
-        val messages = days.map {it.messages.toDouble()}
-        val calls = days.map{it.messages.toDouble()}
-        val signal = days.map{it.signal.toDouble()}
-        val telegram = days.map{it.signal.toDouble()}
+        val whatApps = days.map {it.whatApps!!.toDouble()}
+        val messages = days.map {it.messages!!.toDouble()}
+        val calls = days.map{it.calls.toDouble()}
+        val signal = days.map{it.signal!!.toDouble()}
+        val telegram = days.map{it.signal!!.toDouble()}
 
         // Calculate the correlations and return the results
         val variablePairs = listOf(

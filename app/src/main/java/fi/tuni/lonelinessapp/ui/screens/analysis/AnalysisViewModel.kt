@@ -45,10 +45,10 @@ class AnalysisViewModel (
         val loneliness: Int?,
 
         // Phone usage at night (in minutes).
-        val nightMinutes: Int,
+        val nightMinutes: Int?,
 
         // Phone usage per day (in minutes).
-        val dayMinutes: Int,
+        val dayMinutes: Int?,
 
         // Steps.
         val steps: Int
@@ -108,11 +108,11 @@ class AnalysisViewModel (
 
     // Convert night minutes to hours for the bar chart.
     fun nightUsageBarsHours(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.nightMinutes.toFloat())) }
+        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours((d.nightMinutes ?: 0.0).toFloat())) }
 
     // Convert day minutes to hours for the bar chart.
     fun dayUsageBarsHours(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours(d.dayMinutes.toFloat())) }
+        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), minutesToHours((d.dayMinutes ?: 0.0).toFloat())) }
 
     // Create the steps data as is (no change in units).
     fun stepsBars(data: List<DaySample>): List<BarPoint> =
@@ -131,7 +131,7 @@ class AnalysisViewModel (
     fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {
         val valid = samples.filter {
             (it.loneliness != null && it.loneliness in 3..9) ||
-                    it.nightMinutes > 0 || it.dayMinutes > 0 || it.steps > 0
+                    (it.nightMinutes ?: -1) > 0 || (it.dayMinutes ?: -1) > 0 || it.steps > 0
         }
         if (valid.isEmpty()) return emptyList()
 
@@ -162,8 +162,8 @@ class AnalysisViewModel (
                     .map { (it - 3).coerceIn(0,6) }
                     .average().toFloat().let { if (it.isNaN()) Float.NaN else it }
 
-                val nightH   = (inPeriod.map { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
-                val dayH     = (inPeriod.map { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
+                val nightH   = (inPeriod.mapNotNull { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
+                val dayH     = (inPeriod.mapNotNull { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
                 val stepsAvg =  inPeriod.map { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
 
                 out += AggregateBucket(label, lonAvg, nightH, dayH, stepsAvg)
