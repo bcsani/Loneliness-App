@@ -36,6 +36,8 @@ import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.ceil
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
+import java.time.format.DateTimeFormatter
+
 
 // Color configuration for charts.
 // The colors are now hardcoded. Later we will move under the theme (?)
@@ -288,10 +290,25 @@ fun AnalysisScreen(
             else -> emptyList()
         }
     }
+
+    // Labelit toast-viesteihin: aina oikea päivämäärä (esim. 4.12.2025)
+    val toastLabels = remember(samples, selectedRange) {
+        when (selectedRange) {
+            TimeRange.Week, TimeRange.Month -> {
+                val formatter = DateTimeFormatter.ofPattern("d.M.yyyy")
+                samples.map { sample ->
+                    sample.date.format(formatter)
+                }
+            }
+            else -> emptyList()
+        }
+    }
+
     val monthTicks = if (selectedRange == TimeRange.Month)
         listOf(1, 5, 10, 15, 20, 25, 30)
     else
         null
+
 
     val monthlyAgg = remember(samples, selectedRange) {
         when (selectedRange) {
@@ -441,7 +458,7 @@ fun AnalysisScreen(
                                 monthTickDays = monthTicks
                             )
                             chart.lockZoomPanKeepTap()
-                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f", y) }
+                            chart.enableTapToShowValue(toastLabels) { y -> String.format("%.1f", y) }
 
                             val dataSets = buildLonelinessDataSets(lonelinessPts)
                             chart.data = LineData(dataSets)
@@ -483,7 +500,7 @@ fun AnalysisScreen(
                                 monthTickDays = monthTicks
                             )
                             chart.applyNiceYAxis(nightPts.map { it.y }, ::hourStepFor)
-                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
+                            chart.enableTapToShowValue(toastLabels) { y -> String.format("%.1f h", y) }
 
                             // --- sama reuna-logiikka kuin Day time -kaaviossa ---
                             val entries = toBarEntries(nightPts)
@@ -502,7 +519,6 @@ fun AnalysisScreen(
 
                             chart.xAxis.axisMinimum = minX - halfWidth
                             chart.xAxis.axisMaximum = maxX + halfWidth
-                            // ---------------------------------------------------
 
                             chart.data.notifyDataChanged()
                             chart.notifyDataSetChanged()
@@ -540,7 +556,7 @@ fun AnalysisScreen(
                                 monthTickDays = monthTicks
                             )
                             chart.applyNiceYAxis(dayPts.map { it.y }, ::hourStepFor)
-                            chart.enableTapToShowValue(dayLabels) { y -> String.format("%.1f h", y) }
+                            chart.enableTapToShowValue(toastLabels) { y -> String.format("%.1f h", y) }
 
                             val entries = toBarEntries(dayPts)
 
@@ -601,7 +617,7 @@ fun AnalysisScreen(
                                 monthTickDays = monthTicks
                             )
                             chart.applyNiceYAxis(stepsPts.map { it.y }, ::stepStepFor)
-                            chart.enableTapToShowValue(dayLabels) { y -> "%,d".format(y.toInt()) }
+                            chart.enableTapToShowValue(toastLabels) { y -> "%,d".format(y.toInt()) }
 
                             // Same edge logic as in Day time chart.
                             val entries = toBarEntries(stepsPts)
