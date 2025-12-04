@@ -13,7 +13,7 @@ import fi.tuni.lonelinessapp.data.utils.Converters
 import fi.tuni.lonelinessapp.data.utils.PrepopulateDataGenerator
 import java.util.concurrent.Executors
 
-@Database(entities= [DayEntity::class], version = 2)
+@Database(entities= [DayEntity::class], version = 3)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dayDao(): DayDao
@@ -33,15 +33,38 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
         }
 
-        // This will migrate all the data from version 1 to version 2
-        private val MIGRATION_1_2: Migration = object : Migration(1, 2) {
+        private val MIGRATION_2_3: Migration = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Add new columns
-                db.execSQL("ALTER TABLE dayTable ADD COLUMN whatApps INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE dayTable ADD COLUMN messages INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE dayTable ADD COLUMN calls INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE dayTable ADD COLUMN signal INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE dayTable ADD COLUMN telegram INTEGER NOT NULL DEFAULT 0")
+                // Create temporary table with new schema
+                db.execSQL("""
+                    CREATE TABLE dayTable_new (
+                        date TEXT PRIMARY KEY NOT NULL,
+                        loneliness INTEGER,
+                        nightMinutes INTEGER,
+                        dayMinutes INTEGER,
+                        steps INTEGER NOT NULL,
+                        whatApps INTEGER,
+                        messages INTEGER,
+                        calls INTEGER NOT NULL,
+                        signal INTEGER,
+                        telegram INTEGER
+                    )
+                    """.trimIndent())
+
+                // Copy data from old table to new table
+                db.execSQL("""
+                        INSERT INTO dayTable_new (date, loneliness, nightMinutes, dayMinutes, steps, 
+                                     whatApps, messages, calls, signal, telegram)
+                        SELECT date, loneliness, nightMinutes, dayMinutes, steps, 
+                            whatApps, messages, calls, signal, telegram
+                        FROM dayTable
+                    """.trimIndent())
+
+                // Drop old table
+                db.execSQL("DROP TABLE dayTable")
+
+                // Rename new table to original name
+                db.execSQL("ALTER TABLE dayTable_new RENAME TO dayTable")
             }
         }
 
@@ -60,7 +83,7 @@ abstract class AppDatabase : RoomDatabase() {
                         ioExecutor.shutdown()
                     }
                 })
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_2_3)
                 .build()
     }
 }
