@@ -172,15 +172,20 @@ fun HomeScreen(
                             setScaleEnabled(false) // zoom not in use
 
                             /*
-                            xAxis.valueFormatter = object : ValueFormatter() {
-                                override fun getFormattedValue(value: Float): String {
-                                    val index = value.toInt()
-                                    return labels.getOrNull(index) ?: ""
+
                                 }
                             }
                             */
 
                             axisLeft.apply {
+                                xAxis.valueFormatter = object : ValueFormatter() {
+                                    override fun getFormattedValue(value: Float): String {
+                                        val index = value.toInt()
+                                        return labels.getOrNull(index) ?: ""
+                                    }
+                                }
+                                xAxis.setLabelRotationAngle(-90f)
+
                                 // Left Y-axis limits
                                 axisMinimum = -0.1f
                                 axisMaximum = 0.1f
