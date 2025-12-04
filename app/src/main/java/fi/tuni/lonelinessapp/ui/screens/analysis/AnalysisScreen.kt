@@ -349,7 +349,7 @@ fun AnalysisScreen(
         // Dropdown box.
         item {
             var expanded by remember { mutableStateOf(false) }
-            val options = listOf("Week", "1 Month", "3 Months", "1 Year", "All Time")
+            val options = listOf("Last Week", "Last 30 Days", "Last 3 Months", "Past Year", "All Time")
             var selectedOptionText by remember { mutableStateOf(options[0]) }
 
             Box(
@@ -383,8 +383,8 @@ fun AnalysisScreen(
                                     selectedOptionText = selectionOption
                                     selectedRange = when (selectionOption) {
                                         "Week" -> TimeRange.Week
-                                        "1 Month" -> TimeRange.Month
-                                        "3 Months" -> TimeRange.ThreeMonths
+                                        "Last 30 Days" -> TimeRange.Month
+                                        "Last 3 Months" -> TimeRange.ThreeMonths
                                         "1 Year" -> TimeRange.Year
                                         else -> TimeRange.All
                                     }
