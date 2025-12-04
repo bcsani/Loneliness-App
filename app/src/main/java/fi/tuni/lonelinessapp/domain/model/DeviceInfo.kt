@@ -8,6 +8,6 @@ data class DeviceInfo(
     val timestamp: Long = System.currentTimeMillis()
 ) {
     override fun toString(): String {
-        return "Name: $name\nAddress: $address\nRSSI: $rssi\nDistance: ${String.format("%.2f", distance)}m"
+        return "Name: $name\nAddress: $address\nRSSI: $rssi\nDistance: ${String.format("%.2f", distance)}m\nTimeStamp: $timestamp"
     }
 }

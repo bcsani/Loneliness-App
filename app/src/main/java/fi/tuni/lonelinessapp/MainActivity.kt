@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
@@ -21,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
@@ -109,12 +111,13 @@ class MainActivity : ComponentActivity() {
 
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun initializeBluetoothManager() {
         println("Initialize bluetooth manager")
         bluetoothManager = BluetoothProximityManager(this,
             onDeviceDetected = { deviceInfo ->
                 // Update UI when device is detected
-                println("Device detected: ${deviceInfo.name}")
+                println("Device detected: ${deviceInfo}")
             },
             onScanStatusChanged = { isScanning ->
                 println(if (isScanning) "Scanning..." else "Scanning stopped")
@@ -123,6 +126,7 @@ class MainActivity : ComponentActivity() {
                 showError(errorMessage)
             }
         )
+        bluetoothManager.startScanning()
     }
 
     private fun showError(errorMessage: String) {
@@ -133,13 +137,6 @@ class MainActivity : ComponentActivity() {
 
     private fun showPermissionDeniedMessage(text: String) {
         Toast.makeText(this, text, Toast.LENGTH_LONG).show()
-    }
-
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    override fun onResume() {
-        super.onResume()
-        // Restart scanning when activity comes to foreground
-        bluetoothManager.startScanning()
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
@@ -199,7 +196,13 @@ class MainActivity : ComponentActivity() {
         permissionManager.addMultiplePermissions(
             permissions = bluetoothPermissions,
             onGranted = {
-                initializeBluetoothManager()
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.BLUETOOTH_SCAN
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    initializeBluetoothManager()
+                }
             },
             onDenied = {
                 showPermissionDeniedMessage("Bluetooth proximity detection")
