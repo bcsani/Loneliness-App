@@ -31,19 +31,16 @@ import java.util.Locale
 import java.time.LocalDate
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.ui.graphics.toArgb
 import com.github.mikephil.charting.charts.BarLineChartBase
 import kotlin.math.roundToInt
 import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel.DaySample
 import kotlin.math.ceil
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
-import fi.tuni.lonelinessapp.ui.theme.primaryBlue
-import fi.tuni.lonelinessapp.ui.theme.textPrimary
-
-
 
 // Color configuration for charts.
 // The colors are now hardcoded. Later we will move under the theme (?)
+private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 
 // pie chart colors.
 private val PIE_COLORS = listOf(
@@ -195,11 +192,13 @@ private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Floa
     }
     val step   = stepFn(maxVal)
     val axisMax = niceCeil(maxVal * 1.15f, step)
+    val labelCount = (axisMax / step).toInt() + 1
+
     axisLeft.apply {
         axisMinimum = 0f
         axisMaximum = axisMax
         granularity = step
-        setLabelCount(((axisMax / step).toInt() + 1).coerceAtMost(10), true)
+        setLabelCount(labelCount, true)
         setDrawGridLines(true)
         enableGridDashedLine(10f, 10f, 0f)
     }
@@ -232,34 +231,35 @@ fun AnalysisScreen(
     // ====================== TEST DATA (WEEK VIEW) ======================
     // This block provides hardcoded data for the "Week" view to test how null/zero values are rendered.
     //o restore live data, comment out this entire block and uncomment the "ORIGINAL DATA LOADING" block below.
-   //val daysEntity by analysisViewModel.daysEntity.collectAsState()
+    //val daysEntity by analysisViewModel.daysEntity.collectAsState()
     //val samples: List<DaySample> = remember(daysEntity, selectedRange) {
-      //  if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month
-        //    ) {
-         //   val today = LocalDate.now()
-           // val testData = listOf(
-             //   DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
-               // DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
-                //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
-                //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
-                //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
-                //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
-                //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
-            //)
-            //val testDataMap = testData.associateBy { it.date }
-            //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
-            //wantedDates.map { date ->
-              //  testDataMap[date] ?: DaySample(
-                //    date = date,
-                  //  loneliness = null,
-                    //nightMinutes = 0,
-                    //dayMinutes = 0,
-                    //steps = 0
-                //)
-           //}
-        //} else {
-          //  buildSamplesForRange(daysEntity, selectedRange)
-        //}
+    //if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month || selectedRange == TimeRange.ThreeMonths
+    //) {
+    //val today = LocalDate.now()
+    //val testData = listOf(
+    //DaySample(today.minusDays(6), loneliness = 4, nightMinutes = 60, dayMinutes = 120, steps = 5000),
+    //DaySample(today.minusDays(5), loneliness = 7, nightMinutes = 75, dayMinutes = 150, steps = 6200),
+    //DaySample(today.minusDays(4), loneliness = 5, nightMinutes = 0,  dayMinutes = 100, steps = 4500), // <-- Null loneliness, zero night usage
+    //DaySample(today.minusDays(3), loneliness = null, nightMinutes = 90, dayMinutes = 200, steps = 8000),
+    //DaySample(today.minusDays(2), loneliness = 4, nightMinutes = 80, dayMinutes = 0,   steps = 0),     // <-- Zero day usage and steps
+    //DaySample(today.minusDays(1), loneliness = 5, nightMinutes = 120, dayMinutes = 240, steps = 9500),
+    //DaySample(today,              loneliness = 4, nightMinutes = 55, dayMinutes = 110, steps = 5200)
+    //)
+    //val testDataMap = testData.associateBy { it.date }
+    //val wantedDates = (0..6).map { i -> today.minusDays((6 - i).toLong()) }
+    //wantedDates.map { date ->
+    //testDataMap[date] ?: DaySample(
+    //date = date,
+    //loneliness = null,
+    //nightMinutes = 0,
+    //dayMinutes = 0,
+    //steps = 0
+    //)
+    //}
+    //}
+    //else {
+    //buildSamplesForRange(daysEntity, selectedRange)
+    //}
     //}
     // ======================= END OF TEST DATA =======================
 
@@ -403,9 +403,11 @@ fun AnalysisScreen(
 
             // 1) Loneliness(line chart).
             item {
-                val infoText = "Shows your UCLA Loneliness Scale scores for the selected period. Higher values indicate greater feelings of loneliness."
+                val infoText = "Shows your Loneliness scale scores from answers given to survey.\n" +
+                        "Higher values indicate greater feelings of loneliness. Zero equals not feeling lonely. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "UCLA Loneliness Scale",
+                    title = "Loneliness Score",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
 
@@ -455,7 +457,9 @@ fun AnalysisScreen(
 
             // 2) Night usage (bar chart).
             item {
-                val infoText = "Shows the time spent on your phone at night."
+                val infoText = "Shows the time spent on your phone at night in hours. \n" +
+                        "Night usage is 10.00 pm - 06.00 am. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
                     title = "Night time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -511,7 +515,10 @@ fun AnalysisScreen(
 
             // 3) Daytime usage (bar chart).
             item {
-                val infoText = "Shows the time spent on your phone during the day."
+                val infoText = "Shows the time spent on your phone during the day in hours.\n" +
+                        "Daily usage is 06.00 am - 10.00 pm.\n" +
+                        "Shows values from selected period of time. "
+
                 ChartCard(
                     title = "Day time phone usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -565,9 +572,10 @@ fun AnalysisScreen(
 
             // 4) Steps (bar chart).
             item {
-                val infoText = "Shows the number of steps taken during the selected period."
+                val infoText = "Shows the number of steps taken during the selected period of time.\n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "Steps taken",
+                    title = "Steps",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
@@ -624,7 +632,8 @@ fun AnalysisScreen(
 
             // 5) Communications (pie chart).
             item {
-                val infoText = "Shows how your communication app usage is distributed. The chart displays the total hours spent on each app during the selected period."
+                val infoText = "Shows how your communication app usage is distributed. \n" +
+                        "The chart displays the total hours spent on each app during the selected time period."
                 ChartCard(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -668,7 +677,7 @@ fun AnalysisScreen(
                                     colors = PIE_COLORS
                                     sliceSpace = 2f
                                     valueTextSize = 14f
-                                    valueTextColor = textPrimary.toArgb()
+                                    valueTextColor = COLOR_TEXT_HEX
                                     valueFormatter = object : ValueFormatter() {
                                         @SuppressLint("DefaultLocale")
                                         override fun getFormattedValue(value: Float) =
@@ -687,17 +696,14 @@ fun AnalysisScreen(
 
             // 3 months, 1 year.
         } else {
-            if (selectedRange == TimeRange.All) {
-                StartEndValueFormatter(monthLabels) // <-- FIX: This is a List<String>
-            } else {
-                IndexAxisValueFormatter(monthLabels)
-            }
 
             // 1) Loneliness(line chart).
             item {
-                val infoText = "Shows the monthly average of your UCLA Loneliness Scale scores. Higher values indicate greater feelings of loneliness."
+                val infoText = "Shows your Loneliness scale scores from answers given to survey.\n" +
+                        "Higher values indicate greater feelings of loneliness. Zero equals not feeling lonely. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "UCLA Loneliness Scale",
+                    title = "Loneliness Score",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
@@ -765,7 +771,9 @@ fun AnalysisScreen(
 
             // 2) Night usage (bar chart).
             item {
-                val infoText = "Shows the monthly average of the time spent on your phone at night."
+                val infoText = "Shows the time spent on your phone at night in hours. \n" +
+                        "Night usage is 10.00 pm - 06.00 am. \n" +
+                        "Shows values from selected period of time."
                 ChartCard(
                     title = "Night Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -832,7 +840,9 @@ fun AnalysisScreen(
 
             // 3) Daytime usage (bar chart).
             item {
-                val infoText = "Shows the monthly average of the time spent on your phone during the day."
+                val infoText = "Shows the time spent on your phone during the day in hours.\n" +
+                        "Daily usage is 06.00 am - 10.00 pm.\n" +
+                        "Shows values from selected period of time. "
                 ChartCard(
                     title = "Day Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -894,9 +904,10 @@ fun AnalysisScreen(
 
             // 4) Steps (bar chart).
             item {
-                val infoText = "Shows the monthly average of the number of steps taken."
+                val infoText = "Shows the number of steps taken during the selected period of time.\n" +
+                        "Shows values from selected period of time."
                 ChartCard(
-                    title = "Exercise",
+                    title = "Steps",
                     onInfoClick = { infoDialogMessage = infoText }
                 ) {
                     AndroidView(
@@ -959,7 +970,8 @@ fun AnalysisScreen(
 
             // 5) Communications (pie chart).
             item {
-                val infoText = "Shows how your communication app usage is distributed. The chart displays the total hours spent on each app during the selected period."
+                val infoText = "Shows how your communication app usage is distributed. \n" +
+                        "The chart displays the total hours spent on each app during the selected time period."
                 ChartCard(
                     title = "Communication Apps Usage",
                     onInfoClick = { infoDialogMessage = infoText }
@@ -1003,7 +1015,7 @@ fun AnalysisScreen(
                                     colors = PIE_COLORS
                                     sliceSpace = 2f
                                     valueTextSize = 14f
-                                    valueTextColor = textPrimary.toArgb()
+                                    valueTextColor = COLOR_TEXT_HEX
                                     valueFormatter = object : ValueFormatter() {
                                         @SuppressLint("DefaultLocale")
                                         override fun getFormattedValue(value: Float) = String.format("%.1f h", value)
@@ -1087,10 +1099,11 @@ fun BarChart.applyBarDefaults() {
     setTouchEnabled(true)
     isHighlightPerTapEnabled = false
     isHighlightPerDragEnabled = false
+
+    setExtraOffsets(20f, 0f, 20f, 8f)
+
     xAxis.position = XAxis.XAxisPosition.BOTTOM
-    xAxis.textSize = 12f
-    xAxis.granularity = 1f
-    xAxis.setDrawGridLines(true)
+    xAxis.textSize = 14f
     xAxis.granularity = 1f
     xAxis.setDrawGridLines(true)
     axisLeft.setDrawAxisLine(true)
@@ -1122,10 +1135,9 @@ private fun makeBarDataSet(
     label: String,
     entries: List<BarEntry>,
 ): BarDataSet = BarDataSet(entries, label).apply {
-    color = primaryBlue.toArgb()
-
+    color = COLOR_PRIMARY_HEX
     valueTextSize = 12f
-    valueTextColor = textPrimary.toArgb()
+    valueTextColor = COLOR_TEXT_HEX
     setDrawValues(false)
 }
 
@@ -1365,8 +1377,8 @@ private fun buildLonelinessDataSets(points: List<AnalysisViewModel.LinePoint>): 
     fun flush() {
         if (run.isNotEmpty()) {
             sets += LineDataSet(run, "Loneliness").apply {
-                color = primaryBlue.toArgb()
-                setCircleColor(primaryBlue.toArgb())
+                color = COLOR_PRIMARY_HEX
+                setCircleColor(COLOR_PRIMARY_HEX)
                 lineWidth = 3f
                 circleRadius = 5f
                 mode = LineDataSet.Mode.LINEAR
