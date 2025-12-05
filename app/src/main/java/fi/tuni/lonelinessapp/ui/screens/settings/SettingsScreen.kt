@@ -198,28 +198,29 @@ fun SettingsScreen(
 
 fun formatContent(days: List<DayEntity>?): String {
     return buildString {
-        append("date," +
-                "loneliness," +
-                "nightMinutes," +
-                "dayMinutes," +
-                "steps," +
-                "whatApps," +
-                "messages," +
-                "calls," +
-                "signal," +
-                "telegram" +
-                "\n")
+        append("Date," +
+               "Loneliness," +
+               "NightMinutes," +
+               "DayMinutes," +
+               "Steps," +
+               "WhatApps," +
+               "Messages," +
+               "Calls," +
+               "Signal," +
+               "Telegram" +
+               "\n")
         days?.forEach { day ->
             append("${day.date}," +
-                    "${day.loneliness}," +
-                    "${day.nightMinutes}," +
-                    "${day.dayMinutes}," +
-                    "${day.whatApps}," +
-                    "${day.messages}," +
-                    "${day.calls}," +
-                    "${day.signal}," +
-                    "${day.telegram}" +
-                    "\n")
+                   "${day.loneliness}," +
+                   "${day.nightMinutes}," +
+                   "${day.dayMinutes}," +
+                   "${day.steps}," +
+                   "${day.whatApps}," +
+                   "${day.messages}," +
+                   "${day.calls}," +
+                   "${day.signal}," +
+                   "${day.telegram}" +
+                   "\n")
         }
     }
 }
