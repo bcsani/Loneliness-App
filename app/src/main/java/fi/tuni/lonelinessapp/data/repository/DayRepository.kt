@@ -35,12 +35,16 @@ class DayRepository  (
         dayDataSource.getDayByDate(date)
     override fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDataSource.getDaysFromDate(startDate)
-    fun getTodaySignalDuration(): Flow<Int?> {
+    fun getSignalToday(): Flow<Int?> {
         val today = LocalDate.now() // Implement your date logic
         return dayDataSource.getSignalByDate(today)
     }
+    fun getCallsToday(): Flow<Int?> {
+        val today = LocalDate.now() // Implement your date logic
+        return dayDataSource.getCallsByDate(today)
+    }
     suspend fun resetData() =
         dayDataSource.resetData()
-    fun getTotalCallDurationToday(): Float =
-        dayDataSource.getTotalCallDurationToday()
+    suspend fun updateCallDurationToday() =
+        dayDataSource.updateCallDurationToday()
 }

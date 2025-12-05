@@ -79,24 +79,28 @@ class AnalysisViewModel (
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
 
-    var callDuration = 0.9f
+    private val _callDuration = MutableStateFlow(0.0f)
+    private val _signalDuration = MutableStateFlow(0.0f)
 
-    private val _signalDuration = MutableStateFlow(0.6f)
+    private fun getCallDuration(): Float {
+        return _callDuration.value
+    }
 
     private fun getSignalDuration(): Float {
         return _signalDuration.value
     }
 
     // This function set the call duration for today when the user accept call log tracking
-    fun setCallDuration() {
+    fun updateCallDuration() {
         try {
             viewModelScope.launch {
-                val callDurationMin = dayRepository.getTotalCallDurationToday()
-                dayRepository.saveCalls(LocalDate.now(), callDurationMin.toInt())
-                callDuration = minutesToHours(callDurationMin)
+                dayRepository.getCallsToday().collect { duration ->
+                    val callDurationMin = duration?.toFloat()!!
+                    _callDuration.value = minutesToHours(callDurationMin)
+                }
             }
         } catch (e: Exception) {
-            callDuration = 0.9f
+            _callDuration.value = 0.9f
         }
     }
 
@@ -104,13 +108,13 @@ class AnalysisViewModel (
     fun updateSignalDuration() {
         try {
             viewModelScope.launch {
-                dayRepository.getTodaySignalDuration().collect { duration ->
+                dayRepository.getSignalToday().collect { duration ->
                     val signalDurationMin = duration?.toFloat()!!
                     _signalDuration.value = minutesToHours(signalDurationMin)
                 }
             }
         } catch (e: Exception) {
-            callDuration = 0.9f
+            _signalDuration.value = 0.9f
         }
     }
 
@@ -140,13 +144,18 @@ class AnalysisViewModel (
         data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps.toFloat()) }
 
     // Create the communication application hours for the pie chart.
-    fun communicationPieHours(): List<PieSlice> = listOf(
-        PieSlice("WhatsApp", 2.3f),
-        PieSlice("Messages", 1.7f),
-        PieSlice("Calls",    callDuration),
-        PieSlice("Signal",   getSignalDuration()),
-        PieSlice("Telegram",  0.5f)
-    )
+    fun communicationPieHours(): List<PieSlice> {
+        val callDuration = getCallDuration()
+        val signalDuration = getSignalDuration()
+
+        return listOf(
+            PieSlice("WhatsApp", 2.3f),
+            PieSlice("Messages", 1.7f),
+            PieSlice("Calls",    callDuration),
+            PieSlice("Signal",   signalDuration),
+            PieSlice("Telegram",  0.5f)
+        )
+    }
 
 
     fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {

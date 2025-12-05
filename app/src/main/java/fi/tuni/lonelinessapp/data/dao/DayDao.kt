@@ -49,6 +49,8 @@ interface DayDao {
 
     @Query("SELECT signal FROM dayTable where date = :date")
     fun getSignalByDate(date: LocalDate): Flow<Int?>
+    @Query("SELECT calls FROM dayTable where date = :date")
+    fun getCallsByDate(date: LocalDate): Flow<Int?>
 
     @Query("DELETE FROM dayTable")
     suspend fun resetData()

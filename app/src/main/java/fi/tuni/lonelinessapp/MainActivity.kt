@@ -41,6 +41,9 @@ import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -49,6 +52,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
     private lateinit var bluetoothManager: BluetoothProximityManager
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -162,7 +166,10 @@ class MainActivity : ComponentActivity() {
         permissionManager.addPermission(
             permission = Manifest.permission.READ_CALL_LOG,
             onGranted = {
-                analysisViewModel.setCallDuration()
+                coroutineScope.launch {
+                    dayRepository.updateCallDurationToday()
+                    analysisViewModel.updateCallDuration()
+                }
             },
             onDenied = {
                 showPermissionDeniedMessage("Call log permission denied")

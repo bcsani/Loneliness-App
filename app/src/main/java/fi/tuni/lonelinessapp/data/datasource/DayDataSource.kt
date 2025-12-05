@@ -22,8 +22,14 @@ class DayDataSource (
 
     fun getSignalByDate(date: LocalDate): Flow<Int?> =
         dayDao.getSignalByDate(date)
-    fun getTotalCallDurationToday(): Float =
-        callDurationHelper.getTotalCallDurationToday()
+    fun getCallsByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getCallsByDate(date)
+    suspend fun updateCallDurationToday() {
+        val duration = callDurationHelper.getTotalCallDurationToday()
+        val today = LocalDate.now()
+        dayDao.updateCalls(today, duration.toInt())
+    }
+
     suspend fun saveLoneliness(date: LocalDate = LocalDate.now(), loneliness: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
