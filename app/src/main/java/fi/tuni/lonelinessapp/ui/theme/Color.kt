@@ -3,12 +3,14 @@ package fi.tuni.lonelinessapp.ui.theme
 import androidx.compose.ui.graphics.Color
 
 //Sininen jota on kaikkialla
-private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+val primaryBlue = Color(0xFF2563EB)
+val textPrimary    = Color(0xFF1F2937)
+val PieBlue = Color(0xFF2563EB)
+val PieOrange = Color(0xFFF59E0B)
+val PieGreen = Color(0xFF10B981)
+val PieViolet = Color(0xFFA855F7)
+val PieRed = Color(0xFFEF4444)
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val PIE_COLORS = listOf(PieBlue, PieOrange, PieGreen, PieViolet, PieRed)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+

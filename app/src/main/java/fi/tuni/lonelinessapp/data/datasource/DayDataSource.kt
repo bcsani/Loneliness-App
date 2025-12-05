@@ -122,15 +122,15 @@ class DayDataSource (
 
     suspend private fun insertDayWithData(
         date: LocalDate,
-        loneliness: Int = 0,
-        nightMinutes: Int = 0,
-        dayMinutes: Int = 0,
+        loneliness: Int? = null,
+        nightMinutes: Int? = null,
+        dayMinutes: Int? = null,
         steps: Int = 0,
-        whatApps: Int = 0,
-        messages: Int = 0,
+        whatApps: Int? = null,
+        messages: Int? = null,
         calls: Int = 0,
-        signal: Int = 0,
-        telegram: Int = 0
+        signal: Int? = null,
+        telegram: Int? = null
     ) {
         dayDao.insertDay(DayEntity(
             date = date,

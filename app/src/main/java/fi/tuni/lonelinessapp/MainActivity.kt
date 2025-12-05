@@ -242,7 +242,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
                     1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
-                SettingsScreen()
+                SettingsScreen(settingsViewModel=settingsViewModel)
             }
 
             // Show survey dialog
