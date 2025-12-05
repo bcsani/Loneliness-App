@@ -61,17 +61,35 @@ fun SettingsScreen(
     val showAboutApp by settingsViewModel.showAboutApp
     val showAboutData by settingsViewModel.showAboutData
 
+    // File launcher for exporting data
     val createFileLauncher = rememberLauncherForActivityResult(
+        // Make csv file
         contract = ActivityResultContracts.CreateDocument("text/csv"),
         onResult = { uri: Uri? ->
             uri?.let {
-                // Download
+                // Content for file
                 val content = formatContent(days)
-                context.contentResolver.openOutputStream(uri)?.use {
-                    it.write(content.toByteArray())
+
+                try {
+                    // Download file
+                    context.contentResolver.openOutputStream(uri)?.use {
+                        it.write(content.toByteArray())
+                    }
+                    // Notification, successful
+                    Toast.makeText(
+                        context,
+                        "Export successful",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-                // Notification
-                Toast.makeText(context, "Export successful", Toast.LENGTH_LONG).show()
+                catch (e : Exception) {
+                    // Notification, failed
+                    Toast.makeText(
+                        context,
+                        "Export failed ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     )
@@ -82,7 +100,7 @@ fun SettingsScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ){
-        // About App -item
+        // About App
         item {
             Button(
                 onClick = { settingsViewModel.openShowAbout() },
@@ -98,7 +116,7 @@ fun SettingsScreen(
             }
         }
 
-        // About Data -item
+        // About Data
         item {
             Button(
                 onClick = { settingsViewModel.openShowData() },
@@ -114,13 +132,10 @@ fun SettingsScreen(
             }
         }
 
+        // Export Data
         item {
             Button(
-                onClick = {
-                    createFileLauncher.launch("data_${LocalDate.now()
-                        .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}" +
-                            "_${LocalTime.now().format(
-                        DateTimeFormatter.ofPattern("HH-mm"))}.csv")},
+                onClick = { createFileLauncher.launch(generateFileName()) },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -133,27 +148,39 @@ fun SettingsScreen(
             }
         }
 
+        // Share Data
         item {
             Button(
                 onClick = {
-                    val cacheFile = File(context.cacheDir, "data_${LocalDate.now()
-                        .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))}" +
-                            "_${LocalTime.now().format(
-                                DateTimeFormatter.ofPattern("HH-mm"))}.csv")
-                    cacheFile.writeText(formatContent(days))
+                    try {
+                        // Make file to cache
+                        val cacheFile = File(context.cacheDir, generateFileName())
 
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        cacheFile
-                    )
+                        // Content for file
+                        cacheFile.writeText(formatContent(days))
 
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            cacheFile
+                        )
+
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(
+                            Intent.createChooser(shareIntent, "Share file")
+                        )
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share file"))
+                    catch (e : Exception) {
+                        Toast.makeText(
+                            context,
+                            "Share failed ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
@@ -167,11 +194,10 @@ fun SettingsScreen(
             }
         }
 
+        // Reset
         item {
             Button(
-                onClick = {
-                    settingsViewModel.openResetDialog()
-                },
+                onClick = { settingsViewModel.openResetDialog() },
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
@@ -196,31 +222,165 @@ fun SettingsScreen(
     }
 }
 
+@Composable
+fun AboutApp(
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                // Top row with title and close button
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Title
+                    Text(
+                        text = "About App",
+                        modifier = Modifier
+                            .weight(2f)
+                            .padding(4.dp),
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+
+                    // Close button
+                    Button(
+                        onClick = { onDismiss() },
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Text("Close")
+                    }
+                }
+
+                // LazyColumn for text
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    item{
+                        Text(
+                            text = "Information about app:\n" +
+                                    "Something about app and how it works",
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AboutData(
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                // Top row with title and close button
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Title
+                    Text(
+                        text = "About App",
+                        modifier = Modifier
+                            .weight(2f)
+                            .padding(4.dp),
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+
+                    // Close button
+                    Button(
+                        onClick = { onDismiss() },
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Text("Close")
+                    }
+
+                }
+                // LazyColumn for text
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    item{
+                        Text(
+                            text = "Information about data:\n" +
+                                    "Something about data and what data is collected",
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun generateFileName(): String {
+    val date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    val time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH-mm"))
+    return "data_${date}" + "_${time}.csv"
+}
+
 fun formatContent(days: List<DayEntity>?): String {
     return buildString {
-        append("Date," +
-               "Loneliness," +
-               "NightMinutes," +
-               "DayMinutes," +
-               "Steps," +
-               "WhatApps," +
-               "Messages," +
-               "Calls," +
-               "Signal," +
-               "Telegram" +
-               "\n")
+        append(
+            "Date," +
+            "Loneliness," +
+            "NightMinutes," +
+            "DayMinutes," +
+            "Steps," +
+            "WhatApps," +
+            "Messages," +
+            "Calls," +
+            "Signal," +
+            "Telegram" +
+            "\n")
         days?.forEach { day ->
-            append("${day.date}," +
-                   "${day.loneliness}," +
-                   "${day.nightMinutes}," +
-                   "${day.dayMinutes}," +
-                   "${day.steps}," +
-                   "${day.whatApps}," +
-                   "${day.messages}," +
-                   "${day.calls}," +
-                   "${day.signal}," +
-                   "${day.telegram}" +
-                   "\n")
+            append(
+                "${day.date}," +
+                "${day.loneliness}," +
+                "${day.nightMinutes}," +
+                "${day.dayMinutes}," +
+                "${day.steps}," +
+                "${day.whatApps}," +
+                "${day.messages}," +
+                "${day.calls}," +
+                "${day.signal}," +
+                "${day.telegram}" +
+                "\n")
         }
     }
 }
@@ -253,11 +413,10 @@ fun ResetDialog(
         }
     }
 
-
-
     Dialog(onDismissRequest =  onDismiss) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Card(
@@ -266,7 +425,6 @@ fun ResetDialog(
                     .fillMaxWidth()
                     .wrapContentHeight()
             ) {
-
                 Column(
                     modifier = Modifier
                         .padding(16.dp)
@@ -274,32 +432,46 @@ fun ResetDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Info text
+                    // First reset-info popup
                     if (!isTimerRunning) {
+
+                        // Info text
                         Text(
                             text = "Are you sure you want to reset the app?",
                             modifier = Modifier
                                 .padding(4.dp),
-                            style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                            style = TextStyle(
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
                             textAlign = TextAlign.Center
                         )
+
                         // Info text
                         Text(
                             text = "This action will permanently clear all data from the app.",
                             modifier = Modifier
                                 .padding(4.dp),
-                            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
                             textAlign = TextAlign.Center
                         )
+
                         // Info text
                         Text(
                             text = "This action cannot be undone.",
                             modifier = Modifier
                                 .padding(4.dp),
-                            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
                             textAlign = TextAlign.Center
                         )
 
+                        // Buttons in row
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -308,10 +480,9 @@ fun ResetDialog(
                         ) {
                             // Cancel button
                             Button(
-                                onClick = {
-                                    onDismiss()
-                                },
-                                modifier = Modifier.weight(1f)
+                                onClick = { onDismiss() },
+                                modifier = Modifier
+                                    .weight(1f)
                             ) {
                                 Text("Cancel")
                             }
@@ -321,157 +492,54 @@ fun ResetDialog(
                             // Reset button
                             Button(
                                 onClick = startTimer,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                                modifier = Modifier
+                                    .weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red
+                                )
                             ) {
                                 Text("Reset")
                             }
                         }
-                    } else {
+                    }
 
+                    // Timer popup after first popup
+                    else {
+
+                        // Info text
                         Text(
                             text = "Reset in",
                             modifier = Modifier
                                 .padding(4.dp),
-                            style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                            style = TextStyle(
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
                             textAlign = TextAlign.Center
                         )
+
+                        // Time in seconds
                         Text(
                             text = "$timeLeft seconds",
                             modifier = Modifier
                                 .padding(4.dp),
-                            style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+                            style = TextStyle(
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
                             textAlign = TextAlign.Center
                         )
-                        // Cancel reset
+
+                        // Cancel button
                         Button(
                             onClick = {
                                 isTimerRunning = false
                                 onDismiss()
                             },
                             modifier = Modifier
-
                         ) {
                             Text("Cancel")
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AboutApp(
-    onDismiss: () -> Unit,
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                // top row with title and close button
-                Row(
-                    modifier = Modifier
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    //title
-                    Text(
-                        text = "About App",
-                        modifier = Modifier.weight(2f)
-                            .padding(4.dp),
-                        style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    )
-                    Button(
-                        onClick = {
-                            onDismiss()
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Close")
-                    }
-
-                }
-                // LazyColumn for text content
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(16.dp)
-                ) {
-                    item{
-                        Text(
-                            text = "Information about app:\n" +
-                                    "Something about app and how it works",
-                            modifier = Modifier.weight(1f)
-
-                                .padding(4.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AboutData(
-    onDismiss: () -> Unit,
-
-    ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                // top row with title and close button
-                Row(
-                    modifier = Modifier
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // title
-                    Text(
-                        text = "About App",
-                        modifier = Modifier.weight(2f)
-                            .padding(4.dp),
-                        style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    )
-
-                    Button(
-                        onClick = {
-                            onDismiss()
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Close")
-                    }
-
-                }
-                // LazyColumn for text content
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(16.dp)
-                ) {
-                    item{
-                        Text(
-                            text = "Information about data:\n" +
-                                    "Something about data and what data is collected",
-                            modifier = Modifier.weight(1f)
-
-                                .padding(4.dp)
-                        )
                     }
                 }
             }
