@@ -45,6 +45,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import fi.tuni.lonelinessapp.data.entity.DayEntity
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalTime
@@ -95,7 +96,9 @@ fun SettingsScreen(
     )
 
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -107,7 +110,8 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(70.dp),
+                colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
                 Text(
                     text = "About App",
@@ -123,7 +127,8 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(70.dp),
+                colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
                 Text(
                     text = "About Data",
@@ -139,7 +144,8 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(70.dp),
+                colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
                 Text(
                     text = "Export Data",
@@ -185,7 +191,8 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(70.dp),
+                colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
                 Text(
                     text = "Share Data",
@@ -201,7 +208,8 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium,
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(70.dp),
+                colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
                 Text(
                     text = "Reset",
@@ -209,7 +217,20 @@ fun SettingsScreen(
                 )
             }
         }
+
+        // Bottom text
+        item {
+            Text(
+                text = "Lonelytics\n" +
+                        "Autumn 2025\n" +
+                        "Tampere University\n",
+                fontSize = 20.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        }
     }
+
     // Open popups when activated
     if(showResetDialog) {
         ResetDialog(onDismiss = {settingsViewModel.closeResetDialog()}, settingsViewModel)
@@ -259,7 +280,8 @@ fun AboutApp(
                     Button(
                         onClick = { onDismiss() },
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1f),
+                        colors = ButtonDefaults.buttonColors(primaryBlue)
                     ) {
                         Text("Close")
                     }
@@ -322,7 +344,8 @@ fun AboutData(
                     Button(
                         onClick = { onDismiss() },
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1f),
+                        colors = ButtonDefaults.buttonColors(primaryBlue)
                     ) {
                         Text("Close")
                     }
@@ -439,7 +462,7 @@ fun ResetDialog(
                         Text(
                             text = "Are you sure you want to reset the app?",
                             modifier = Modifier
-                                .padding(4.dp),
+                                .padding(8.dp),
                             style = TextStyle(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
@@ -451,7 +474,7 @@ fun ResetDialog(
                         Text(
                             text = "This action will permanently clear all data from the app.",
                             modifier = Modifier
-                                .padding(4.dp),
+                                .padding(8.dp),
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
@@ -463,7 +486,7 @@ fun ResetDialog(
                         Text(
                             text = "This action cannot be undone.",
                             modifier = Modifier
-                                .padding(4.dp),
+                                .padding(8.dp),
                             style = TextStyle(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
@@ -475,14 +498,15 @@ fun ResetDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 4.dp),
+                                .padding(top = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             // Cancel button
                             Button(
                                 onClick = { onDismiss() },
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(1f),
+                                colors = ButtonDefaults.buttonColors(primaryBlue)
                             ) {
                                 Text("Cancel")
                             }
@@ -536,7 +560,8 @@ fun ResetDialog(
                                 isTimerRunning = false
                                 onDismiss()
                             },
-                            modifier = Modifier
+                            modifier = Modifier,
+                            colors = ButtonDefaults.buttonColors(primaryBlue)
                         ) {
                             Text("Cancel")
                         }
