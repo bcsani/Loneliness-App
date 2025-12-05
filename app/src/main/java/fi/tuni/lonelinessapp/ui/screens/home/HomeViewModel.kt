@@ -4,14 +4,12 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import fi.tuni.lonelinessapp.data.repository.DayRepository
 import fi.tuni.lonelinessapp.domain.model.CorrelationResult
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 class HomeViewModel(
     private val calculateCorrelationUseCase: CalculateCorrelationUseCase
@@ -36,9 +34,9 @@ class HomeViewModel(
                 _isLoading.value = false
 
             } catch (e: Exception) {
+                _isLoading.value = false
                 println("Failed to calculate correlations: ${e.message}")
             }
         }
     }
-
 }
