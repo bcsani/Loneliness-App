@@ -95,8 +95,8 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getCallsToday().collect { duration ->
-                    val callDurationMin = duration?.toFloat()!!
-                    _callDuration.value = minutesToHours(callDurationMin)
+                    val callDurationSec = duration?.toFloat()!!
+                    _callDuration.value = secondsToHours(callDurationSec)
                 }
             }
         } catch (e: Exception) {
@@ -109,8 +109,8 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getSignalToday().collect { duration ->
-                    val signalDurationMin = duration?.toFloat()!!
-                    _signalDuration.value = minutesToHours(signalDurationMin)
+                    val signalDurationSec = duration?.toFloat()!!
+                    _signalDuration.value = secondsToHours(signalDurationSec)
                 }
             }
         } catch (e: Exception) {
@@ -204,5 +204,6 @@ class AnalysisViewModel (
 
     // Convert minutes to hours.
     private fun minutesToHours(mins: Float): Float = mins / 60f
+    private fun secondsToHours(seconds: Float): Float = seconds / 3600f
 
 }
