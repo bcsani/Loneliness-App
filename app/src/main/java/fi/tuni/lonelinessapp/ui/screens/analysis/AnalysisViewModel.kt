@@ -7,6 +7,7 @@ import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -80,6 +81,12 @@ class AnalysisViewModel (
 
     var callDuration = 0.9f
 
+    private val _signalDuration = MutableStateFlow(0.6f)
+
+    private fun getSignalDuration(): Float {
+        return _signalDuration.value
+    }
+
     // This function set the call duration for today when the user accept call log tracking
     fun setCallDuration() {
         try {
@@ -87,6 +94,20 @@ class AnalysisViewModel (
                 val callDurationMin = dayRepository.getTotalCallDurationToday()
                 dayRepository.saveCalls(LocalDate.now(), callDurationMin.toInt())
                 callDuration = minutesToHours(callDurationMin)
+            }
+        } catch (e: Exception) {
+            callDuration = 0.9f
+        }
+    }
+
+    // This function set the signal duration for today
+    fun updateSignalDuration() {
+        try {
+            viewModelScope.launch {
+                dayRepository.getTodaySignalDuration().collect { duration ->
+                    val signalDurationMin = duration?.toFloat()!!
+                    _signalDuration.value = minutesToHours(signalDurationMin)
+                }
             }
         } catch (e: Exception) {
             callDuration = 0.9f
@@ -123,7 +144,7 @@ class AnalysisViewModel (
         PieSlice("WhatsApp", 2.3f),
         PieSlice("Messages", 1.7f),
         PieSlice("Calls",    callDuration),
-        PieSlice("Signal",   0.6f),
+        PieSlice("Signal",   getSignalDuration()),
         PieSlice("Telegram",  0.5f)
     )
 

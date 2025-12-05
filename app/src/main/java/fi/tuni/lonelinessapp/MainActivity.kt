@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
         val settingsViewModel = SettingsViewModel(dayRepository)
-        checkAllPermissions(analysisViewModel)
+        checkAllPermissions(analysisViewModel, dayRepository)
 
         enableEdgeToEdge()
         setContent {
@@ -106,19 +106,17 @@ class MainActivity : ComponentActivity() {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    private fun initializeBluetoothManager() {
+    private fun initializeBluetoothManager(dayRepository: DayRepository, analysisViewModel: AnalysisViewModel) {
         println("Initialize bluetooth manager")
         bluetoothManager = BluetoothProximityManager(this,
-            onDeviceDetected = { deviceInfo ->
-                // Update UI when device is detected
-                println("Device detected: ${deviceInfo}")
-            },
             onScanStatusChanged = { isScanning ->
                 println(if (isScanning) "Scanning..." else "Scanning stopped")
             },
             onError = { errorMessage ->
                 showError(errorMessage)
-            }
+            },
+            dayRepository = dayRepository,
+            analysisViewModel = analysisViewModel,
         )
         bluetoothManager.startScanning()
     }
@@ -144,7 +142,10 @@ class MainActivity : ComponentActivity() {
         bluetoothManager.cleanup()
     }
 
-    private fun checkAllPermissions(analysisViewModel: AnalysisViewModel) {
+    private fun checkAllPermissions(
+        analysisViewModel: AnalysisViewModel,
+        dayRepository: DayRepository
+    ) {
         val permissionManager = SequentialPermissionManager(this)
 
         permissionManager.addPermission(
@@ -183,7 +184,7 @@ class MainActivity : ComponentActivity() {
                         Manifest.permission.BLUETOOTH_SCAN
                     ) == PackageManager.PERMISSION_GRANTED
                 ) {
-                    initializeBluetoothManager()
+                    initializeBluetoothManager(dayRepository, analysisViewModel)
                 }
             },
             onDenied = {

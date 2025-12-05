@@ -25,7 +25,7 @@ class DayRepository  (
         dayDataSource.saveMessages(date, messages)
     suspend fun saveCalls(date: LocalDate, calls: Int) =
         dayDataSource.saveCalls(date, calls)
-    suspend fun saveSignal(date: LocalDate, signal: Int) =
+    suspend fun saveSignal(date: LocalDate = LocalDate.now(), signal: Int) =
         dayDataSource.saveSignal(date, signal)
     suspend fun saveTelegram(date: LocalDate, telegram: Int) =
         dayDataSource.saveTelegram(date, telegram)
@@ -35,6 +35,10 @@ class DayRepository  (
         dayDataSource.getDayByDate(date)
     override fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDataSource.getDaysFromDate(startDate)
+    fun getTodaySignalDuration(): Flow<Int?> {
+        val today = LocalDate.now() // Implement your date logic
+        return dayDataSource.getSignalByDate(today)
+    }
     suspend fun resetData() =
         dayDataSource.resetData()
     fun getTotalCallDurationToday(): Float =
