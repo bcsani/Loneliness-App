@@ -45,6 +45,9 @@ import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -53,6 +56,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var stepSensorManager: StepSensorManager
     private var isServiceBound = false
     private lateinit var bluetoothManager: BluetoothProximityManager
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
     private lateinit var appUsageTracker: AppUsageTracker
 
     private val serviceConnection = object : ServiceConnection {
@@ -84,7 +88,7 @@ class MainActivity : ComponentActivity() {
         val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
         val settingsViewModel = SettingsViewModel(dayRepository)
         appUsageTracker = AppUsageTracker(this)
-        checkAllPermissions(analysisViewModel)
+        checkAllPermissions(analysisViewModel, dayRepository)
 
         enableEdgeToEdge()
         setContent {
@@ -112,19 +116,17 @@ class MainActivity : ComponentActivity() {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    private fun initializeBluetoothManager() {
+    private fun initializeBluetoothManager(dayRepository: DayRepository, analysisViewModel: AnalysisViewModel) {
         println("Initialize bluetooth manager")
         bluetoothManager = BluetoothProximityManager(this,
-            onDeviceDetected = { deviceInfo ->
-                // Update UI when device is detected
-                println("Device detected: ${deviceInfo}")
-            },
             onScanStatusChanged = { isScanning ->
                 println(if (isScanning) "Scanning..." else "Scanning stopped")
             },
             onError = { errorMessage ->
                 showError(errorMessage)
-            }
+            },
+            dayRepository = dayRepository,
+            analysisViewModel = analysisViewModel,
         )
         bluetoothManager.startScanning()
     }
@@ -150,7 +152,10 @@ class MainActivity : ComponentActivity() {
         bluetoothManager.cleanup()
     }
 
-    private fun checkAllPermissions(analysisViewModel: AnalysisViewModel) {
+    private fun checkAllPermissions(
+        analysisViewModel: AnalysisViewModel,
+        dayRepository: DayRepository
+    ) {
         val permissionManager = SequentialPermissionManager(this)
 
         permissionManager.addPermission(
@@ -167,7 +172,10 @@ class MainActivity : ComponentActivity() {
         permissionManager.addPermission(
             permission = Manifest.permission.READ_CALL_LOG,
             onGranted = {
-                analysisViewModel.setCallDuration()
+                coroutineScope.launch {
+                    dayRepository.updateCallDurationToday()
+                    analysisViewModel.updateCallDuration()
+                }
             },
             onDenied = {
                 showPermissionDeniedMessage("Call log permission denied")
@@ -178,8 +186,7 @@ class MainActivity : ComponentActivity() {
         permissionManager.addPermission(
             permission = Manifest.permission.PACKAGE_USAGE_STATS,
             onGranted = {
-                // Initialize app usage tracking for Telegram and WhatsApp
-                // initializeAppUsageTracking()
+
             },
             onDenied = {
                 showPermissionDeniedMessage("Usage Access")
@@ -201,7 +208,7 @@ class MainActivity : ComponentActivity() {
                         Manifest.permission.BLUETOOTH_SCAN
                     ) == PackageManager.PERMISSION_GRANTED
                 ) {
-                    initializeBluetoothManager()
+                    initializeBluetoothManager(dayRepository, analysisViewModel)
                 }
             },
             onDenied = {
@@ -212,17 +219,21 @@ class MainActivity : ComponentActivity() {
 
         permissionManager.start()
 
-        checkUsageStatsPermission(analysisViewModel)
+        checkUsageStatsPermission(dayRepository, analysisViewModel)
     }
 
-    private fun checkUsageStatsPermission(analysisViewModel: AnalysisViewModel){
+    private fun checkUsageStatsPermission(dayRepository: DayRepository,analysisViewModel: AnalysisViewModel){
         if (appUsageTracker.isUsageStatsPermissionGranted()) {
             appUsageTracker.startTracking()
             println("App Usage tracker start tracking")
-
             val appUsageData = appUsageTracker.getCurrentUsage()
-            analysisViewModel.setTelegramDuration(appUsageData.telegramUsageTime)
-            analysisViewModel.setWhatappsDuration(appUsageData.whatsappUsageTime)
+            coroutineScope.launch {
+                dayRepository.saveWhatApp(whatApps = appUsageData.whatsappUsageTime.toInt())
+                dayRepository.saveTelegram(telegram = appUsageData.telegramUsageTime.toInt())
+            }
+
+            analysisViewModel.updateWhatAppsDuration()
+            analysisViewModel.updateTelegramDuration()
         } else {
             showUsageStatsPermissionDialog()
         }
@@ -301,7 +312,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
                     1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
                 }
             } else {
-                SettingsScreen()
+                SettingsScreen(settingsViewModel=settingsViewModel)
             }
 
             // Show survey dialog

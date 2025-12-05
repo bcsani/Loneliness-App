@@ -13,22 +13,34 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
-import fi.tuni.lonelinessapp.domain.model.DeviceInfo
+import fi.tuni.lonelinessapp.data.repository.DayRepository
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class BluetoothProximityManager(
     private val context: Context,
-    private val onDeviceDetected: (DeviceInfo) -> Unit,
     private val onScanStatusChanged: (Boolean) -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
+    private val dayRepository: DayRepository,
+    private val analysisViewModel: AnalysisViewModel
 ) {
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var bluetoothLeScanner: BluetoothLeScanner
     private var scanning = false
     private val scannedDevices = mutableSetOf<String>()
+    private var totalDevices: Int = 0
+    private var totalDuration: Float = 0.0f
+    private val deviceDetectionMap = mutableMapOf<String, Long>()
+    private val deviceTimeoutMap = mutableMapOf<String, Runnable>()
+    private val handler = Handler(Looper.getMainLooper())
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 
     companion object {
         private const val PROXIMITY_RSSI_THRESHOLD = -70
-        private const val SCAN_PERIOD: Long = 100000
+        private const val SCAN_PERIOD: Long = 30000L
+        private const val DEVICE_TIMEOUT_MS: Long = 3000L
     }
 
     private val leScanCallback = object : ScanCallback() {
@@ -92,6 +104,28 @@ class BluetoothProximityManager(
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScanning() {
         if (scanning) {
+            // Handle all remaining devices as timed out
+            val currentTime = System.currentTimeMillis()
+            deviceDetectionMap.forEach { (deviceAddress, startTime) ->
+                val duration = (currentTime - startTime) / 1000.0f
+                totalDuration += duration
+            }
+
+
+            // Add total duration to the database
+            coroutineScope.launch {
+                dayRepository.saveSignal(signal = totalDuration.toInt())
+                analysisViewModel.updateSignalDuration()
+            }
+
+            // Clear all tracking data
+            deviceDetectionMap.clear()
+            deviceTimeoutMap.clear()
+            scannedDevices.clear()
+
+            // Remove any pending callbacks
+            handler.removeCallbacksAndMessages(null)
+
             bluetoothLeScanner.stopScan(leScanCallback)
             scanning = false
             onScanStatusChanged(false)
@@ -103,18 +137,57 @@ class BluetoothProximityManager(
         val device = result.device
         val rssi = result.rssi
 
-        if (rssi >= PROXIMITY_RSSI_THRESHOLD && !scannedDevices.contains(device.address)) {
-            scannedDevices.add(device.address)
+        if (rssi >= PROXIMITY_RSSI_THRESHOLD) {
+            // Check if this is a new detection
+            val isNewDevice = !scannedDevices.contains(device.address)
 
-            val distance = calculateDistance(rssi)
-            val deviceInfo = DeviceInfo(
-                name = device.name ?: "Unknown",
-                address = device.address,
-                rssi = rssi,
-                distance = distance
-            )
+            if (isNewDevice) {
+                scannedDevices.add(device.address)
+                totalDevices += 1
+            }
 
-            onDeviceDetected(deviceInfo)
+            // Track detection time
+            handleDeviceDetection(device.address)
+        } else {
+            // Device is out of range
+            handleDeviceTimeout(device.address)
+        }
+    }
+
+    private fun handleDeviceDetection(deviceAddress: String){
+        val currentTime = System.currentTimeMillis()
+
+        // If device was not previously detected, start tracking
+        if (!deviceDetectionMap.containsKey(deviceAddress)) {
+            deviceDetectionMap[deviceAddress] = currentTime
+        }
+
+        // Cancel any existing timeout for this device
+        deviceTimeoutMap[deviceAddress]?.let {
+            handler.removeCallbacks(it)
+            deviceTimeoutMap.remove(deviceAddress)
+        }
+
+        // Schedule a new timeout to detect when device goes out of range
+        val timeoutRunnable = Runnable {
+            handleDeviceTimeout(deviceAddress)
+        }
+
+        handler.postDelayed(timeoutRunnable, DEVICE_TIMEOUT_MS)
+        deviceTimeoutMap[deviceAddress] = timeoutRunnable
+    }
+
+    private fun handleDeviceTimeout(deviceAddress: String) {
+        deviceDetectionMap[deviceAddress]?.let { startTime ->
+            val endTime = System.currentTimeMillis()
+            val duration = (endTime - startTime) / 1000.0f
+
+            // Add to total duration
+            totalDuration += duration
+
+            // Remove from tracking maps
+            deviceDetectionMap.remove(deviceAddress)
+            deviceTimeoutMap.remove(deviceAddress)
         }
     }
 
@@ -136,5 +209,20 @@ class BluetoothProximityManager(
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun cleanup() {
         stopScanning()
+    }
+
+    fun getTotalDuration(): Float {
+        val currentTime = System.currentTimeMillis()
+        var ongoingDuration = 0.0f
+
+        deviceDetectionMap.forEach { (_, startTime) ->
+            ongoingDuration += (currentTime - startTime) / 1000.0f
+        }
+
+        return totalDuration + ongoingDuration
+    }
+
+    fun getTotalDevice(): Int {
+        return totalDevices
     }
 }

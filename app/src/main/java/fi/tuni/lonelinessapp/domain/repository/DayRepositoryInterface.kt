@@ -7,13 +7,13 @@ import java.time.LocalDate
 interface DayRepositoryInterface {
     suspend fun insertDay(day: DayEntity)
 
-    suspend fun saveLoneliness(date: LocalDate, loneliness: Int)
+    suspend fun saveLoneliness(date: LocalDate = LocalDate.now(), loneliness: Int)
 
-    suspend fun saveNightMinutes(date: LocalDate, nightMinutes: Int)
+    suspend fun saveNightMinutes(date: LocalDate = LocalDate.now(), nightMinutes: Int)
 
-    suspend fun saveDayMinutes(date: LocalDate, dayMinutes: Int)
+    suspend fun saveDayMinutes(date: LocalDate = LocalDate.now(), dayMinutes: Int)
 
-    suspend fun saveSteps(date: LocalDate, steps: Int)
+    suspend fun saveSteps(date: LocalDate = LocalDate.now(), steps: Int)
 
     fun getAllDays(): Flow<List<DayEntity>>
 

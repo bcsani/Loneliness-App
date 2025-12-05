@@ -19,9 +19,23 @@ class DayDataSource (
         dayDao.getDayByDate(date)
     fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDao.getDaysFromDate(startDate)
-    fun getTotalCallDurationToday(): Float =
-        callDurationHelper.getTotalCallDurationToday()
-    suspend fun saveLoneliness(date: LocalDate, loneliness: Int) {
+
+    fun getSignalByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getSignalByDate(date)
+    fun getCallsByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getCallsByDate(date)
+    fun getWhatAppsByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getWhatAppsByDate(date)
+    fun getTelegramByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getTelegramByDate(date)
+
+    suspend fun updateCallDurationToday() {
+        val duration = callDurationHelper.getTotalCallDurationToday()
+        val today = LocalDate.now()
+        dayDao.updateCalls(today, duration.toInt())
+    }
+
+    suspend fun saveLoneliness(date: LocalDate = LocalDate.now(), loneliness: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -32,7 +46,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveNightMinutes(date: LocalDate, nightMinutes: Int) {
+    suspend fun saveNightMinutes(date: LocalDate = LocalDate.now(), nightMinutes: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -43,7 +57,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveDayMinutes(date: LocalDate, dayMinutes: Int) {
+    suspend fun saveDayMinutes(date: LocalDate = LocalDate.now(), dayMinutes: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -54,7 +68,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveSteps(date: LocalDate, steps: Int) {
+    suspend fun saveSteps(date: LocalDate = LocalDate.now(), steps: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -65,7 +79,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveWhatApp(date: LocalDate, whatApps: Int) {
+    suspend fun saveWhatApp(date: LocalDate = LocalDate.now(), whatApps: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -76,7 +90,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveMessages(date: LocalDate, messages: Int) {
+    suspend fun saveMessages(date: LocalDate = LocalDate.now(), messages: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -87,7 +101,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveCalls(date: LocalDate, calls: Int) {
+    suspend fun saveCalls(date: LocalDate = LocalDate.now(), calls: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -98,7 +112,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveSignal(date: LocalDate, signal: Int) {
+    suspend fun saveSignal(date: LocalDate = LocalDate.now(), signal: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -109,7 +123,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveTelegram(date: LocalDate, telegram: Int) {
+    suspend fun saveTelegram(date: LocalDate = LocalDate.now(), telegram: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -122,15 +136,15 @@ class DayDataSource (
 
     suspend private fun insertDayWithData(
         date: LocalDate,
-        loneliness: Int = 0,
-        nightMinutes: Int = 0,
-        dayMinutes: Int = 0,
+        loneliness: Int? = null,
+        nightMinutes: Int? = null,
+        dayMinutes: Int? = null,
         steps: Int = 0,
-        whatApps: Int = 0,
-        messages: Int = 0,
+        whatApps: Int? = null,
+        messages: Int? = null,
         calls: Int = 0,
-        signal: Int = 0,
-        telegram: Int = 0
+        signal: Int? = null,
+        telegram: Int? = null
     ) {
         dayDao.insertDay(DayEntity(
             date = date,
