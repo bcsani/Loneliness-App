@@ -2,6 +2,7 @@ package fi.tuni.lonelinessapp.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fi.tuni.lonelinessapp.data.repository.DayRepository
 import fi.tuni.lonelinessapp.domain.model.CorrelationResult
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
 import kotlinx.coroutines.Dispatchers
