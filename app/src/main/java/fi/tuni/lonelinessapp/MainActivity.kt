@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
-        val homeViewModel = HomeViewModel(calculateCorrelationUseCase)
+        val homeViewModel = HomeViewModel(dayRepository, calculateCorrelationUseCase)
         val settingsViewModel = SettingsViewModel(dayRepository)
         checkAllPermissions(analysisViewModel)
 
