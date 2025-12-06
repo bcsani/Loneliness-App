@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity() {
         val settingsViewModel = SettingsViewModel(dayRepository)
         appUsageTracker = AppUsageTracker(this)
         checkAllPermissions(analysisViewModel, dayRepository)
+        analysisViewModel.updateDurations()
 
         enableEdgeToEdge()
         setContent {

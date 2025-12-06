@@ -46,6 +46,8 @@ class DayRepository  (
         dayDataSource.getTelegramByDate(today)
     suspend fun resetData() =
         dayDataSource.resetData()
+    fun addSignalToday(signal: Int) =
+        dayDataSource.addSignalByDate(today, signal)
     suspend fun updateCallDurationToday() =
         dayDataSource.updateCallDurationToday()
 }

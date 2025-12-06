@@ -146,6 +146,13 @@ class AnalysisViewModel (
         }
     }
 
+    fun updateDurations() {
+        updateCallDuration()
+        updateSignalDuration()
+        updateWhatAppsDuration()
+        updateTelegramDuration()
+    }
+
     // Let's do the conversions for charts.
     // Convert the day's data to fit a line chart (date + value).
     fun lonelinessLine(data: List<DaySample>): List<LinePoint> =

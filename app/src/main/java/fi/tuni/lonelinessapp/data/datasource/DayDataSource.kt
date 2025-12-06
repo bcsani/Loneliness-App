@@ -28,6 +28,15 @@ class DayDataSource (
         dayDao.getWhatAppsByDate(date)
     fun getTelegramByDate(date: LocalDate): Flow<Int?> =
         dayDao.getTelegramByDate(date)
+    fun addSignalByDate(date: LocalDate, signal: Int) {
+        println("DEBUG: Adding signal $signal for date $date")
+        val before = dayDao.getSignalByDateSingle(date)
+        println("DEBUG: Before update: $before")
+        dayDao.addSignalByDate(date, signal)
+        val after = dayDao.getSignalByDateSingle(date)
+        println("DEBUG: After update: $after")
+    }
+
 
     suspend fun updateCallDurationToday() {
         val duration = callDurationHelper.getTotalCallDurationToday()

@@ -39,7 +39,7 @@ class BluetoothProximityManager(
 
     companion object {
         private const val PROXIMITY_RSSI_THRESHOLD = -70
-        private const val SCAN_PERIOD: Long = 30000L
+        private const val SCAN_PERIOD: Long = 10000L
         private const val DEVICE_TIMEOUT_MS: Long = 3000L
     }
 
@@ -114,7 +114,8 @@ class BluetoothProximityManager(
 
             // Add total duration to the database
             coroutineScope.launch {
-                dayRepository.saveSignal(signal = totalDuration.toInt())
+                println("totalDuration $totalDuration")
+                dayRepository.addSignalToday(signal = totalDuration.toInt())
                 analysisViewModel.updateSignalDuration()
             }
 
