@@ -95,6 +95,27 @@ fun SettingsScreen(
         }
     )
 
+    // Function to create buttons
+    @Composable
+    fun SettingsButton (
+        text: String,
+        onClick: () -> Unit
+    ) {
+        Button(
+            onClick = onClick,
+            shape = MaterialTheme.shapes.medium,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(70.dp),
+            colors = ButtonDefaults.buttonColors(primaryBlue)
+        ) {
+            Text(
+                text = text,
+                fontSize = 24.sp
+            )
+        }
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -104,118 +125,58 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ){
         // About App
-        item {
-            Button(
-                onClick = { settingsViewModel.openShowAbout() },
-                shape = MaterialTheme.shapes.medium,
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(70.dp),
-                colors = ButtonDefaults.buttonColors(primaryBlue)
-            ) {
-                Text(
-                    text = "About App",
-                    fontSize = 24.sp
-                )
-            }
+        item { SettingsButton(text = "About App",
+            onClick = { settingsViewModel.openShowAbout() })
         }
 
         // About Data
-        item {
-            Button(
-                onClick = { settingsViewModel.openShowData() },
-                shape = MaterialTheme.shapes.medium,
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(70.dp),
-                colors = ButtonDefaults.buttonColors(primaryBlue)
-            ) {
-                Text(
-                    text = "About Data",
-                    fontSize = 24.sp
-                )
-            }
+        item { SettingsButton(text = "About Data",
+            onClick = { settingsViewModel.openShowData() })
         }
 
         // Export Data
-        item {
-            Button(
-                onClick = { createFileLauncher.launch(generateFileName()) },
-                shape = MaterialTheme.shapes.medium,
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(70.dp),
-                colors = ButtonDefaults.buttonColors(primaryBlue)
-            ) {
-                Text(
-                    text = "Export Data",
-                    fontSize = 24.sp
-                )
-            }
+        item { SettingsButton(text = "Export Data",
+            onClick = { createFileLauncher.launch(generateFileName()) })
         }
 
         // Share Data
-        item {
-            Button(
-                onClick = {
-                    try {
-                        // Make file to cache
-                        val cacheFile = File(context.cacheDir, generateFileName())
+        item { SettingsButton(text = "Share Data",
+            onClick = {
+                try {
+                    // Make file to cache
+                    val cacheFile = File(context.cacheDir, generateFileName())
 
-                        // Content for file
-                        cacheFile.writeText(formatContent(days))
+                    // Content for file
+                    cacheFile.writeText(formatContent(days))
 
-                        val uri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            cacheFile
-                        )
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        cacheFile
+                    )
 
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/csv"
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        context.startActivity(
-                            Intent.createChooser(shareIntent, "Share file")
-                        )
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    catch (e : Exception) {
-                        Toast.makeText(
-                            context,
-                            "Share failed ${e.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                },
-                shape = MaterialTheme.shapes.medium,
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(70.dp),
-                colors = ButtonDefaults.buttonColors(primaryBlue)
-            ) {
-                Text(
-                    text = "Share Data",
-                    fontSize = 24.sp
-                )
-            }
+                    context.startActivity(
+                        Intent.createChooser(shareIntent, "Share file")
+                    )
+                }
+                catch (e : Exception) {
+                    Toast.makeText(
+                        context,
+                        "Share failed ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            })
         }
 
         // Reset
-        item {
-            Button(
-                onClick = { settingsViewModel.openResetDialog() },
-                shape = MaterialTheme.shapes.medium,
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(70.dp),
-                colors = ButtonDefaults.buttonColors(primaryBlue)
-            ) {
-                Text(
-                    text = "Reset",
-                    fontSize = 24.sp
-                )
-            }
+        item { SettingsButton(text = "Reset",
+            onClick = { settingsViewModel.openResetDialog() })
         }
 
         // Bottom text
