@@ -39,4 +39,7 @@ class DayRepository  (
         dayDataSource.resetData()
     fun getTotalCallDurationToday(): Float =
         dayDataSource.getTotalCallDurationToday()
+
+    fun getStreak(): Flow<Int> = dayDataSource.getStreak()
+    fun isResponded(): Flow<Boolean> = dayDataSource.isResponded()
 }

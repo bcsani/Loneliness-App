@@ -62,7 +62,8 @@ fun HomeScreen(
     surveyViewModel: SurveyViewModel
 ) {
     val showDialog by mainViewModel.showSurvey
-    val streakCount by homeViewModel.streakCount
+    val streakCount by homeViewModel.streakCount.collectAsState()
+    val isResponded by homeViewModel.isResponded.collectAsState()
     var infoDialogMessage by remember { mutableStateOf<String?>(null)}
     var selectedBarMessage by remember { mutableStateOf<String?>(null) }
 
@@ -71,7 +72,9 @@ fun HomeScreen(
 
     // Values for correlation chart
     val correlationResults by homeViewModel.correlationResults.collectAsState()
+
     LaunchedEffect(Unit) {
+        homeViewModel.getStreakCount()
         homeViewModel.calculateCorrelation()
     }
 
@@ -145,7 +148,11 @@ fun HomeScreen(
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
-                Text("Fill Daily Survey", fontSize = 20.sp)
+                if (!isResponded) {
+                    Text("Fill Daily Survey", fontSize = 20.sp)
+                } else {
+                    Text("Refill Daily Survey", fontSize = 20.sp)
+                }
             }
         }
 

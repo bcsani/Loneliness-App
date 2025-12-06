@@ -1,29 +1,46 @@
 package fi.tuni.lonelinessapp.ui.screens.home
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fi.tuni.lonelinessapp.domain.model.CorrelationResult
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
+    private val dayRepository: DayRepository,
     private val calculateCorrelationUseCase: CalculateCorrelationUseCase
 ) : ViewModel() {
 
     // Streak count
-    private val _streakCount = mutableIntStateOf(3) // Hardcoded value for testing
-    val streakCount: State<Int> = _streakCount
+    private var _streakCount = MutableStateFlow(0)
+    val streakCount = _streakCount
+
+    private var _isResponded = MutableStateFlow(false)
+    val isResponded = _isResponded
 
     // Loading variable for initializing the correlation results
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
     private val _correlationResults = MutableStateFlow<List<CorrelationResult>>(emptyList())
     val correlationResults: StateFlow<List<CorrelationResult>> = _correlationResults.asStateFlow()
+
+    fun getStreakCount() {
+        viewModelScope.launch(Dispatchers.IO) {
+            dayRepository.getStreak().collect { streak ->
+                _streakCount.value = streak
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            dayRepository.isResponded().collect { isResponded ->
+                _isResponded.value = isResponded
+            }
+        }
+    }
 
     fun calculateCorrelation(){
         viewModelScope.launch {
