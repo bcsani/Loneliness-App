@@ -62,4 +62,13 @@ interface DayDao {
 
     @Query("DELETE FROM dayTable")
     suspend fun resetData()
+
+    @Query("SELECT MIN(date) FROM dayTable")
+    fun firstDate(): Flow<LocalDate?>
+
+    @Query("SELECT MAX(date) FROM dayTable WHERE loneliness IS NOT NULL")
+    fun lastResponse(): Flow<LocalDate?>
+
+    @Query("SELECT MAX(date) FROM dayTable WHERE loneliness IS NULL AND date < :today")
+    fun lastNonStreak(today: LocalDate): Flow<LocalDate?>
 }

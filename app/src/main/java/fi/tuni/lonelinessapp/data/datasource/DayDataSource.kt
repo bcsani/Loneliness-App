@@ -4,7 +4,10 @@ import fi.tuni.lonelinessapp.data.dao.DayDao
 import fi.tuni.lonelinessapp.data.entity.DayEntity
 import fi.tuni.lonelinessapp.data.utils.CallDurationHelper
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 
 class DayDataSource (
@@ -171,5 +174,26 @@ class DayDataSource (
 
     suspend fun resetData() {
         dayDao.resetData()
+    }
+
+    fun isResponded(): Flow<Boolean> = dayDao.lastResponse().map { it == LocalDate.now() }
+
+    fun getStreak(): Flow<Int> {
+        return flow {
+            dayDao.firstDate()
+                .combine(dayDao.lastResponse()) {i, j -> Pair(i, j)}
+                .combine(dayDao.lastNonStreak(LocalDate.now())) {(i, j), k -> Triple(i, j, k)}
+                .collect { (firstDate, lastResponse, lastNonStreak) -> emit(
+                    if (firstDate == null || lastResponse == null) {
+                        0
+                    } else if (lastNonStreak == null) {
+                        lastResponse.toEpochDay().toInt() - firstDate.toEpochDay().toInt() + 1
+                    } else if (lastResponse < LocalDate.now().minusDays(1)) {
+                        0
+                    } else {
+                        lastResponse.toEpochDay().toInt() - lastNonStreak.toEpochDay().toInt()
+                    })
+                }
+        }
     }
 }

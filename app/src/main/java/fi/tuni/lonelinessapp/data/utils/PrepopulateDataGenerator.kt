@@ -17,12 +17,12 @@ object PrepopulateDataGenerator {
 
         var currentDate = LocalDate.of( year - 1, month, dayOfMonth)
 
-        // This loop will create all the DayEntity which from last year to at the end of this year
-        while (currentDate != LocalDate.of(year, 12, 31)) {
+        while (currentDate != LocalDate.now().plusDays(1)) {
             data.add(
                 DayEntity(
                     date = currentDate,
-                    loneliness = Random.nextInt(3, 10),
+                    loneliness = if (currentDate != LocalDate.now().minusDays(2) && currentDate != LocalDate.now()) Random.nextInt(3, 10) else null,
+                    //loneliness = Random.nextInt(3, 10),
                     nightMinutes = Random.nextInt(16, 31),
                     dayMinutes = Random.nextInt(27, 420),
                     steps = Random.nextInt(500, 8000),
