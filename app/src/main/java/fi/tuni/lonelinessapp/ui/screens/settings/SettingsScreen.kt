@@ -346,7 +346,7 @@ fun formatContent(days: List<DayEntity>?): String {
             "NightMinutes," +
             "DayMinutes," +
             "Steps," +
-            "WhatApps," +
+            "WhatsApp," +
             "Messages," +
             "Calls," +
             "Signal," +
