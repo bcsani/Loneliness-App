@@ -4,11 +4,12 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import fi.tuni.lonelinessapp.ui.navigation.TAB_HOME
 
 class MainViewModel : ViewModel() {
 
     // Selected bottom tab
-    private val _selectedTab = mutableIntStateOf(0)
+    private val _selectedTab = mutableIntStateOf(TAB_HOME)
     val selectedTab: State<Int> = _selectedTab
 
     // Survey dialog visibility
@@ -18,7 +19,6 @@ class MainViewModel : ViewModel() {
     // Settings screen visibility
     private val _showSettings = mutableStateOf(false)
     val showSettings: State<Boolean> = _showSettings
-
 
     fun selectTab(tab: Int) {
         _selectedTab.intValue = tab

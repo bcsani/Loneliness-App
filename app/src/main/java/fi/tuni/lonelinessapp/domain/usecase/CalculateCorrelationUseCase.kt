@@ -31,7 +31,7 @@ class CalculateCorrelationUseCase (
             "Night Minutes" to nightMinutesData,
             "Day Minutes" to dayMinutesData,
             "Steps" to stepsData,
-            "WhatApps" to whatApps,
+            "WhatsApp" to whatApps,
             "Messages" to messages,
             "Calls" to calls,
             "Signal" to signal,
