@@ -25,16 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
-import fi.tuni.lonelinessapp.ui.navigation.TopBar
-import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
-import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
-import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
-import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
-import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
-import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
-import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
-import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
 import fi.tuni.lonelinessapp.data.AppDatabase
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.repository.DayRepository
@@ -44,10 +34,23 @@ import fi.tuni.lonelinessapp.domain.service.BluetoothProximityManager
 import fi.tuni.lonelinessapp.domain.service.SequentialPermissionManager
 import fi.tuni.lonelinessapp.domain.service.StepSensorManager
 import fi.tuni.lonelinessapp.domain.usecase.CalculateCorrelationUseCase
+import fi.tuni.lonelinessapp.ui.navigation.BottomNavigation
+import fi.tuni.lonelinessapp.ui.navigation.TAB_ANALYSIS
+import fi.tuni.lonelinessapp.ui.navigation.TAB_HOME
+import fi.tuni.lonelinessapp.ui.navigation.TopBar
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisScreen
+import fi.tuni.lonelinessapp.ui.screens.analysis.AnalysisViewModel
+import fi.tuni.lonelinessapp.ui.screens.home.HomeScreen
+import fi.tuni.lonelinessapp.ui.screens.home.HomeViewModel
+import fi.tuni.lonelinessapp.ui.screens.settings.SettingsScreen
 import fi.tuni.lonelinessapp.ui.screens.settings.SettingsViewModel
+import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
+import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
+import fi.tuni.lonelinessapp.ui.theme.LonelinessAppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 
 class MainActivity : ComponentActivity() {
 
@@ -287,8 +290,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
     Scaffold(
         topBar = {
             TopBar(
-                currentTab = selectedTab,
-                showSettingsScreen = showSettings,
                 onSettingsClick = {viewModel.toggleSettings()}
             )
         },
@@ -309,16 +310,29 @@ fun MainScreen(viewModel: MainViewModel = viewModel(),
             // Show main content or settings
             if (!showSettings) {
                 when (selectedTab) {
-                    0 -> HomeScreen(viewModel, homeViewModel=homeViewModel, surveyViewModel=surveyViewModel)
-                    1 -> AnalysisScreen(analysisViewModel=analysisViewModel)
+
+                    TAB_HOME -> HomeScreen(
+                        viewModel,
+                        homeViewModel=homeViewModel,
+                        surveyViewModel=surveyViewModel
+                    )
+
+                    TAB_ANALYSIS -> AnalysisScreen(
+                        analysisViewModel=analysisViewModel
+                    )
                 }
             } else {
-                SettingsScreen(settingsViewModel=settingsViewModel)
+                SettingsScreen(
+                    settingsViewModel=settingsViewModel
+                )
             }
 
             // Show survey dialog
             if (showSurvey) {
-                SurveyDialog(onDismiss = { viewModel.closeSurvey() }, surveyViewModel=surveyViewModel)
+                SurveyDialog(
+                    onDismiss = { viewModel.closeSurvey() },
+                    surveyViewModel=surveyViewModel
+                )
             }
         }
     }

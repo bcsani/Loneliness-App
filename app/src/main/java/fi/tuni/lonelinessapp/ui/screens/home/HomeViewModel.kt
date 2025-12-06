@@ -52,9 +52,9 @@ class HomeViewModel(
                 _isLoading.value = false
 
             } catch (e: Exception) {
+                _isLoading.value = false
                 println("Failed to calculate correlations: ${e.message}")
             }
         }
     }
-
 }

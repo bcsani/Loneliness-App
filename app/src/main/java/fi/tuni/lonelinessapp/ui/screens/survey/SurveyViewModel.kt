@@ -63,9 +63,6 @@ class SurveyViewModel(
     }
 
     fun submitAnswers() {
-        // ___________________
-        // Process the answers
-        // ___________________
         val date = LocalDate.now()
         val loneliness = _answers.sumOf{it ?: 0}
 

@@ -1,22 +1,40 @@
 package fi.tuni.lonelinessapp.ui.screens.home
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Whatshot
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -25,36 +43,24 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import fi.tuni.lonelinessapp.MainViewModel
 import fi.tuni.lonelinessapp.ui.screens.analysis.ChartCard
 import fi.tuni.lonelinessapp.ui.screens.analysis.applyBarDefaults
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyDialog
 import fi.tuni.lonelinessapp.ui.screens.survey.SurveyViewModel
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.toArgb
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener
-import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.formatter.ValueFormatter
 import fi.tuni.lonelinessapp.ui.theme.primaryBlue
-
-
-
 
 @Composable
 fun HomeScreen(
     mainViewModel: MainViewModel,
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = viewModel(),
-    surveyViewModel: SurveyViewModel,
-
-    ) {
+    surveyViewModel: SurveyViewModel
+) {
     val showDialog by mainViewModel.showSurvey
     val streakCount by homeViewModel.streakCount.collectAsState()
     val isResponded by homeViewModel.isResponded.collectAsState()
@@ -83,11 +89,11 @@ fun HomeScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // Loading indicator
         if (isLoading) {
             item {
                 CircularProgressIndicator()
             }
-
         }
 
         //  Streak Card
@@ -96,7 +102,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)), // 👈 reunus lisätty ,
+                    .border(1.dp, Color.Gray, RoundedCornerShape(16.dp)),
                 shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
             ) {
@@ -107,6 +113,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
+                    // Fire icon
                     Icon(
                         imageVector = Icons.Filled.Whatshot,
                         contentDescription = "Streak Icon",
@@ -114,6 +121,7 @@ fun HomeScreen(
                         modifier = Modifier.size(40.dp)
                     )
 
+                    // Streak number and text
                     Column {
                         Text(
                             text = streakCount.toString(),
@@ -126,7 +134,6 @@ fun HomeScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-
                 }
             }
         }
@@ -134,13 +141,12 @@ fun HomeScreen(
         //  Fill Daily Survey Button
         item {
             Button(
-
                 onClick = { mainViewModel.openSurvey() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.buttonColors(Color(primaryBlue.value))
+                colors = ButtonDefaults.buttonColors(primaryBlue)
             ) {
                 if (!isResponded) {
                     Text("Fill Daily Survey", fontSize = 20.sp)
@@ -152,7 +158,8 @@ fun HomeScreen(
 
         //  Loneliness Correlations Chart
         item {
-            val infoText = "Loneliness correlations, shows how different things correlate with expereinced lonliness"
+            val infoText = "Loneliness correlations, " +
+                           "shows how different things correlate with experienced loneliness"
             val title = "Correlation"
             ChartCard(
                 title = title,
@@ -171,17 +178,10 @@ fun HomeScreen(
                             //applyBarDefaults(labels)
                             applyBarDefaults()
 
-
-                            //can touch
+                            // Can touch
                             setTouchEnabled(true)
                             isHighlightPerTapEnabled = true
                             setScaleEnabled(false) // zoom not in use
-
-                            /*
-
-                                }
-                            }
-                            */
 
                             axisLeft.apply {
                                 xAxis.valueFormatter = object : ValueFormatter() {
@@ -190,7 +190,7 @@ fun HomeScreen(
                                         return labels.getOrNull(index) ?: ""
                                     }
                                 }
-                                xAxis.setLabelRotationAngle(-90f)
+                                xAxis.labelRotationAngle = -90f
 
                                 // Left Y-axis limits
                                 axisMinimum = -0.1f
@@ -215,7 +215,6 @@ fun HomeScreen(
                                 color = primaryBlue.toArgb()
                             }
 
-
                             // Set the data and width.
                             data = BarData(dataSet).apply {
                                 xAxis.textSize = 14f
@@ -231,7 +230,6 @@ fun HomeScreen(
                                         selectedBarMessage = "$variableName: correlation = $value"
                                     }
                                 }
-
                                 override fun onNothingSelected() { }
                             })
 
@@ -242,30 +240,31 @@ fun HomeScreen(
                 )
             }
         }
-
-
-        if (showDialog) {
-            item {
-                SurveyDialog(
-                    onDismiss = { mainViewModel.closeSurvey() },
-                    surveyViewModel = surveyViewModel
-                )
-            }
-        }
     }
+
+    // Survey
+    if (showDialog) {
+        SurveyDialog(
+            onDismiss = { mainViewModel.closeSurvey() },
+            surveyViewModel = surveyViewModel
+        )
+    }
+
+    // Chart info message
     if (infoDialogMessage != null) {
         AlertDialog(
             onDismissRequest = { infoDialogMessage = null },
             confirmButton = {
                 TextButton(onClick = { infoDialogMessage = null }) {
                     Text("OK")
-
                 }
             },
             title = { Text("Info") },
             text = { Text(infoDialogMessage!!) }
         )
     }
+
+    // Bar info message
     if (selectedBarMessage != null) {
         AlertDialog(
             onDismissRequest = { selectedBarMessage = null },
@@ -278,5 +277,4 @@ fun HomeScreen(
             text = { Text(selectedBarMessage!!) }
         )
     }
-
 }

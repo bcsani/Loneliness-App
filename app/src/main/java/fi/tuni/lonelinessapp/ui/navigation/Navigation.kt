@@ -19,41 +19,44 @@ import androidx.compose.ui.unit.dp
 import fi.tuni.lonelinessapp.R
 import fi.tuni.lonelinessapp.ui.theme.primaryBlue
 
-
-
+const val TAB_HOME = 1
+const val TAB_SURVEY = 2
+const val TAB_ANALYSIS = 3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
-    currentTab: Int,
-    showSettingsScreen: Boolean,
     onSettingsClick: () -> Unit
 ) {
-    val titles = listOf("Home", "Analysis", "Settings")
-
     Column {
         TopAppBar(
+            // App logo
             title = {
                 Image(
-                    painter = painterResource(id = R.drawable.logo_small), // <-- Varmista, että tämä vastaa tiedostonimeäsi
+                    painter = painterResource(id = R.drawable.logo_small), // <-- Logo file
                     contentDescription = "App Logo",
                     modifier = Modifier.height(45.dp)
                 )
             },
+
+            // Settings button
             actions = {
                 IconButton(onClick = { onSettingsClick() }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Settings"
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth()
         )
 
-        // line under top bar
+        // Line under top bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color.LightGray) // Haluttu väri viivalle
+                .background(Color.LightGray)
         )
     }
 }
@@ -68,6 +71,7 @@ fun BottomNavigation(
 ) {
     NavigationBar(modifier = modifier) {
 
+        // Function to create icons to bottom navigation
         @Composable
         fun BottomNavItem(
             iconVector: ImageVector,
@@ -75,13 +79,14 @@ fun BottomNavigation(
             index: Int,
             onClick: () -> Unit
         ) {
-            val isSelected = index >= 0 && currentTab == index && !showSettingsScreen
+            val isSelected = currentTab == index && !showSettingsScreen
             val iconColor = if (isSelected) primaryBlue else Color.Gray
 
             NavigationBarItem(
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
+                        // Icon for item
                         Icon(
                             imageVector = iconVector,
                             contentDescription = label,
@@ -89,12 +94,13 @@ fun BottomNavigation(
                             modifier = Modifier.size(24.dp)
                         )
 
-
+                        // Text for item
                         Text(
                             text = label,
                             color = iconColor
                         )
 
+                        // Line for item
                         if (isSelected) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Box(
@@ -113,10 +119,14 @@ fun BottomNavigation(
             )
         }
 
-        BottomNavItem(iconVector = Icons.Filled.Home, label = "Home", index = 0, onClick = { selectNewTab(0) })
+        // Create bottom navigation items
+        BottomNavItem(iconVector = Icons.Filled.Home, label = "Home",
+                      index = TAB_HOME, onClick = { selectNewTab(TAB_HOME) })
 
-        BottomNavItem(iconVector = Icons.Filled.AddCircle, label = "Survey", index = -1, onClick = onSurveyButtonClick)
+        BottomNavItem(iconVector = Icons.Filled.AddCircle, label = "Survey",
+                      index = TAB_SURVEY, onClick = onSurveyButtonClick)
 
-        BottomNavItem(iconVector = Icons.Filled.Analytics, label = "Analysis", index = 1, onClick = { selectNewTab(1) })
+        BottomNavItem(iconVector = Icons.Filled.Analytics, label = "Analysis",
+                      index = TAB_ANALYSIS, onClick = { selectNewTab(TAB_ANALYSIS) })
     }
 }

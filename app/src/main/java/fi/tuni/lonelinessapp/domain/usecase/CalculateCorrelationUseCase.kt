@@ -16,22 +16,22 @@ class CalculateCorrelationUseCase (
         val days = dayRepository.getAllDays().first()
 
         // Retrieve all data from days value
-        val lonelinessData = days.map { it.loneliness!!.toDouble() }
-        val nightMinutesData = days.map { it.nightMinutes!!.toDouble() }
-        val dayMinutesData = days.map { it.dayMinutes!!.toDouble() }
-        val stepsData = days.map { it.steps.toDouble()}
-        val whatApps = days.map {it.whatApps!!.toDouble()}
-        val messages = days.map {it.messages!!.toDouble()}
-        val calls = days.map{it.calls.toDouble()}
-        val signal = days.map{it.signal!!.toDouble()}
-        val telegram = days.map{it.signal!!.toDouble()}
+        val lonelinessData = days.map { it.loneliness?.toDouble() }
+        val nightMinutesData = days.map { it.nightMinutes?.toDouble() }
+        val dayMinutesData = days.map { it.dayMinutes?.toDouble() }
+        val stepsData = days.map { it.steps?.toDouble() }
+        val whatApps = days.map {it.whatApps?.toDouble() }
+        val messages = days.map {it.messages?.toDouble() }
+        val calls = days.map{it.calls?.toDouble() }
+        val signal = days.map{it.signal?.toDouble() }
+        val telegram = days.map{it.signal?.toDouble() }
 
         // Calculate the correlations and return the results
         val variablePairs = listOf(
             "Night Minutes" to nightMinutesData,
             "Day Minutes" to dayMinutesData,
             "Steps" to stepsData,
-            "WhatApps" to whatApps,
+            "WhatsApp" to whatApps,
             "Messages" to messages,
             "Calls" to calls,
             "Signal" to signal,
@@ -39,10 +39,13 @@ class CalculateCorrelationUseCase (
         )
 
         val results = variablePairs.mapNotNull { (variableName, variableData) ->
+            val zipped = variableData.zip(lonelinessData).filter { (i, j) -> i != null && j != null }
+            val independent = zipped.map { (i, _) -> i!! }
+            val loneliness = zipped.map { (_, j) -> j!! }
             calculatePolyserialCorrelation(
                 variableName = variableName,
-                lonelinessData = lonelinessData,
-                ordinalData = variableData
+                continuousData = independent,
+                ordinalData = loneliness
             )
         }
 
@@ -90,15 +93,15 @@ class CalculateCorrelationUseCase (
 
     private fun calculatePolyserialCorrelation(
         variableName: String,
-        lonelinessData: List<Double>, // Continuous variable
+        continuousData: List<Double>, // Continuous variable
         ordinalData: List<Double>     // Ordinal variable (discrete values representing categories)
     ): CorrelationResult? {
-        if (lonelinessData.size != ordinalData.size || lonelinessData.size < 2) {
+        if (continuousData.size < 2) {
             return null
         }
 
         // Calculate polyserial correlation value
-        val correlationValue = calculatePolyserialCoefficient(lonelinessData, ordinalData)
+        val correlationValue = calculatePolyserialCoefficient(continuousData, ordinalData)
 
         return CorrelationResult(
             variableName = variableName,
