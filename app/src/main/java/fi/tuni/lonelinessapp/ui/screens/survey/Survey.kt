@@ -11,19 +11,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.RadioButtonDefaults
-
-private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
+import fi.tuni.lonelinessapp.ui.theme.primaryBlue
 
 @Composable
 fun SurveyDialog(
@@ -91,8 +89,8 @@ fun SurveyDialog(
                                     currentStep,
                                     optionValues[index]
                                 )
-                            },  colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(COLOR_PRIMARY_HEX)),
+                            },
+                            colors = RadioButtonDefaults.colors(selectedColor = primaryBlue)
                         )
                         Text(text = option,
                             modifier = Modifier.
@@ -109,7 +107,8 @@ fun SurveyDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Back-button
-                    Button(onClick = {
+                    Button(
+                        onClick = {
                             if (currentStep == 1) {
                                 surveyViewModel.resetSurvey()
                                 onDismiss()
@@ -118,8 +117,7 @@ fun SurveyDialog(
                                 surveyViewModel.previousStep()
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(COLOR_PRIMARY_HEX)),
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
                         modifier = Modifier.weight(1f)
                     ) {
                         if (currentStep == 1) {
@@ -143,9 +141,8 @@ fun SurveyDialog(
                                 surveyViewModel.nextStep()
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(COLOR_PRIMARY_HEX)),
-
-                                enabled = currentAnswer != null,
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
+                        enabled = currentAnswer != null,
                         modifier = Modifier.weight(1f)
                     ) {
                         if (currentStep == 3) {
