@@ -52,7 +52,7 @@ class AnalysisViewModel (
         val dayMinutes: Int?,
 
         // Steps.
-        val steps: Int
+        val steps: Int?
     )
 
     // Single point data to line chart.
@@ -72,17 +72,17 @@ class AnalysisViewModel (
         val dayH: Float,
         val stepsAvg: Float
     )
-
+    private val initialValue = 0.0f
 
     val daysEntity: StateFlow<List<DayEntity>?> =
         dayRepository.getAllDays()
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
 
-    private val _callDuration = MutableStateFlow(0.0f)
-    private val _signalDuration = MutableStateFlow(0.0f)
-    private val _whatAppsDuration = MutableStateFlow(0.0f)
-    private val _telegramDuration = MutableStateFlow(0.0f)
+    private val _callDuration = MutableStateFlow(initialValue)
+    private val _signalDuration = MutableStateFlow(initialValue)
+    private val _whatAppsDuration = MutableStateFlow(initialValue)
+    private val _telegramDuration = MutableStateFlow(initialValue)
 
     private fun getCallDuration(): Float = _callDuration.value
     private fun getSignalDuration(): Float = _signalDuration.value
@@ -95,12 +95,12 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getCallsToday().collect { duration ->
-                    val callDurationSec = duration?.toFloat()!!
+                    val callDurationSec = duration?.toFloat() ?: 0f
                     _callDuration.value = secondsToHours(callDurationSec)
                 }
             }
-        } catch (e: Exception) {
-            _callDuration.value = 0.9f
+        } catch (e: NullPointerException) {
+            _callDuration.value = initialValue
         }
     }
 
@@ -109,12 +109,12 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getSignalToday().collect { duration ->
-                    val signalDurationSec = duration?.toFloat()!!
+                    val signalDurationSec = duration?.toFloat() ?: 0f
                     _signalDuration.value = secondsToHours(signalDurationSec)
                 }
             }
-        } catch (e: Exception) {
-            _signalDuration.value = 0.9f
+        } catch (e: NullPointerException) {
+            _signalDuration.value = initialValue
         }
     }
 
@@ -122,13 +122,13 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getWhatAppsToday().collect { duration ->
-                    val whatAppsDurationMin = duration?.toFloat()!!
+                    val whatAppsDurationMin = duration?.toFloat() ?: 0f
                     _whatAppsDuration.value = minutesToHours(whatAppsDurationMin)
                 }
 
             }
-        } catch (e: Exception) {
-            _whatAppsDuration.value = 2.3f
+        } catch (e: NullPointerException) {
+            _whatAppsDuration.value = initialValue
         }
     }
 
@@ -137,12 +137,12 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getTelegramToday().collect { duration ->
-                    val telegramDurationMin = duration?.toFloat()!!
+                    val telegramDurationMin = duration?.toFloat() ?: 0f
                     _telegramDuration.value = minutesToHours(telegramDurationMin)
                 }
             }
-        } catch (e: Exception) {
-            _telegramDuration.value = 0.5f
+        } catch (e: NullPointerException) {
+            _telegramDuration.value = initialValue
         }
     }
 
@@ -176,7 +176,11 @@ class AnalysisViewModel (
 
     // Create the steps data as is (no change in units).
     fun stepsBars(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps.toFloat()) }
+        data.mapNotNull { d ->
+            d.steps?.let { steps ->
+                BarPoint(d.date.dayOfWeek.name.take(3), steps.toFloat())
+            }
+        }
 
     // Create the communication application hours for the pie chart.
     fun communicationPieHours(): List<PieSlice> {
@@ -188,7 +192,7 @@ class AnalysisViewModel (
 
         return listOf(
             PieSlice("WhatsApp", whatAppsDuration),
-            PieSlice("Messages", 1.7f),
+            PieSlice("Messages", 0.0f),
             PieSlice("Calls",    callDuration),
             PieSlice("Signal",   signalDuration),
             PieSlice("Telegram",  telegramDuration)
@@ -199,7 +203,9 @@ class AnalysisViewModel (
     fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {
         val valid = samples.filter {
             (it.loneliness != null && it.loneliness in 3..9) ||
-                    (it.nightMinutes ?: -1) > 0 || (it.dayMinutes ?: -1) > 0 || it.steps > 0
+                    (it.nightMinutes ?: 0) > 0 ||
+                    (it.dayMinutes ?: 0) > 0 ||
+                    (it.steps ?: 0) > 0
         }
         if (valid.isEmpty()) return emptyList()
 
@@ -232,7 +238,7 @@ class AnalysisViewModel (
 
                 val nightH   = (inPeriod.mapNotNull { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
                 val dayH     = (inPeriod.mapNotNull { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
-                val stepsAvg =  inPeriod.map { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
+                val stepsAvg = inPeriod.mapNotNull { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
 
                 out += AggregateBucket(label, lonAvg, nightH, dayH, stepsAvg)
             }

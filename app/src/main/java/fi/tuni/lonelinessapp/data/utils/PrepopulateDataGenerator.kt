@@ -17,7 +17,7 @@ object PrepopulateDataGenerator {
 
         var currentDate = LocalDate.of( year - 1, month, dayOfMonth)
 
-        while (currentDate != LocalDate.now().plusDays(1)) {
+        while (currentDate != LocalDate.now().plusDays(-10)) {
             data.add(
                 DayEntity(
                     date = currentDate,
