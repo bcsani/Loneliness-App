@@ -674,7 +674,7 @@ fun AnalysisScreen(
                             val entries = commPie.filter { it.value > 0f }
                                 .map { PieEntry(it.value, it.label) }
                             if (entries.isEmpty()) {
-                                //pie.centerText = "No chart data available"
+                                pie.centerText = "No chart data available"
                                 pie.setCenterTextSize(16f)
                                 pie.setCenterTextColor(android.graphics.Color.BLACK)
                                 pie.legend.isEnabled = false
