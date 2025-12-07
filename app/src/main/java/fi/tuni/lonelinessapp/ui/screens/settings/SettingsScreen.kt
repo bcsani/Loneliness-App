@@ -255,8 +255,11 @@ fun AboutApp(
                 ) {
                     item{
                         Text(
-                            text = "Information about app:\n" +
-                                    "Something about app and how it works",
+                            text = "This application is a research and study project of Tampere University. It has been developed to explore the relationship between loneliness and mobile phone use.\n" +
+                                    "\n" +
+                                    "The app helps you track your loneliness scores with a short daily loneliness questionnaire, and your phone use through tables and charts. It also shows simple correlations between these data.\n"+
+                                    "\n" +
+                                    "The app is not a medical device and does not provide diagnoses or treatment recommendations. If you have been feeling unwell or lonely for a long time, please contact healthcare services.",
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(4.dp)
@@ -291,7 +294,7 @@ fun AboutData(
                 ) {
                     // Title
                     Text(
-                        text = "About App",
+                        text = "About Data",
                         modifier = Modifier
                             .weight(2f)
                             .padding(4.dp),
@@ -319,8 +322,15 @@ fun AboutData(
                 ) {
                     item{
                         Text(
-                            text = "Information about data:\n" +
-                                    "Something about data and what data is collected",
+                            text = "The app stores the following information on a daily basis:\n" +
+                                    "- Your answers to the loneliness questionnaire and the resulting score.\n" +
+                                    "- Your phone usage time, separated into daytime and night-time.\n" +
+                                    "- Your daily step count.\n"+
+                                    "- Your use of certain messaging apps (only total time, not message content).\n"+
+                                    "\n"+
+                                    "All data is stored only on this device. The app does not send your data anywhere.\n" +
+                                    "\n" +
+                                    "You can export or share your data as a CSV file from the app settings.",
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(4.dp)
