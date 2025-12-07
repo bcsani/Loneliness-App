@@ -376,6 +376,23 @@ fun AnalysisScreen(
         }
     }
 
+    // For "All Time" charts: use full start/end dates on the X-axis
+    val allTimeAxisLabels = remember(monthLabels, samples, selectedRange) {
+        if (selectedRange == TimeRange.All && monthLabels.isNotEmpty() && samples.isNotEmpty()) {
+            val formatter = DateTimeFormatter.ofPattern("d.M.yyyy")
+            val sortedByDate = samples.sortedBy { it.date }
+            val startLabel = sortedByDate.first().date.format(formatter)
+            val endLabel = sortedByDate.last().date.format(formatter)
+
+            monthLabels.toMutableList().apply {
+                this[0] = startLabel      // earliest date
+                this[lastIndex] = endLabel // latest date
+            }.toList()
+        } else {
+            monthLabels
+        }
+    }
+
     // Monthly series for loneliness, night usage, day usage, and steps.
     val lonMonthly = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
@@ -808,8 +825,12 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
+                            val axisLabels =
+                                if (selectedRange == TimeRange.All) allTimeAxisLabels
+                                else monthLabels
+
                             chart.xAxis.applyDomainAndLabels(
-                                labels = monthLabels,
+                                labels = axisLabels,
                                 useStartEndOnly = (selectedRange == TimeRange.All),
                                 everyNthLabel = if (selectedRange == TimeRange.Year) 2 else 1
                             )
@@ -864,13 +885,14 @@ fun AnalysisScreen(
                             if (selectedRange == TimeRange.All) {
 
                                 // ALL TIME: only "start" + "Now", but with little space on the edges for the columns.
+                                // ALL TIME: only start and end dates, with a bit of space on the edges for the columns.
                                 chart.xAxis.apply {
                                     val count = monthLabels.size.coerceAtLeast(1)
 
                                     axisMinimum = -0.5f
                                     axisMaximum = (count - 1).toFloat() + 0.5f
 
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
+                                    valueFormatter = StartEndValueFormatter(allTimeAxisLabels)
                                     setLabelCount(2, true)
 
                                     granularity = 1f
@@ -934,13 +956,14 @@ fun AnalysisScreen(
 
                             if (selectedRange == TimeRange.All) {
 
-                                // All time: start + Now labels with bar padding.
+                                // ALL TIME: only start and end dates, with a bit of space on the edges for the columns.
                                 chart.xAxis.apply {
                                     val count = monthLabels.size.coerceAtLeast(1)
+
                                     axisMinimum = -0.5f
                                     axisMaximum = (count - 1).toFloat() + 0.5f
 
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
+                                    valueFormatter = StartEndValueFormatter(allTimeAxisLabels)
                                     setLabelCount(2, true)
 
                                     granularity = 1f
@@ -1001,12 +1024,15 @@ fun AnalysisScreen(
                         update = { chart ->
 
                             if (selectedRange == TimeRange.All) {
+
+                                // ALL TIME: only start and end dates, with a bit of space on the edges for the columns.
                                 chart.xAxis.apply {
                                     val count = monthLabels.size.coerceAtLeast(1)
+
                                     axisMinimum = -0.5f
                                     axisMaximum = (count - 1).toFloat() + 0.5f
 
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
+                                    valueFormatter = StartEndValueFormatter(allTimeAxisLabels)
                                     setLabelCount(2, true)
 
                                     granularity = 1f
@@ -1485,16 +1511,17 @@ private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
  */
 class StartEndValueFormatter(private val labels: List<String>) : ValueFormatter() {
     override fun getFormattedValue(value: Float): String {
-
+        if (labels.isEmpty()) return ""
         val index = value.toInt()
         val lastIndex = labels.lastIndex
 
-        if (index == 0) return labels.firstOrNull() ?: ""
-        if (index == lastIndex) return "Now"
-        return ""
+        return when (index) {
+            0 -> labels[0]          // start date (d.M.yyyy)
+            lastIndex -> labels[lastIndex] // end date (d.M.yyyy)
+            else -> ""
+        }
     }
 }
-
 
 /**
  * buildLonelinessDataSets:
