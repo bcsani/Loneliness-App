@@ -121,7 +121,6 @@ class AnalysisViewModel (
     // Create the communication application hours for the pie chart.
     fun communicationPieHours(): List<PieSlice> = listOf(
         PieSlice("WhatsApp", 2.3f),
-        PieSlice("Messages", 1.7f),
         PieSlice("Calls",    callDuration),
         PieSlice("Signal",   0.6f),
         PieSlice("Telegram",  0.5f)
