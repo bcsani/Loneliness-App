@@ -7,6 +7,7 @@ import fi.tuni.lonelinessapp.data.repository.DayRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -51,7 +52,7 @@ class AnalysisViewModel (
         val dayMinutes: Int?,
 
         // Steps.
-        val steps: Int
+        val steps: Int?
     )
 
     // Single point data to line chart.
@@ -71,26 +72,85 @@ class AnalysisViewModel (
         val dayH: Float,
         val stepsAvg: Float
     )
-
+    private val initialValue = 0.0f
 
     val daysEntity: StateFlow<List<DayEntity>?> =
         dayRepository.getAllDays()
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
 
-    var callDuration = 0.9f
+    private val _callDuration = MutableStateFlow(initialValue)
+    private val _signalDuration = MutableStateFlow(initialValue)
+    private val _whatAppsDuration = MutableStateFlow(initialValue)
+    private val _telegramDuration = MutableStateFlow(initialValue)
+
+    private fun getCallDuration(): Float = _callDuration.value
+    private fun getSignalDuration(): Float = _signalDuration.value
+    private fun getWhatAppsDuration(): Float = _whatAppsDuration.value
+    private fun getTelegramDuration(): Float = _telegramDuration.value
+
 
     // This function set the call duration for today when the user accept call log tracking
-    fun setCallDuration() {
+    fun updateCallDuration() {
         try {
             viewModelScope.launch {
-                val callDurationMin = dayRepository.getTotalCallDurationToday()
-                dayRepository.saveCalls(LocalDate.now(), callDurationMin.toInt())
-                callDuration = minutesToHours(callDurationMin)
+                dayRepository.getCallsToday().collect { duration ->
+                    val callDurationSec = duration?.toFloat() ?: 0f
+                    _callDuration.value = secondsToHours(callDurationSec)
+                }
             }
-        } catch (e: Exception) {
-            callDuration = 0.9f
+        } catch (e: NullPointerException) {
+            _callDuration.value = initialValue
         }
+    }
+
+    // This function set the signal duration for today
+    fun updateSignalDuration() {
+        try {
+            viewModelScope.launch {
+                dayRepository.getSignalToday().collect { duration ->
+                    val signalDurationSec = duration?.toFloat() ?: 0f
+                    _signalDuration.value = secondsToHours(signalDurationSec)
+                }
+            }
+        } catch (e: NullPointerException) {
+            _signalDuration.value = initialValue
+        }
+    }
+
+    fun updateWhatAppsDuration() {
+        try {
+            viewModelScope.launch {
+                dayRepository.getWhatAppsToday().collect { duration ->
+                    val whatAppsDurationMin = duration?.toFloat() ?: 0f
+                    _whatAppsDuration.value = minutesToHours(whatAppsDurationMin)
+                }
+
+            }
+        } catch (e: NullPointerException) {
+            _whatAppsDuration.value = initialValue
+        }
+    }
+
+    // This function set the telegram's usage duration for today when user accept app tracking
+    fun updateTelegramDuration() {
+        try {
+            viewModelScope.launch {
+                dayRepository.getTelegramToday().collect { duration ->
+                    val telegramDurationMin = duration?.toFloat() ?: 0f
+                    _telegramDuration.value = minutesToHours(telegramDurationMin)
+                }
+            }
+        } catch (e: NullPointerException) {
+            _telegramDuration.value = initialValue
+        }
+    }
+
+    fun updateDurations() {
+        updateCallDuration()
+        updateSignalDuration()
+        updateWhatAppsDuration()
+        updateTelegramDuration()
     }
 
     // Let's do the conversions for charts.
@@ -116,21 +176,36 @@ class AnalysisViewModel (
 
     // Create the steps data as is (no change in units).
     fun stepsBars(data: List<DaySample>): List<BarPoint> =
-        data.map { d -> BarPoint(d.date.dayOfWeek.name.take(3), d.steps.toFloat()) }
+        data.mapNotNull { d ->
+            d.steps?.let { steps ->
+                BarPoint(d.date.dayOfWeek.name.take(3), steps.toFloat())
+            }
+        }
 
     // Create the communication application hours for the pie chart.
-    fun communicationPieHours(): List<PieSlice> = listOf(
-        PieSlice("WhatsApp", 2.3f),
-        PieSlice("Calls",    callDuration),
-        PieSlice("Signal",   0.6f),
-        PieSlice("Telegram",  0.5f)
-    )
+    fun communicationPieHours(): List<PieSlice> {
+        val callDuration = getCallDuration()
+        val signalDuration = getSignalDuration()
+        val whatAppsDuration = getWhatAppsDuration()
+        val telegramDuration = getTelegramDuration()
+
+
+        return listOf(
+            PieSlice("WhatsApp", whatAppsDuration),
+            PieSlice("Messages", 0.0f),
+            PieSlice("Calls",    callDuration),
+            PieSlice("Signal",   signalDuration),
+            PieSlice("Telegram",  telegramDuration)
+        )
+    }
 
 
     fun aggregateIntoTwelvePeriods(samples: List<DaySample>): List<AggregateBucket> {
         val valid = samples.filter {
             (it.loneliness != null && it.loneliness in 3..9) ||
-                    (it.nightMinutes ?: -1) > 0 || (it.dayMinutes ?: -1) > 0 || it.steps > 0
+                    (it.nightMinutes ?: 0) > 0 ||
+                    (it.dayMinutes ?: 0) > 0 ||
+                    (it.steps ?: 0) > 0
         }
         if (valid.isEmpty()) return emptyList()
 
@@ -163,7 +238,7 @@ class AnalysisViewModel (
 
                 val nightH   = (inPeriod.mapNotNull { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
                 val dayH     = (inPeriod.mapNotNull { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
-                val stepsAvg =  inPeriod.map { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
+                val stepsAvg = inPeriod.mapNotNull { it.steps }.average().toFloat().let { if (it.isNaN()) 0f else it }
 
                 out += AggregateBucket(label, lonAvg, nightH, dayH, stepsAvg)
             }
@@ -173,5 +248,6 @@ class AnalysisViewModel (
 
     // Convert minutes to hours.
     private fun minutesToHours(mins: Float): Float = mins / 60f
+    private fun secondsToHours(seconds: Float): Float = seconds / 3600f
 
 }

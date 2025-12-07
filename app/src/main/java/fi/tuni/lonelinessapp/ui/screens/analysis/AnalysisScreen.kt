@@ -1362,7 +1362,7 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
 
         val night = (daysInMonth.mapNotNull { it.nightMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
         val day = (daysInMonth.mapNotNull { it.dayMinutes }.average().toFloat() / 60f).let { if (it.isNaN()) 0f else it }
-        val steps = daysInMonth.map { it.steps }.average().toFloat()
+        val steps = (daysInMonth.mapNotNull { it.steps }.average().toFloat()).let { if (it.isNaN()) 0f else it }
 
         monthBuckets.add(MonthBucket(
             label = label,

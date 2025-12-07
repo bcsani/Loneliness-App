@@ -22,9 +22,27 @@ class DayDataSource (
         dayDao.getDayByDate(date)
     fun getDaysFromDate(startDate: LocalDate): Flow<List<DayEntity>?> =
         dayDao.getDaysFromDate(startDate)
-    fun getTotalCallDurationToday(): Float =
-        callDurationHelper.getTotalCallDurationToday()
-    suspend fun saveLoneliness(date: LocalDate, loneliness: Int) {
+
+    fun getSignalByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getSignalByDate(date)
+    fun getCallsByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getCallsByDate(date)
+    fun getWhatAppsByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getWhatAppsByDate(date)
+    fun getTelegramByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getTelegramByDate(date)
+    fun addSignalByDate(date: LocalDate, signal: Int) {
+        dayDao.addSignalByDate(date, signal)
+    }
+
+
+    suspend fun updateCallDurationToday() {
+        val duration = callDurationHelper.getTotalCallDurationToday()
+        val today = LocalDate.now()
+        dayDao.updateCalls(today, duration.toInt())
+    }
+
+    suspend fun saveLoneliness(date: LocalDate = LocalDate.now(), loneliness: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -35,7 +53,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveNightMinutes(date: LocalDate, nightMinutes: Int) {
+    suspend fun saveNightMinutes(date: LocalDate = LocalDate.now(), nightMinutes: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -46,7 +64,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveDayMinutes(date: LocalDate, dayMinutes: Int) {
+    suspend fun saveDayMinutes(date: LocalDate = LocalDate.now(), dayMinutes: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -57,7 +75,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveSteps(date: LocalDate, steps: Int) {
+    suspend fun saveSteps(date: LocalDate = LocalDate.now(), steps: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -68,7 +86,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveWhatApp(date: LocalDate, whatApps: Int) {
+    suspend fun saveWhatApp(date: LocalDate = LocalDate.now(), whatApps: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -79,7 +97,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveMessages(date: LocalDate, messages: Int) {
+    suspend fun saveMessages(date: LocalDate = LocalDate.now(), messages: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -90,7 +108,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveCalls(date: LocalDate, calls: Int) {
+    suspend fun saveCalls(date: LocalDate = LocalDate.now(), calls: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -101,7 +119,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveSignal(date: LocalDate, signal: Int) {
+    suspend fun saveSignal(date: LocalDate = LocalDate.now(), signal: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
@@ -112,7 +130,7 @@ class DayDataSource (
         }
     }
 
-    suspend fun saveTelegram(date: LocalDate, telegram: Int) {
+    suspend fun saveTelegram(date: LocalDate = LocalDate.now(), telegram: Int) {
         val existingDay = dayDao.getDayByDate(date).first()
 
         // Check if the day exists or not, if it doesn't exist then create a new day
