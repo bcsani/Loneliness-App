@@ -176,10 +176,8 @@ class AnalysisViewModel (
 
     // Create the steps data as is (no change in units).
     fun stepsBars(data: List<DaySample>): List<BarPoint> =
-        data.mapNotNull { d ->
-            d.steps?.let { steps ->
-                BarPoint(d.date.dayOfWeek.name.take(3), steps.toFloat())
-            }
+        data.map { d ->
+            BarPoint(d.date.dayOfWeek.name.take(3), (d.steps ?: 0).toFloat())
         }
 
     // Create the communication application hours for the pie chart.
