@@ -13,7 +13,7 @@ import fi.tuni.lonelinessapp.data.utils.Converters
 import fi.tuni.lonelinessapp.data.utils.PrepopulateDataGenerator
 import java.util.concurrent.Executors
 
-@Database(entities= [DayEntity::class], version = 3)
+@Database(entities= [DayEntity::class], version = 4)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dayDao(): DayDao
@@ -33,7 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
         }
 
-        private val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+        private val MIGRATION_3_4: Migration = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Create temporary table with new schema
                 db.execSQL("""
@@ -42,12 +42,13 @@ abstract class AppDatabase : RoomDatabase() {
                         loneliness INTEGER,
                         nightMinutes INTEGER,
                         dayMinutes INTEGER,
-                        steps INTEGER NOT NULL,
+                        steps INTEGER,
                         whatApps INTEGER,
                         messages INTEGER,
-                        calls INTEGER NOT NULL,
+                        calls INTEGER,
                         signal INTEGER,
-                        telegram INTEGER
+                        telegram INTEGER,
+                        signalAmount INTEGER
                     )
                     """.trimIndent())
 
@@ -83,7 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                         ioExecutor.shutdown()
                     }
                 })
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_3_4)
                 .build()
     }
 }

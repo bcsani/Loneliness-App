@@ -25,6 +25,8 @@ class DayDataSource (
 
     fun getSignalByDate(date: LocalDate): Flow<Int?> =
         dayDao.getSignalByDate(date)
+    fun getSignalAmountByDate(date: LocalDate): Flow<Int?> =
+        dayDao.getSignalAmountByDate(date)
     fun getCallsByDate(date: LocalDate): Flow<Int?> =
         dayDao.getCallsByDate(date)
     fun getWhatAppsByDate(date: LocalDate): Flow<Int?> =
@@ -34,7 +36,8 @@ class DayDataSource (
     fun addSignalByDate(date: LocalDate, signal: Int) {
         dayDao.addSignalByDate(date, signal)
     }
-
+    fun addSignalAmountByDate(date: LocalDate, signalAmount: Int) {
+        dayDao.addSignalAmountByDate(date, signalAmount)
 
     suspend fun updateCallDurationToday() {
         val duration = callDurationHelper.getTotalCallDurationToday()
@@ -141,17 +144,29 @@ class DayDataSource (
         }
     }
 
-    suspend private fun insertDayWithData(
+    suspend fun saveSignalAmount(date: LocalDate = LocalDate.now(), signalAmount: Int) {
+        val existingDay = dayDao.getDayByDate(date).first()
+
+        // Check if the day exists or not, if it doesn't exist then create a new day
+        if (existingDay == null) {
+            insertDayWithData(date=date, signalAmount=signalAmount)
+        } else {
+            dayDao.updateSignalAmount(date, signalAmount)
+        }
+    }
+
+    suspend fun insertDayWithData(
         date: LocalDate,
         loneliness: Int? = null,
         nightMinutes: Int? = null,
         dayMinutes: Int? = null,
-        steps: Int = 0,
+        steps: Int? = null,
         whatApps: Int? = null,
         messages: Int? = null,
-        calls: Int = 0,
+        calls: Int? = null,
         signal: Int? = null,
-        telegram: Int? = null
+        telegram: Int? = null,
+        signalAmount: Int? = null
     ) {
         dayDao.insertDay(DayEntity(
             date = date,
@@ -163,7 +178,8 @@ class DayDataSource (
             messages = messages,
             calls = calls,
             signal = signal,
-            telegram = telegram
+            telegram = telegram,
+            signalAmount = signalAmount
         ))
     }
 

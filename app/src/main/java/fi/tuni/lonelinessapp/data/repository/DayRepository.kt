@@ -30,6 +30,8 @@ class DayRepository  (
         dayDataSource.saveSignal(date, signal)
     suspend fun saveTelegram(date: LocalDate = today, telegram: Int) =
         dayDataSource.saveTelegram(date, telegram)
+    suspend fun saveSignalAmount(date: LocalDate = today, signalAmount: Int) =
+        dayDataSource.saveSignalAmount(date, signalAmount)
     override fun getAllDays(): Flow<List<DayEntity>> =
         dayDataSource.getAllDays()
     override fun getDayByDate(date: LocalDate): Flow<DayEntity?> =
@@ -38,6 +40,8 @@ class DayRepository  (
         dayDataSource.getDaysFromDate(startDate)
     fun getSignalToday(): Flow<Int?> =
         dayDataSource.getSignalByDate(today)
+    fun getSignalAmountToday(): Flow<Int?> =
+        dayDataSource.getSignalAmountByDate(today)
     fun getCallsToday(): Flow<Int?> =
         dayDataSource.getCallsByDate(today)
     fun getWhatAppsToday(): Flow<Int?> =
@@ -50,6 +54,8 @@ class DayRepository  (
     fun isResponded(): Flow<Boolean> = dayDataSource.isResponded()
     fun addSignalToday(signal: Int) =
         dayDataSource.addSignalByDate(today, signal)
+    fun addSignalAmountToday(signalAmount: Int) =
+        dayDataSource.addSignalAmountByDate(today, signalAmount)
     suspend fun updateCallDurationToday() =
         dayDataSource.updateCallDurationToday()
 }

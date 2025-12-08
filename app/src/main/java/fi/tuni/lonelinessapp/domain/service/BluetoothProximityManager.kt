@@ -144,7 +144,9 @@ class BluetoothProximityManager(
             // Add total duration to the database
             coroutineScope.launch {
                 dayRepository.addSignalToday(signal = totalDuration.toInt())
+                dayRepository.addSignalAmountToday(signalAmount = totalDevices)
                 analysisViewModel.updateSignalDuration()
+                analysisViewModel.updateSignalAmount()
             }
 
             // Clear all tracking data

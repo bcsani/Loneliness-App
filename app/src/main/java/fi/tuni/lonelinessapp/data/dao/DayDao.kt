@@ -38,6 +38,9 @@ interface DayDao {
     @Query("UPDATE dayTable SET telegram = :telegram WHERE date = :date")
     suspend fun updateTelegram(date: LocalDate, telegram: Int)
 
+    @Query("UPDATE dayTable SET signalAmount = :signalAmount WHERE date = :date")
+    suspend fun updateSignalAmount(date: LocalDate, signalAmount: Int)
+
     @Query("SELECT * FROM dayTable ORDER BY date ASC")
     fun getAllDays(): Flow<List<DayEntity>>
 
@@ -49,10 +52,14 @@ interface DayDao {
 
     @Query("SELECT signal FROM dayTable where date = :date")
     fun getSignalByDate(date: LocalDate): Flow<Int?>
+    @Query("SELECT signalAmount FROM dayTable where date = :date")
+    fun getSignalAmountByDate(date: LocalDate): Flow<Int?>
     @Query("SELECT signal FROM dayTable WHERE date = :date LIMIT 1")
     fun getSignalByDateSingle(date: LocalDate): Int?
     @Query("UPDATE dayTable SET signal = COALESCE(signal, 0) + :signal WHERE date = :date")
     fun addSignalByDate(date: LocalDate, signal: Int)
+    @Query("UPDATE dayTable SET signalAmount = COALESCE(signalAmount, 0) + :signalAmount WHERE date = :date")
+    fun addSignalAmountByDate(date: LocalDate, signalAmount: Int)
     @Query("SELECT calls FROM dayTable where date = :date")
     fun getCallsByDate(date: LocalDate): Flow<Int?>
     @Query("SELECT whatApps FROM dayTable where date = :date")

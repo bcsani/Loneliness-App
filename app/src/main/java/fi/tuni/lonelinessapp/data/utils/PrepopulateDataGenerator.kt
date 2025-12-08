@@ -30,7 +30,8 @@ object PrepopulateDataGenerator {
                     messages = Random.nextInt(1,120),
                     calls = Random.nextInt(1,60),
                     signal = Random.nextInt(1, 120),
-                    telegram = Random.nextInt(1,120)
+                    telegram = Random.nextInt(1,120),
+                    signalAmount = Random.nextInt(1,10)
                 )
             )
             currentDate = currentDate.plusDays(1)

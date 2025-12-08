@@ -15,7 +15,8 @@ data class DayEntity(
     val messages: Int?,
     val calls: Int?,
     val signal: Int?,
-    val telegram: Int?
+    val telegram: Int?,
+    val signalAmount: Int?,
 )
 
 
