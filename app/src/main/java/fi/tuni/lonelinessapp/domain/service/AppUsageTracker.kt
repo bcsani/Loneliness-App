@@ -1,15 +1,20 @@
 package fi.tuni.lonelinessapp.domain.service
 
 import android.app.AppOpsManager
-import android.app.usage.UsageStats
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import fi.tuni.lonelinessapp.domain.model.AppUsageData
+import fi.tuni.lonelinessapp.data.datasource.DayDataSource
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 class AppUsageTracker(
-    private val context: Context
+    private val context: Context,
+    private val dataSource: DayDataSource
 ) {
     private val usageStatsManager: UsageStatsManager by lazy {
         context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -43,74 +48,81 @@ class AppUsageTracker(
 
     }
 
-    fun getAppUsageStats(daysBack: Int = 1): AppUsageData {
-        val calendar = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_WEEK, -daysBack)
-        }
+    private fun getMinsFromInterval(beg: Long, end: Long): List<Pair<String, Long>> {
+        val usageEvents = usageStatsManager.queryEvents(beg, end)
+        val foregroundEvents: MutableList<UsageEvents.Event> = mutableListOf()
+        val appUsage = HashMap<String, Long>()
 
-        val usageStats = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_BEST,
-            calendar.timeInMillis,
-            System.currentTimeMillis()
-        ) ?: return AppUsageData()
-
-        return processUsageStats(usageStats)
-    }
-
-    private fun processUsageStats(usageStats: List<UsageStats>): AppUsageData {
-        var telegramTime = 0L
-        var whatsappTime = 0L
-
-        println("=== PROCESSING USAGE STATS ===")
-
-        // Sum usage across all package variations
-        usageStats.forEach { stats ->
-            val packageName = stats.packageName
-            val usageTime = stats.totalTimeInForeground
-
-            // Only process if there's actual usage time
-            if (usageTime > 0) {
-                // println("Processing: $packageName - ${usageTime}ms")
-
-                when {
-                    telegramPackages.any { it == packageName } -> {
-                        // println("✓ FOUND TELEGRAM: $packageName - ${usageTime}ms")
-                        telegramTime += usageTime
-                    }
-                    whatsappPackages.any { it == packageName } -> {
-                        // println("✓ FOUND WHATSAPP: $packageName - ${usageTime}ms")
-                        whatsappTime += usageTime
-                    }
-                    else -> {
-                        // Debug: print other apps with significant usage
-                        if (usageTime > 60000) { // More than 1 minute
-                            println("  Other app: $packageName - ${usageTime}ms")
-                        }
-                    }
+        while (usageEvents.hasNextEvent()) {
+            val event = UsageEvents.Event()
+            usageEvents.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED || event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
+                foregroundEvents.add(event)
+                if (event.packageName !in appUsage) {
+                    appUsage[event.packageName] = 0
                 }
             }
         }
 
+        for (i in 0..<foregroundEvents.size - 1) {
+            val e0 = foregroundEvents[i]
+            val e1 = foregroundEvents[i + 1]
 
-        /*
-        println("FINAL RESULTS:")
-        println("Telegram time: ${telegramTime}ms (${TimeUnit.MILLISECONDS.toMinutes(telegramTime)} minutes)")
-        println("WhatsApp time: ${whatsappTime}ms (${TimeUnit.MILLISECONDS.toMinutes(whatsappTime)} minutes)")
-        println("=== END PROCESSING ===")
-         */
+            if (e0.eventType == UsageEvents.Event.ACTIVITY_RESUMED &&
+                e1.eventType == UsageEvents.Event.ACTIVITY_PAUSED &&
+                e0.packageName == e1.packageName
+            ) {
+                val diff = e1.timeStamp - e0.timeStamp
+                appUsage[e0.packageName]?.let { appUsage[e0.packageName] = it + diff }
+            }
+        }
 
-        // Convert milliseconds to minutes
-        val telegramMinutes = TimeUnit.MILLISECONDS.toMinutes(telegramTime)
-        val whatsappMinutes = TimeUnit.MILLISECONDS.toMinutes(whatsappTime)
-
-        return AppUsageData(
-            telegramUsageTime = telegramMinutes,
-            whatsappUsageTime = whatsappMinutes,
-            lastUpdated = System.currentTimeMillis()
-        )
+        return appUsage.toList().map { (key, value) ->
+                Pair(key, TimeUnit.MILLISECONDS.toMinutes(value))
+            }
     }
 
-    fun getCurrentUsage(): AppUsageData {
-        return getAppUsageStats(1) // Last 24 hours
+    private fun getAppMins(usageStats: List<Pair<String, Long>>, packages: List<String>): Int {
+        return usageStats
+            .filter { (packageName, _) -> packageName in packages }
+            .sumOf { (_, minutes) -> minutes }
+            .toInt()
+    }
+
+    suspend fun updateDate(date: LocalDate) {
+        val off = ZoneId.systemDefault().rules.getOffset(Instant.now())
+
+        val dateBeg = date.atStartOfDay().toInstant(off).toEpochMilli()
+        val dateEnd = date.atStartOfDay().plus(24, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
+
+        val usageStats = getMinsFromInterval(dateBeg, dateEnd)
+
+        val telegramMinutes = getAppMins(usageStats, telegramPackages)
+        val whatsAppMinutes = getAppMins(usageStats, whatsappPackages)
+
+        dataSource.saveTelegram(date, telegramMinutes)
+        dataSource.saveWhatApp(date, whatsAppMinutes)
+
+        val nighttimeBegin = date.atStartOfDay().minus(2, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
+        val transition     = date.atStartOfDay().plus(6, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
+        val daytimeEnd     = date.atStartOfDay().plus(22, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
+
+        val nightMinutes = getMinsFromInterval(nighttimeBegin, transition)
+            .sumOf { (_, mins) -> mins}.toInt()
+
+        val dayMinutes = getMinsFromInterval(transition, daytimeEnd)
+            .sumOf { (_, mins) -> mins}.toInt()
+
+        dataSource.saveNightMinutes(date, nightMinutes)
+        dataSource.saveDayMinutes(date, dayMinutes)
+    }
+
+    suspend fun update() {
+        var date = LocalDate.now().minusDays(6)
+
+        while (date != LocalDate.now().plusDays(1)) {
+            updateDate(date)
+            date = date.plusDays(1)
+        }
     }
 }

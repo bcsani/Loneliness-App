@@ -147,6 +147,7 @@ class AnalysisViewModel (
     }
 
     fun updateDurations() {
+        viewModelScope.launch { dayRepository.updateAppUsage() }
         updateCallDuration()
         updateSignalDuration()
         updateWhatAppsDuration()
