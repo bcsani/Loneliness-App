@@ -95,8 +95,8 @@ class AnalysisViewModel (
         try {
             viewModelScope.launch {
                 dayRepository.getCallsToday().collect { duration ->
-                    val callDurationSec = duration?.toFloat() ?: 0f
-                    _callDuration.value = secondsToHours(callDurationSec)
+                    val callDurationMin = duration?.toFloat() ?: 0f
+                    _callDuration.value = minutesToHours(callDurationMin)
                 }
             }
         } catch (e: NullPointerException) {
