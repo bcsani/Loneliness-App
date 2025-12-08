@@ -72,10 +72,12 @@ fun HomeScreen(
 
     // Values for correlation chart
     val correlationResults by homeViewModel.correlationResults.collectAsState()
+    val signalAmount by homeViewModel.signalAmount.collectAsState()
 
     LaunchedEffect(Unit) {
         homeViewModel.getStreakCount()
         homeViewModel.calculateCorrelation()
+        homeViewModel.getSignalAmount()
     }
 
     val correlationValues = correlationResults.map { it.correlationValue }
@@ -237,6 +239,24 @@ fun HomeScreen(
                             invalidate()
                         }
                     }
+                )
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Text(
+                    text = "Bluetooth Amount: $signalAmount",
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }

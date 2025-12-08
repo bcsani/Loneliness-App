@@ -28,6 +28,8 @@ class HomeViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading
     private val _correlationResults = MutableStateFlow<List<CorrelationResult>>(emptyList())
     val correlationResults: StateFlow<List<CorrelationResult>> = _correlationResults.asStateFlow()
+    private val _signalAmount = MutableStateFlow(0)
+    val signalAmount = _signalAmount.asStateFlow()
 
     fun getStreakCount() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -54,6 +56,19 @@ class HomeViewModel(
             } catch (e: Exception) {
                 _isLoading.value = false
                 println("Failed to calculate correlations: ${e.message}")
+            }
+        }
+    }
+
+    fun getSignalAmount() {
+        viewModelScope.launch {
+            try {
+                dayRepository.getSignalAmountToday().collect { signalAmount ->
+                    println("Signal Amount $signalAmount")
+                    _signalAmount.value = signalAmount ?: 0
+                }
+            } catch (e: Exception) {
+                println("Failed to get signal amount: ${e.message}")
             }
         }
     }

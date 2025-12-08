@@ -38,6 +38,7 @@ class DayDataSource (
     }
     fun addSignalAmountByDate(date: LocalDate, signalAmount: Int) {
         dayDao.addSignalAmountByDate(date, signalAmount)
+    }
 
     suspend fun updateCallDurationToday() {
         val duration = callDurationHelper.getTotalCallDurationToday()
@@ -50,7 +51,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, loneliness=loneliness)
+            insertDayWithData(date = date, loneliness = loneliness)
         } else {
             dayDao.updateLoneliness(date, loneliness)
         }
@@ -61,7 +62,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, nightMinutes=nightMinutes)
+            insertDayWithData(date = date, nightMinutes = nightMinutes)
         } else {
             dayDao.updateNightMinutes(date, nightMinutes)
         }
@@ -72,7 +73,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, dayMinutes=dayMinutes)
+            insertDayWithData(date = date, dayMinutes = dayMinutes)
         } else {
             dayDao.updateDayMinutes(date, dayMinutes)
         }
@@ -83,7 +84,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, steps=steps)
+            insertDayWithData(date = date, steps = steps)
         } else {
             dayDao.updateSteps(date, steps)
         }
@@ -94,7 +95,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, whatApps=whatApps)
+            insertDayWithData(date = date, whatApps = whatApps)
         } else {
             dayDao.updateWhatApps(date, whatApps)
         }
@@ -105,7 +106,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, messages=messages)
+            insertDayWithData(date = date, messages = messages)
         } else {
             dayDao.updateMessages(date, messages)
         }
@@ -116,7 +117,7 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, calls=calls)
+            insertDayWithData(date = date, calls = calls)
         } else {
             dayDao.updateCalls(date, calls)
         }
@@ -127,20 +128,9 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, signal=signal)
+            insertDayWithData(date = date, signal = signal)
         } else {
             dayDao.updateSignal(date, signal)
-        }
-    }
-
-    suspend fun saveTelegram(date: LocalDate = LocalDate.now(), telegram: Int) {
-        val existingDay = dayDao.getDayByDate(date).first()
-
-        // Check if the day exists or not, if it doesn't exist then create a new day
-        if (existingDay == null) {
-            insertDayWithData(date=date, telegram=telegram)
-        } else {
-            dayDao.updateTelegram(date, telegram)
         }
     }
 
@@ -149,9 +139,20 @@ class DayDataSource (
 
         // Check if the day exists or not, if it doesn't exist then create a new day
         if (existingDay == null) {
-            insertDayWithData(date=date, signalAmount=signalAmount)
+            insertDayWithData(date = date, signalAmount = signalAmount)
         } else {
             dayDao.updateSignalAmount(date, signalAmount)
+        }
+    }
+
+    suspend fun saveTelegram(date: LocalDate = LocalDate.now(), telegram: Int) {
+        val existingDay = dayDao.getDayByDate(date).first()
+
+        // Check if the day exists or not, if it doesn't exist then create a new day
+        if (existingDay == null) {
+            insertDayWithData(date = date, telegram = telegram)
+        } else {
+            dayDao.updateTelegram(date, telegram)
         }
     }
 
@@ -166,21 +167,23 @@ class DayDataSource (
         calls: Int? = null,
         signal: Int? = null,
         telegram: Int? = null,
-        signalAmount: Int? = null
+        signalAmount: Int? = null,
     ) {
-        dayDao.insertDay(DayEntity(
-            date = date,
-            loneliness = loneliness,
-            nightMinutes = nightMinutes,
-            dayMinutes = dayMinutes,
-            steps = steps,
-            whatApps = whatApps,
-            messages = messages,
-            calls = calls,
-            signal = signal,
-            telegram = telegram,
-            signalAmount = signalAmount
-        ))
+        dayDao.insertDay(
+            DayEntity(
+                date = date,
+                loneliness = loneliness,
+                nightMinutes = nightMinutes,
+                dayMinutes = dayMinutes,
+                steps = steps,
+                whatApps = whatApps,
+                messages = messages,
+                calls = calls,
+                signal = signal,
+                telegram = telegram,
+                signalAmount = signalAmount
+            )
+        )
     }
 
     suspend fun resetData() {
@@ -192,18 +195,22 @@ class DayDataSource (
     fun getStreak(): Flow<Int> {
         return flow {
             dayDao.firstDate()
-                .combine(dayDao.lastResponse()) {i, j -> Pair(i, j)}
-                .combine(dayDao.lastNonStreak(LocalDate.now())) {(i, j), k -> Triple(i, j, k)}
-                .collect { (firstDate, lastResponse, lastNonStreak) -> emit(
-                    if (firstDate == null || lastResponse == null) {
-                        0
-                    } else if (lastNonStreak == null) {
-                        lastResponse.toEpochDay().toInt() - firstDate.toEpochDay().toInt() + 1
-                    } else if (lastResponse < LocalDate.now().minusDays(1)) {
-                        0
-                    } else {
-                        lastResponse.toEpochDay().toInt() - lastNonStreak.toEpochDay().toInt()
-                    })
+                .combine(dayDao.lastResponse()) { i, j -> Pair(i, j) }
+                .combine(dayDao.lastNonStreak(LocalDate.now())) { (i, j), k -> Triple(i, j, k) }
+                .collect { (firstDate, lastResponse, lastNonStreak) ->
+                    emit(
+                        if (firstDate == null || lastResponse == null) {
+                            0
+                        } else if (lastNonStreak == null) {
+                            lastResponse.toEpochDay().toInt() - firstDate.toEpochDay()
+                                .toInt() + 1
+                        } else if (lastResponse < LocalDate.now().minusDays(1)) {
+                            0
+                        } else {
+                            lastResponse.toEpochDay().toInt() - lastNonStreak.toEpochDay()
+                                .toInt()
+                        }
+                    )
                 }
         }
     }

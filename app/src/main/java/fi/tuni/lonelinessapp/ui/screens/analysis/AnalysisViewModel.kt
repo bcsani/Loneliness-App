@@ -81,7 +81,6 @@ class AnalysisViewModel (
 
     private val _callDuration = MutableStateFlow(initialValue)
     private val _signalDuration = MutableStateFlow(initialValue)
-    private val _signalAmount = MutableStateFlow(0)
     private val _whatAppsDuration = MutableStateFlow(initialValue)
     private val _telegramDuration = MutableStateFlow(initialValue)
 
@@ -116,19 +115,6 @@ class AnalysisViewModel (
             }
         } catch (e: NullPointerException) {
             _signalDuration.value = initialValue
-        }
-    }
-
-    fun updateSignalAmount() {
-        try {
-            viewModelScope.launch {
-                dayRepository.getSignalAmountToday().collect { signalAmount ->
-                    _signalAmount.value = (signalAmount ?: 0f) as Int
-
-
-            }
-        } catch (e: NullPointerException) {
-        _signalDuration.value = initialValue
         }
     }
 
