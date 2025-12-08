@@ -1,3 +1,24 @@
+/**
+ * AnalysisScreen.kt
+ *
+ * This file defines the "Analysis" view of the Loneliness App.
+ * It visualizes:
+ *  - Daily loneliness scores (UCLA 3-item scale, mapped to 0–6).
+ *  - Night-time and day-time phone usage (in hours).
+ *  - Daily step counts.
+ *  - Communication app usage (pie chart).
+ *
+ * The screen supports multiple time ranges:
+ *  - Last 7 days.
+ *  - Last 30 days.
+ *  - Last 3 months.
+ *  - Past year.
+ *  - All time.
+ *
+ * Charts are rendered using MPAndroidChart inside Jetpack Compose via AndroidView.
+ * All statistics are calculated from DayEntity data in AnalysisViewModel.
+ */
+
 package fi.tuni.lonelinessapp.ui.screens.analysis
 
 // Compose
@@ -40,11 +61,11 @@ import java.time.format.DateTimeFormatter
 
 
 // Color configuration for charts.
-// The colors are now hardcoded. Later we will move under the theme (?)
+// The colors are now hardcoded. Later we will move under the theme.
 private const val COLOR_PRIMARY_HEX = 0xFF2563EB.toInt()
 private const val COLOR_TEXT_HEX    = 0xFF1F2937.toInt()
 
-// pie chart colors.
+// Pie chart colors (for communication app distribution).
 private val PIE_COLORS = listOf(
     0xFF2563EB.toInt(),
     0xFFF59E0B.toInt(),
@@ -56,6 +77,13 @@ private val PIE_COLORS = listOf(
 // User selectable time ranges in the analysis view.
 enum class TimeRange { Week, Month, ThreeMonths, Year, All }
 
+/**
+ * Configures an MPAndroidChart XAxis with different strategies depending on:
+ *  - useStartEndOnly: only first and last label (e.g. All Time).
+ *  - adjustForBars: add half-bar padding so first/last bars are not cut.
+ *  - monthTickDays: custom ticks (e.g. 1,5,10,15,... for Month view).
+ *  - everyNthLabel: show only every Nth label to avoid clutter.
+ */
 private fun XAxis.applyDomainAndLabels(
     labels: List<String>,
     useStartEndOnly: Boolean = false,
@@ -74,7 +102,7 @@ private fun XAxis.applyDomainAndLabels(
         }
     }
 
-    // 1) All Time: just the beginning + "Now"
+    // 1) All Time: just the beginning + "Now".
     if (useStartEndOnly) {
         valueFormatter = StartEndValueFormatter(labels)
         setLabelCount(2, true)
@@ -88,11 +116,12 @@ private fun XAxis.applyDomainAndLabels(
         return
     }
 
-    // 2) Columns that require extra space on the edges.
+    // 2) Columns that require extra space on the edges (bar charts).
     if (adjustForBars && labels.isNotEmpty()) {
         axisMinimum = -0.5f
         axisMaximum = (labels.size - 1).toFloat() + 0.5f
 
+        // Map axis values to label indices, taking the padding into account.
         valueFormatter = object : ValueFormatter() {
             override fun getAxisLabel(value: Float, axis: AxisBase?): String {
                 val min = axis?.axisMinimum ?: axisMinimum
@@ -147,7 +176,7 @@ private fun XAxis.applyDomainAndLabels(
         return
     }
 
-    // 4) Default: months/weeks without special logic.
+    // 4) Default: simple index-based labels, optionally skipping every Nth label.
     if (everyNthLabel > 1) {
         valueFormatter = object : ValueFormatter() {
             override fun getAxisLabel(value: Float, axis: AxisBase?): String {
@@ -177,7 +206,14 @@ private fun XAxis.applyDomainAndLabels(
     enableGridDashedLine(10f, 10f, 0f)
 }
 
-// Y-axis “nice” – if maximum is 0/missing, show a reasonable fallback range.
+/**
+ * ApplyNiceYAxis: Applies a “nice” Y-axis range to a BarChart based on given values and a step function.
+ * - If all values are 0 or missing, shows a small default range.
+ * - Otherwise, expands slightly above the max and chooses a clean step (e.g. 0.5h, 1000 steps).
+ *
+ * @param values  Data values to analyze (e.g. hours or steps).
+ * @param stepFn  Strategy for choosing the axis step size based on maximum value.
+ */
 private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Float) {
     val maxVal = values.maxOrNull() ?: 0f
     if (maxVal <= 0f) {
@@ -206,19 +242,28 @@ private fun BarChart.applyNiceYAxis(values: List<Float>, stepFn: (Float) -> Floa
     }
 }
 
-// Day labels for the selected period, even if all day values ​​are empty.
+/**
+ * fallbackDayLabels: Returns fallback day labels when we have no real samples.
+ * Used to keep the chart structure visible even when there's no data.
+ */
 private fun fallbackDayLabels(range: TimeRange, samplesCount: Int): List<String> = when (range) {
     TimeRange.Week  -> listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
     TimeRange.Month -> (1..samplesCount.coerceAtLeast(30)).map { it.toString() }
     else -> emptyList()
 }
 
+
 /**
- * Composable that displays the analysis page: it builds the data series for the
- * selected time range and displays 5 daily charts (Week/Month) or monthly
- * aggregates (3 Months / Year / All).
- * Data is provided by AnalysisViewModel via StateFlow and re-computed whenever
- * the selected time range changes.
+ * Main composable for the Analysis screen.
+ *
+ * - Lets the user pick a time range (Last 7 days / 30 days / 3 months / year / all time).
+ * - Builds daily or monthly aggregates from DayEntity data via AnalysisViewModel.
+ * - Renders 5 charts:
+ *   1. Loneliness score (line chart).
+ *   2. Night-time phone usage (bar chart).
+ *   3. Day-time phone usage (bar chart).
+ *   4. Steps (bar chart).
+ *   5. Communication apps usage (pie chart).
  */
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -269,18 +314,21 @@ fun AnalysisScreen(
 
     // ================= ORIGINAL DATA LOADING (Commented out) ================
     val daysEntity by analysisViewModel.daysEntity.collectAsState()
+
+    // Build samples based on the selected time range.
     val samples: List<DaySample> = remember(daysEntity, selectedRange) {
         buildSamplesForRange(daysEntity, selectedRange)
     }
     // ========================================================================
 
+    // Domain-specific points for each chart.
     val lonelinessPts = remember(samples) { analysisViewModel.lonelinessLine(samples) }
     val nightPts      = remember(samples) { analysisViewModel.nightUsageBarsHours(samples) }
     val dayPts        = remember(samples) { analysisViewModel.dayUsageBarsHours(samples) }
     val stepsPts      = remember(samples) { analysisViewModel.stepsBars(samples) }
     val commPie       = remember { analysisViewModel.communicationPieHours() }
 
-    // Päivä- ja kuukausilabelit (näkyvät myös tyhjällä datalla)
+    // Day labels for the selected period (shown even if data is empty).
     val dayLabels = remember(samples, selectedRange) {
         when (selectedRange) {
             TimeRange.Week  -> (samples.takeIf { it.isNotEmpty() } ?: emptyList()).map {
@@ -293,7 +341,7 @@ fun AnalysisScreen(
         }
     }
 
-    // Labelit toast-viesteihin: aina oikea päivämäärä (esim. 4.12.2025)
+    // Labels used in Toast messages: always the real date (e.g. 4.12.2025).
     val toastLabels = remember(samples, selectedRange) {
         when (selectedRange) {
             TimeRange.Week, TimeRange.Month -> {
@@ -306,12 +354,13 @@ fun AnalysisScreen(
         }
     }
 
+    // Ticks for X-axis in Month view (days: 1,5,10,15,20,25,30).
     val monthTicks = if (selectedRange == TimeRange.Month)
         listOf(1, 5, 10, 15, 20, 25, 30)
     else
         null
 
-
+    // Monthly or period aggregates depending on time range.
     val monthlyAgg = remember(samples, selectedRange) {
         when (selectedRange) {
             TimeRange.ThreeMonths, TimeRange.Year -> aggregateMonthly(samples)
@@ -320,6 +369,7 @@ fun AnalysisScreen(
         }
     }
 
+    // X-axis labels for monthly/period charts.
     val monthLabels = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
             is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.label }
@@ -328,6 +378,24 @@ fun AnalysisScreen(
         }
     }
 
+    // For "All Time" charts: use full start/end dates on the X-axis
+    val allTimeAxisLabels = remember(monthLabels, samples, selectedRange) {
+        if (selectedRange == TimeRange.All && monthLabels.isNotEmpty() && samples.isNotEmpty()) {
+            val formatter = DateTimeFormatter.ofPattern("d.M.yyyy")
+            val sortedByDate = samples.sortedBy { it.date }
+            val startLabel = sortedByDate.first().date.format(formatter)
+            val endLabel = sortedByDate.last().date.format(formatter)
+
+            monthLabels.toMutableList().apply {
+                this[0] = startLabel      // earliest date
+                this[lastIndex] = endLabel // latest date
+            }.toList()
+        } else {
+            monthLabels
+        }
+    }
+
+    // Monthly series for loneliness, night usage, day usage, and steps.
     val lonMonthly = remember(monthlyAgg) {
         when (monthlyAgg.firstOrNull()) {
             is AnalysisViewModel.AggregateBucket -> (monthlyAgg as List<AnalysisViewModel.AggregateBucket>).map { it.lonAvg }
@@ -357,7 +425,7 @@ fun AnalysisScreen(
         }
     }
 
-    // Show the entire analysis as a vertical list: one card per chart.
+    // Scrollable layout: one card per chart.
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -365,7 +433,7 @@ fun AnalysisScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Dropdown box.
+        // Time range dropdown.
         item {
             var expanded by remember { mutableStateOf(false) }
             val options = listOf("Last 7 days", "Last 30 Days", "Last 3 Months", "Past Year", "All Time")
@@ -421,7 +489,7 @@ fun AnalysisScreen(
         // Daily view (Week / Month): show 5 charts using per-day data.
         if (selectedRange == TimeRange.Week || selectedRange == TimeRange.Month) {
 
-            // 1) Loneliness(line chart).
+            // 1) Loneliness (line chart).
             item {
                 val infoText = "Shows your Loneliness scale scores from answers given to survey.\n" +
                         "Higher values indicate greater feelings of loneliness. Zero equals not feeling lonely. \n" +
@@ -434,6 +502,8 @@ fun AnalysisScreen(
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
+
+                            // Configure the LineChart used for daily loneliness scores.
                             LineChart(ctx).apply {
                                 description = Description().apply { text = "" }
                                 axisRight.isEnabled = false
@@ -505,7 +575,6 @@ fun AnalysisScreen(
                             chart.applyNiceYAxis(nightPts.map { it.y }, ::hourStepFor)
                             chart.enableTapToShowValue(toastLabels) { y -> String.format("%.1f h", y) }
 
-                            // --- sama reuna-logiikka kuin Day time -kaaviossa ---
                             val entries = toBarEntries(nightPts)
 
                             val set = makeBarDataSet(
@@ -571,7 +640,6 @@ fun AnalysisScreen(
                             val barData = BarData(set).apply { barWidth = 0.7f }
                             chart.data = barData
 
-                            // THIS FIXES THE FIRST & LAST BEAM CUTTING
                             val minX = entries.minOfOrNull { it.x } ?: 0f
                             val maxX = entries.maxOfOrNull { it.x } ?: 0f
                             val halfWidth = barData.barWidth / 2f
@@ -600,6 +668,8 @@ fun AnalysisScreen(
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(240.dp),
                         factory = { ctx ->
+
+                            // BarChart for steps per day.
                             BarChart(ctx).apply {
                                 applyBarDefaults()
                                 setTouchEnabled(false)
@@ -660,6 +730,8 @@ fun AnalysisScreen(
                     AndroidView(
                         modifier = Modifier.fillMaxWidth().height(340.dp),
                         factory = { ctx ->
+
+                            // Pie chart for communication app usage distribution.
                             PieChart(ctx).apply {
                                 description = Description().apply { text = "" }
                                 legend.isEnabled = false
@@ -676,7 +748,7 @@ fun AnalysisScreen(
                             val entries = commPie.filter { it.value > 0f }
                                 .map { PieEntry(it.value, it.label) }
                             if (entries.isEmpty()) {
-                                //pie.centerText = "No chart data available"
+                                pie.centerText = "No chart data available"
                                 pie.setCenterTextSize(16f)
                                 pie.setCenterTextColor(android.graphics.Color.BLACK)
                                 pie.legend.isEnabled = false
@@ -713,10 +785,10 @@ fun AnalysisScreen(
                 }
             }
 
-            // 3 months, 1 year.
+        // 3 months, 1 year, All time: aggregated view.
         } else {
 
-            // 1) Loneliness(line chart).
+            // 1) Loneliness (line chart) for monthly/period aggregates.
             item {
                 val infoText = "Shows your Loneliness scale scores from answers given to survey.\n" +
                         "Higher values indicate greater feelings of loneliness. Zero equals not feeling lonely. \n" +
@@ -755,8 +827,12 @@ fun AnalysisScreen(
                             }
                         },
                         update = { chart ->
+                            val axisLabels =
+                                if (selectedRange == TimeRange.All) allTimeAxisLabels
+                                else monthLabels
+
                             chart.xAxis.applyDomainAndLabels(
-                                labels = monthLabels,
+                                labels = axisLabels,
                                 useStartEndOnly = (selectedRange == TimeRange.All),
                                 everyNthLabel = if (selectedRange == TimeRange.Year) 2 else 1
                             )
@@ -788,7 +864,7 @@ fun AnalysisScreen(
                 }
             }
 
-            // 2) Night usage (bar chart).
+            // 2) Night usage (bar chart) for monthly/period aggregates.
             item {
                 val infoText = "Shows the time spent on your phone at night in hours. \n" +
                         "Night usage is 10.00 pm - 06.00 am. \n" +
@@ -811,13 +887,14 @@ fun AnalysisScreen(
                             if (selectedRange == TimeRange.All) {
 
                                 // ALL TIME: only "start" + "Now", but with little space on the edges for the columns.
+                                // ALL TIME: only start and end dates, with a bit of space on the edges for the columns.
                                 chart.xAxis.apply {
                                     val count = monthLabels.size.coerceAtLeast(1)
 
                                     axisMinimum = -0.5f
                                     axisMaximum = (count - 1).toFloat() + 0.5f
 
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
+                                    valueFormatter = StartEndValueFormatter(allTimeAxisLabels)
                                     setLabelCount(2, true)
 
                                     granularity = 1f
@@ -826,7 +903,7 @@ fun AnalysisScreen(
                                     enableGridDashedLine(10f, 10f, 0f)
                                 }
                             } else {
-                                // YEAR / 3 MONTHS
+                                // YEAR / 3 MONTHS: show multiple labels, still with bar padding.
                                 chart.xAxis.applyDomainAndLabels(
                                     labels = monthLabels,
                                     useStartEndOnly = false,
@@ -857,7 +934,7 @@ fun AnalysisScreen(
                 }
             }
 
-            // 3) Daytime usage (bar chart).
+            // 3) Daytime usage (bar chart) for monthly/period aggregates.
             item {
                 val infoText = "Shows the time spent on your phone during the day in hours.\n" +
                         "Daily usage is 06.00 am - 10.00 pm.\n" +
@@ -880,12 +957,15 @@ fun AnalysisScreen(
                         update = { chart ->
 
                             if (selectedRange == TimeRange.All) {
+
+                                // ALL TIME: only start and end dates, with a bit of space on the edges for the columns.
                                 chart.xAxis.apply {
                                     val count = monthLabels.size.coerceAtLeast(1)
+
                                     axisMinimum = -0.5f
                                     axisMaximum = (count - 1).toFloat() + 0.5f
 
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
+                                    valueFormatter = StartEndValueFormatter(allTimeAxisLabels)
                                     setLabelCount(2, true)
 
                                     granularity = 1f
@@ -894,6 +974,8 @@ fun AnalysisScreen(
                                     enableGridDashedLine(10f, 10f, 0f)
                                 }
                             } else {
+
+                                // 3 months / year.
                                 chart.xAxis.applyDomainAndLabels(
                                     labels = monthLabels,
                                     useStartEndOnly = false,
@@ -921,7 +1003,7 @@ fun AnalysisScreen(
                 }
             }
 
-            // 4) Steps (bar chart).
+            // 4) Steps (bar chart) for monthly/period aggregates.
             item {
                 val infoText = "Shows the number of steps taken during the selected period of time.\n" +
                         "Shows values from selected period of time."
@@ -944,12 +1026,15 @@ fun AnalysisScreen(
                         update = { chart ->
 
                             if (selectedRange == TimeRange.All) {
+
+                                // ALL TIME: only start and end dates, with a bit of space on the edges for the columns.
                                 chart.xAxis.apply {
                                     val count = monthLabels.size.coerceAtLeast(1)
+
                                     axisMinimum = -0.5f
                                     axisMaximum = (count - 1).toFloat() + 0.5f
 
-                                    valueFormatter = StartEndValueFormatter(monthLabels)
+                                    valueFormatter = StartEndValueFormatter(allTimeAxisLabels)
                                     setLabelCount(2, true)
 
                                     granularity = 1f
@@ -987,7 +1072,7 @@ fun AnalysisScreen(
                 }
             }
 
-            // 5) Communications (pie chart).
+            // 5) Communications (pie chart) – same logic as daily view, but using the full range.
             item {
                 val infoText = "Shows how your communication app usage is distributed. \n" +
                         "The chart displays the total hours spent on each app during the selected time period."
@@ -1052,6 +1137,7 @@ fun AnalysisScreen(
         }
     }
 
+    // Info dialog for chart descriptions (triggered by the info icon in ChartCard).
     if (infoDialogMessage != null) {
         AlertDialog(
             onDismissRequest = { infoDialogMessage = null },
@@ -1066,8 +1152,13 @@ fun AnalysisScreen(
     }
 }
 
-/** Chartcard: function creates a uniform card template for graphs.
- * Small helper to standardize chart container look
+/**
+ * ChartCard:
+ * Small helper to standardize chart container look and title + info-icon row.
+ *
+ * @param title        Card title text shown at the top.
+ * @param onInfoClick  Optional callback when the info icon is pressed.
+ * @param content      Chart content composable.
  */
 @Composable
 fun ChartCard(
@@ -1108,8 +1199,10 @@ fun ChartCard(
     }
 }
 
-/** BarChart.applyBarDefaults:
- * Common baseline for bar charts so we don’t repeat ourselves.
+/**
+ * applyBarDefaults:
+ * Applies common baseline configuration for all BarCharts in this screen.
+ * This keeps styling (axes, grid, legend, padding) consistent across charts.
  */
 fun BarChart.applyBarDefaults() {
     description = Description().apply { text = "" }
@@ -1133,22 +1226,24 @@ fun BarChart.applyBarDefaults() {
 }
 
 /** toBarEntries:
- * Utility mappers to convert domain points or raw floats into MPAndroidChart
- * entries. X is positional (index), Y is the value.
- */
+ * Converts a list of BarPoint (domain type from ViewModel) into BarEntry for MPAndroidChart.
+ * X = index position, Y = value.
+*/
 private fun toBarEntries(points: List<AnalysisViewModel.BarPoint>): List<BarEntry> =
     points.mapIndexed { i, p -> BarEntry(i.toFloat(), p.y) }
 
 /** toBarEntriesFromFloats:
- * Utility mappers to convert domain points or raw floats into MPAndroidChart
- * entries. X is positional (index), Y is the value.
+ * Converts a list of Float values into BarEntry list for MPAndroidChart.
+ * X = index position, Y = value.
  */
 private fun toBarEntriesFromFloats(values: List<Float>): List<BarEntry> =
     values.mapIndexed { i, v -> BarEntry(i.toFloat(), v) }
 
 /** makeBarDataSet:
- * Creates a unified BarDataSet with consistent styling. If a ValueFormatter is
- * provided, we draw labels on bars; otherwise hide value labels to reduce noise.
+ * Creates a unified BarDataSet with consistent styling.
+ *
+ * @param label    Legend label (currently hidden in UI).
+ * @param entries  Data entries for the bar chart.
  */
 private fun makeBarDataSet(
     label: String,
@@ -1160,9 +1255,9 @@ private fun makeBarDataSet(
     setDrawValues(false)
 }
 
-/** PieChart.enableToastOnSliceClick:
- * Attaches a simple toast on slice selection for quick feedback. Safe no-op on
- * empty data because MPAndroidChart won't trigger selection callbacks then.
+/** enableToastOnSliceClick:
+ * Adds a simple toast on pie slice selection.
+ * Shows "<label> – X.X h" when a slice is tapped.
  */
 private fun PieChart.enableToastOnSliceClick() {
     setOnChartValueSelectedListener(object :
@@ -1187,7 +1282,8 @@ private fun PieChart.enableToastOnSliceClick() {
 }
 
 /** niceCeil:
- * Rounds up to the nearest multiple of 'step'. If step <= 0, returns value.
+ * Rounds up [value] to the nearest multiple of [step].
+ * If step <= 0, the original value is returned.
  */
 private fun niceCeil(value: Float, step: Float): Float {
     if (step <= 0f) return value
@@ -1218,7 +1314,13 @@ private fun stepStepFor(maxVal: Float): Float =
     }
 
 /** MonthBucket:
- *  Aggregates daily samples into per-month averages (loneliness, hours, steps).
+ *  Represents monthly aggregates for:
+ *  - Average loneliness
+ *  - Night usage (hours)
+ *  - Day usage (hours)
+ *  - Average steps
+ *
+ * @param label    Month label (e.g. "Jan", "Feb 2025").
  */
 private data class MonthBucket(
     val label: String,
@@ -1229,7 +1331,14 @@ private data class MonthBucket(
 )
 
 /** aggregateMonthly:
- *  Aggregates daily samples into per-month averages (loneliness, hours, steps).
+ *
+ * Aggregates daily samples into per-month averages.
+ *
+ * - Loneliness: average of transformed scores (mapping original scale to 1..7).
+ * - Night / day usage: average minutes, converted to hours.
+ * - Steps: average daily steps.
+ *
+ * Returns one MonthBucket per calendar month between first and last sample.
  */
 private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
     if (samples.isEmpty()) return emptyList()
@@ -1271,8 +1380,13 @@ private fun aggregateMonthly(samples: List<DaySample>): List<MonthBucket> {
 }
 
 /**
- * startDateFor: Computes an inclusive start date for the given range, anchored to anchorDate,
- * which must be the newest date we actually have in the database.
+ * buildSamplesForRange:
+ * Builds a list of DaySample for the selected time range, anchored to today's date.
+ *
+ * - Week: 7 last days, missing dates filled with zero/empty samples.
+ * - Month: last 30 days, missing dates filled.
+ * - 3 Months / Year: direct filter of existing entities.
+ * - All: all samples in DB.
  */
 private fun buildSamplesForRange(
     daysEntity: List<DayEntity>?,
@@ -1327,7 +1441,9 @@ private fun buildSamplesForRange(
 }
 
 /**
- * enableTapToShowValue: Displays a Toast message with the bar value.
+ * enableTapToShowValue:
+ * Enables tap-to-show-value on BarCharts.
+ * Shows a Toast message with the label (date/month) and formatted value.
  */
 private fun BarChart.enableTapToShowValue(
     labels: List<String>,
@@ -1347,6 +1463,11 @@ private fun BarChart.enableTapToShowValue(
     })
 }
 
+/**
+ * enableTapToShowValue:
+ * Enables tap-to-show-value on LineCharts.
+ * Shows a Toast message with the label (date/month) and formatted value.
+ */
 private fun LineChart.enableTapToShowValue(
     labels: List<String>,
     format: (Float) -> String
@@ -1365,6 +1486,11 @@ private fun LineChart.enableTapToShowValue(
     })
 }
 
+/**
+ * BarChart.lockZoomPanKeepTap:
+ * Locks zoom/pan for a BarLineChartBase while still allowing highlight on tap.
+ * Used to keep charts readable and static, but interactive via toast values.
+ */
 private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
     setTouchEnabled(true)
     setDragEnabled(false)
@@ -1377,18 +1503,33 @@ private fun BarLineChartBase<*>.lockZoomPanKeepTap() {
     isHighlightPerDragEnabled = false
 }
 
+/**
+ * StartEndValueFormatter:
+ * Formatter used for All Time / aggregated X-axis.
+ * Only shows:
+ *  - First label as-is
+ *  - Last label as "Now"
+ * Everything in-between is hidden to avoid clutter.
+ */
 class StartEndValueFormatter(private val labels: List<String>) : ValueFormatter() {
     override fun getFormattedValue(value: Float): String {
+        if (labels.isEmpty()) return ""
         val index = value.toInt()
         val lastIndex = labels.lastIndex
 
-        if (index == 0) return labels.firstOrNull() ?: ""
-        if (index == lastIndex) return "Now"
-
-        return ""
+        return when (index) {
+            0 -> labels[0]          // start date (d.M.yyyy)
+            lastIndex -> labels[lastIndex] // end date (d.M.yyyy)
+            else -> ""
+        }
     }
 }
 
+/**
+ * buildLonelinessDataSets:
+ * Builds one or more LineDataSets for loneliness values, splitting at NaN gaps.
+ * This allows rendering discontinuous lines where data is missing.
+ */
 private fun buildLonelinessDataSets(points: List<AnalysisViewModel.LinePoint>): List<ILineDataSet> {
     val sets = mutableListOf<ILineDataSet>()
     var run = mutableListOf<Entry>()

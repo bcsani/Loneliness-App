@@ -86,19 +86,48 @@ class BluetoothProximityManager(
 
         if (scanning) return
 
+        if (!::bluetoothAdapter.isInitialized || !bluetoothAdapter.isEnabled) {
+            initializeBluetooth()
+        }
+
+        // Check if scanner is available
+        if (!bluetoothAdapter.isEnabled) {
+            onError("Please enable Bluetooth to start scanning")
+            return
+        }
+
+        // Initialize scanner if not already done
+        if (!::bluetoothLeScanner.isInitialized) {
+            try {
+                bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+            } catch (e: Exception) {
+                onError("Failed to initialize Bluetooth scanner: ${e.message}")
+                return
+            }
+        }
+
         scannedDevices.clear()
         val scanSettings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
-        bluetoothLeScanner.startScan(emptyList(), scanSettings, leScanCallback)
-        scanning = true
-        onScanStatusChanged(true)
+        try {
+            bluetoothLeScanner.startScan(emptyList(), scanSettings, leScanCallback)
+            scanning = true
+            onScanStatusChanged(true)
 
-        // Auto-stop after scan period
-        Handler(Looper.getMainLooper()).postDelayed({
-            stopScanning()
-        }, SCAN_PERIOD)
+            // Auto-stop after scan period
+            Handler(Looper.getMainLooper()).postDelayed({
+                stopScanning()
+            }, SCAN_PERIOD)
+        } catch (e: SecurityException) {
+            onError("Bluetooth permission denied: ${e.message}")
+        } catch (e: IllegalStateException) {
+            onError("Bluetooth is not available: ${e.message}")
+        } catch (e: Exception) {
+            onError("Failed to start scan: ${e.message}")
+        }
+
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
