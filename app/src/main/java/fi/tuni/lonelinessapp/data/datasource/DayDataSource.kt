@@ -191,15 +191,4 @@ class DayDataSource (
                 }
         }
     }
-
-    /*suspend fun saveAppUsage(date: LocalDate = LocalDate.now(), dayMinutes: Int) {
-        val existingDay = dayDao.getDayByDate(date).first()
-
-        // Check if the day exists or not, if it doesn't exist then create a new day
-        if (existingDay == null) {
-            insertDayWithData(date=date, dayMinutes=dayMinutes)
-        } else {
-            dayDao.updateDayMinutes(date, dayMinutes)
-        }
-    }*/
 }
