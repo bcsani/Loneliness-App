@@ -141,18 +141,32 @@ class DayDataSource (
         }
     }
 
-    suspend private fun insertDayWithData(
+    private suspend fun insertEmptyRows() {
+        var d = if (dayDao.lastDate() != null) {
+            dayDao.lastDate()!!.plusDays(1)
+        } else {
+            LocalDate.now().minusDays(6)
+        }
+
+        while (d.isBefore(LocalDate.now().plusDays(1))) {
+            dayDao.insertDay(DayEntity(d))
+            d = d.plusDays(1)
+        }
+    }
+
+    private suspend fun insertDayWithData(
         date: LocalDate,
         loneliness: Int? = null,
         nightMinutes: Int? = null,
         dayMinutes: Int? = null,
-        steps: Int = 0,
+        steps: Int? = null,
         whatApps: Int? = null,
         messages: Int? = null,
-        calls: Int = 0,
+        calls: Int? = null,
         signal: Int? = null,
         telegram: Int? = null
     ) {
+        insertEmptyRows()
         dayDao.insertDay(DayEntity(
             date = date,
             loneliness = loneliness,
@@ -175,19 +189,19 @@ class DayDataSource (
 
     fun getStreak(): Flow<Int> {
         return flow {
-            dayDao.firstDate()
-                .combine(dayDao.lastResponse()) {i, j -> Pair(i, j)}
-                .combine(dayDao.lastNonStreak(LocalDate.now())) {(i, j), k -> Triple(i, j, k)}
-                .collect { (firstDate, lastResponse, lastNonStreak) -> emit(
-                    if (firstDate == null || lastResponse == null) {
-                        0
-                    } else if (lastNonStreak == null) {
-                        lastResponse.toEpochDay().toInt() - firstDate.toEpochDay().toInt() + 1
-                    } else if (lastResponse < LocalDate.now().minusDays(1)) {
-                        0
-                    } else {
-                        lastResponse.toEpochDay().toInt() - lastNonStreak.toEpochDay().toInt()
-                    })
+            insertEmptyRows()
+            dayDao.lastResponse()
+                .combine(dayDao.lastNonStreak(LocalDate.now())) { i, j -> Pair(i, j) }
+                .collect { (lastResponse, lastNonStreak) ->
+                    emit(
+                        if (lastResponse == null || lastNonStreak == null) {
+                            0
+                        } else if (lastResponse < LocalDate.now().minusDays(1)) {
+                            0
+                        } else {
+                            lastResponse.toEpochDay().toInt() - lastNonStreak.toEpochDay().toInt()
+                        }
+                    )
                 }
         }
     }
