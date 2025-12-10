@@ -1,16 +1,16 @@
 package fi.tuni.lonelinessapp.domain.service
 
 import android.app.AppOpsManager
-import android.app.usage.UsageEvents
+import android.app.usage.UsageEvents.Event
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
 class AppUsageTracker(
     private val context: Context,
@@ -48,52 +48,66 @@ class AppUsageTracker(
 
     }
 
-    private fun getMinsFromInterval(beg: Long, end: Long): List<Pair<String, Long>> {
+    private fun getMinsFromInterval(beg: Long, end: Long): List<Pair<String, Int>> {
         val usageEvents = usageStatsManager.queryEvents(beg, end)
-        val foregroundEvents: MutableList<UsageEvents.Event> = mutableListOf()
-        val appUsage = HashMap<String, Long>()
+        val foregroundEvents: MutableList<Event> = mutableListOf()
 
         while (usageEvents.hasNextEvent()) {
-            val event = UsageEvents.Event()
+            val event = Event()
             usageEvents.getNextEvent(event)
-            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED || event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
+            if (
+                event.eventType == Event.ACTIVITY_RESUMED ||
+                event.eventType == Event.ACTIVITY_PAUSED
+            ) {
                 foregroundEvents.add(event)
-                if (event.packageName !in appUsage) {
-                    appUsage[event.packageName] = 0
-                }
             }
         }
 
-        for (i in 0..<foregroundEvents.size - 1) {
-            val e0 = foregroundEvents[i]
-            val e1 = foregroundEvents[i + 1]
+        val grouped = foregroundEvents.groupBy { it.packageName }
+        val appUsage = HashMap<String, Long>()
 
-            if (e0.eventType == UsageEvents.Event.ACTIVITY_RESUMED &&
-                e1.eventType == UsageEvents.Event.ACTIVITY_PAUSED &&
-                e0.packageName == e1.packageName
-            ) {
-                val diff = e1.timeStamp - e0.timeStamp
-                appUsage[e0.packageName]?.let { appUsage[e0.packageName] = it + diff }
+        for (pkg in grouped.keys) {
+            var mins = 0L
+
+            if (grouped[pkg]!!.first().eventType == Event.ACTIVITY_PAUSED) {
+                mins += grouped[pkg]!!.first().timeStamp - beg
             }
+
+            for (i in 0..<grouped[pkg]!!.size - 1) {
+                val e0 = grouped[pkg]!![i]
+                val e1 = grouped[pkg]!![i + 1]
+
+                if (
+                    e0.eventType == Event.ACTIVITY_RESUMED &&
+                    e1.eventType == Event.ACTIVITY_PAUSED
+                ) {
+                    mins += e1.timeStamp - e0.timeStamp
+                }
+            }
+
+            if (grouped[pkg]!!.last().eventType == Event.ACTIVITY_RESUMED) {
+                mins += end - grouped[pkg]!!.last().timeStamp
+            }
+
+            appUsage[pkg] = mins
         }
 
         return appUsage.toList().map { (key, value) ->
-                Pair(key, TimeUnit.MILLISECONDS.toMinutes(value))
-            }
+            Pair(key, TimeUnit.MILLISECONDS.toMinutes(value).toInt())
+        }
     }
 
-    private fun getAppMins(usageStats: List<Pair<String, Long>>, packages: List<String>): Int {
+    private fun getAppMins(usageStats: List<Pair<String, Int>>, packages: List<String>): Int {
         return usageStats
             .filter { (packageName, _) -> packageName in packages }
             .sumOf { (_, minutes) -> minutes }
-            .toInt()
     }
 
-    suspend fun updateDate(date: LocalDate) {
+    private suspend fun updateDate(date: LocalDate) {
         val off = ZoneId.systemDefault().rules.getOffset(Instant.now())
 
         val dateBeg = date.atStartOfDay().toInstant(off).toEpochMilli()
-        val dateEnd = date.atStartOfDay().plus(24, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
+        val dateEnd = min(System.currentTimeMillis(), date.atStartOfDay().plusHours(24).toInstant(off).toEpochMilli())
 
         val usageStats = getMinsFromInterval(dateBeg, dateEnd)
 
@@ -103,15 +117,15 @@ class AppUsageTracker(
         dataSource.saveTelegram(date, telegramMinutes)
         dataSource.saveWhatApp(date, whatsAppMinutes)
 
-        val nighttimeBegin = date.atStartOfDay().minus(2, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
-        val transition     = date.atStartOfDay().plus(6, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
-        val daytimeEnd     = date.atStartOfDay().plus(22, ChronoUnit.HOURS).toInstant(off).toEpochMilli()
+        val nighttimeBegin = date.atStartOfDay().minusHours(2).toInstant(off).toEpochMilli()
+        val transition     = min(System.currentTimeMillis(), date.atStartOfDay().plusHours(6).toInstant(off).toEpochMilli())
+        val daytimeEnd     = min(System.currentTimeMillis(), date.atStartOfDay().plusHours(22).toInstant(off).toEpochMilli())
 
         val nightMinutes = getMinsFromInterval(nighttimeBegin, transition)
-            .sumOf { (_, mins) -> mins}.toInt()
+            .sumOf { (_, mins) -> mins}
 
         val dayMinutes = getMinsFromInterval(transition, daytimeEnd)
-            .sumOf { (_, mins) -> mins}.toInt()
+            .sumOf { (_, mins) -> mins}
 
         dataSource.saveNightMinutes(date, nightMinutes)
         dataSource.saveDayMinutes(date, dayMinutes)
