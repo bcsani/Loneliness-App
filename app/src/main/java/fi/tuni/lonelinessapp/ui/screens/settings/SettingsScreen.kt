@@ -365,15 +365,15 @@ fun formatContent(days: List<DayEntity>?): String {
         days?.forEach { day ->
             append(
                 "${day.date}," +
-                "${day.loneliness}," +
-                "${day.nightMinutes}," +
-                "${day.dayMinutes}," +
-                "${day.steps}," +
-                "${day.whatApps}," +
-                "${day.messages}," +
-                "${day.calls}," +
-                "${day.signal}," +
-                "${day.telegram}" +
+                "${day.loneliness ?: ""}," +
+                "${day.nightMinutes ?: ""}," +
+                "${day.dayMinutes ?: ""}," +
+                "${day.steps ?: ""}," +
+                "${day.whatApps ?: ""}," +
+                "${day.messages ?: ""}," +
+                "${day.calls ?: ""}," +
+                "${day.signal ?: ""}," +
+                "${day.telegram ?: ""}" +
                 "\n")
         }
     }
@@ -399,9 +399,11 @@ fun ResetDialog(
 
                 override fun onFinish() {
                     timeLeft = 0
-                    isTimerRunning = false
-                    settingsViewModel.resetData()
-                    onDismiss()
+                    if (isTimerRunning) {
+                        isTimerRunning = false
+                        settingsViewModel.resetData()
+                        onDismiss()
+                    }
                 }
             }.start()
         }

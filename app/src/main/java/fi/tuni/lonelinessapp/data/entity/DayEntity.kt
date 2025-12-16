@@ -7,15 +7,15 @@ import java.time.LocalDate
 @Entity(tableName = "dayTable")
 data class DayEntity(
     @PrimaryKey val date: LocalDate,
-    val loneliness: Int?,
-    val nightMinutes: Int?,
-    val dayMinutes: Int?,
-    val steps: Int?,
-    val whatApps: Int?,
-    val messages: Int?,
-    val calls: Int?,
-    val signal: Int?,
-    val telegram: Int?
+    val loneliness: Int? = null,
+    val nightMinutes: Int? = null,
+    val dayMinutes: Int? = null,
+    val steps: Int? = null,
+    val whatApps: Int? = null,
+    val messages: Int? = null,
+    val calls: Int? = null,
+    val signal: Int? = null,
+    val telegram: Int? = null
 )
 
 
