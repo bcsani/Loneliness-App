@@ -52,7 +52,7 @@ interface DayDao {
     @Query("SELECT signal FROM dayTable WHERE date = :date LIMIT 1")
     fun getSignalByDateSingle(date: LocalDate): Int?
     @Query("UPDATE dayTable SET signal = COALESCE(signal, 0) + :signal WHERE date = :date")
-    fun addSignalByDate(date: LocalDate, signal: Int)
+    suspend fun addSignalByDate(date: LocalDate, signal: Int)
     @Query("SELECT calls FROM dayTable where date = :date")
     fun getCallsByDate(date: LocalDate): Flow<Int?>
     @Query("SELECT whatApps FROM dayTable where date = :date")

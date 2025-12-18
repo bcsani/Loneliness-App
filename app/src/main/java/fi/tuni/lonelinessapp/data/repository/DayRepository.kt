@@ -40,7 +40,7 @@ class DayRepository  (
         dayDataSource.resetData()
     fun getStreak(): Flow<Int> = dayDataSource.getStreak()
     fun isResponded(): Flow<Boolean> = dayDataSource.isResponded()
-    fun addSignalToday(signal: Int) =
+    suspend fun addSignalToday(signal: Int) =
         dayDataSource.addSignalByDate(today, signal)
     suspend fun updateCallDurationToday() =
         dayDataSource.updateCallDurationToday()
