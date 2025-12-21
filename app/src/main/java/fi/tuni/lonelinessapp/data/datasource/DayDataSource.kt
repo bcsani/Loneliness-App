@@ -31,7 +31,7 @@ class DayDataSource (
         dayDao.getWhatAppsByDate(date)
     fun getTelegramByDate(date: LocalDate): Flow<Int?> =
         dayDao.getTelegramByDate(date)
-    fun addSignalByDate(date: LocalDate, signal: Int) {
+    suspend fun addSignalByDate(date: LocalDate, signal: Int) {
         dayDao.addSignalByDate(date, signal)
     }
 

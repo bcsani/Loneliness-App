@@ -272,6 +272,8 @@ fun AnalysisScreen(
     modifier: Modifier = Modifier,
     analysisViewModel: AnalysisViewModel = viewModel()
 ) {
+    analysisViewModel.updateDurations()
+
     var selectedRange by remember { mutableStateOf(TimeRange.Week) }
     var infoDialogMessage by remember { mutableStateOf<String?>(null) }
 

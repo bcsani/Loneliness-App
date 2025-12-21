@@ -84,13 +84,13 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getInstance(applicationContext)
         val callDurationHelper = CallDurationHelper(this)
         val dayDataSource = DayDataSource(database.dayDao(), callDurationHelper)
-        dayRepository = DayRepository(dayDataSource)
+        appUsageTracker = AppUsageTracker(this, dayDataSource)
+        dayRepository = DayRepository(dayDataSource, appUsageTracker)
         val calculateCorrelationUseCase = CalculateCorrelationUseCase(dayRepository)
         val surveyViewModel = SurveyViewModel(dayRepository)
         val analysisViewModel = AnalysisViewModel(dayRepository)
         val homeViewModel = HomeViewModel(dayRepository, calculateCorrelationUseCase)
         val settingsViewModel = SettingsViewModel(dayRepository)
-        appUsageTracker = AppUsageTracker(this)
         checkAllPermissions(analysisViewModel, dayRepository)
         analysisViewModel.updateDurations()
 
@@ -223,21 +223,18 @@ class MainActivity : ComponentActivity() {
 
         permissionManager.start()
 
-        checkUsageStatsPermission(dayRepository, analysisViewModel)
+        checkUsageStatsPermission(analysisViewModel)
     }
 
-    private fun checkUsageStatsPermission(dayRepository: DayRepository,analysisViewModel: AnalysisViewModel){
+    private fun checkUsageStatsPermission(analysisViewModel: AnalysisViewModel){
         if (appUsageTracker.isUsageStatsPermissionGranted()) {
             appUsageTracker.startTracking()
             println("App Usage tracker start tracking")
-            val appUsageData = appUsageTracker.getCurrentUsage()
             coroutineScope.launch {
-                dayRepository.saveWhatApp(whatApps = appUsageData.whatsappUsageTime.toInt())
-                dayRepository.saveTelegram(telegram = appUsageData.telegramUsageTime.toInt())
+                appUsageTracker.update()
             }
 
-            analysisViewModel.updateWhatAppsDuration()
-            analysisViewModel.updateTelegramDuration()
+            analysisViewModel.updateDurations()
         } else {
             showUsageStatsPermissionDialog()
         }

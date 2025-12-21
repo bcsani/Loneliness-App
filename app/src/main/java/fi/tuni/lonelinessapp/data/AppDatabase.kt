@@ -78,8 +78,7 @@ abstract class AppDatabase : RoomDatabase() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
                         val ioExecutor = Executors.newSingleThreadExecutor()
-                        ioExecutor.execute({ getInstance(context).dayDao().insertAllDays(PREPOPULATE_DATA)
-                        })
+                        ioExecutor.execute { getInstance(context).dayDao().insertAllDays(PREPOPULATE_DATA) }
                         ioExecutor.shutdown()
                     }
                 })

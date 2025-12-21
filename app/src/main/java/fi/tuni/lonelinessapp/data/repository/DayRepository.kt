@@ -3,11 +3,13 @@ package fi.tuni.lonelinessapp.data.repository
 import fi.tuni.lonelinessapp.data.datasource.DayDataSource
 import fi.tuni.lonelinessapp.data.entity.DayEntity
 import fi.tuni.lonelinessapp.domain.repository.DayRepositoryInterface
+import fi.tuni.lonelinessapp.domain.service.AppUsageTracker
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 class DayRepository  (
-    private val dayDataSource: DayDataSource
+    private val dayDataSource: DayDataSource,
+    private val appUsageTracker: AppUsageTracker
 ): DayRepositoryInterface {
     private val today = LocalDate.now()
     override suspend fun insertDay(day: DayEntity) =
@@ -20,16 +22,6 @@ class DayRepository  (
         dayDataSource.saveDayMinutes(date, dayMinutes)
     override suspend fun saveSteps(date: LocalDate, steps: Int) =
         dayDataSource.saveSteps(date, steps)
-    suspend fun saveWhatApp(date: LocalDate = today, whatApps: Int) =
-        dayDataSource.saveWhatApp(date, whatApps)
-    suspend fun saveMessages(date: LocalDate, messages: Int) =
-        dayDataSource.saveMessages(date, messages)
-    suspend fun saveCalls(date: LocalDate = today, calls: Int) =
-        dayDataSource.saveCalls(date, calls)
-    suspend fun saveSignal(date: LocalDate = today, signal: Int) =
-        dayDataSource.saveSignal(date, signal)
-    suspend fun saveTelegram(date: LocalDate = today, telegram: Int) =
-        dayDataSource.saveTelegram(date, telegram)
     override fun getAllDays(): Flow<List<DayEntity>> =
         dayDataSource.getAllDays()
     override fun getDayByDate(date: LocalDate): Flow<DayEntity?> =
@@ -48,8 +40,10 @@ class DayRepository  (
         dayDataSource.resetData()
     fun getStreak(): Flow<Int> = dayDataSource.getStreak()
     fun isResponded(): Flow<Boolean> = dayDataSource.isResponded()
-    fun addSignalToday(signal: Int) =
+    suspend fun addSignalToday(signal: Int) =
         dayDataSource.addSignalByDate(today, signal)
     suspend fun updateCallDurationToday() =
         dayDataSource.updateCallDurationToday()
+
+    suspend fun updateAppUsage() = appUsageTracker.update()
 }
