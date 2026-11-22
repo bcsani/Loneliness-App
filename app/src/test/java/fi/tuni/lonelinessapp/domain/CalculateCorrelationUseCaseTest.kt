@@ -114,7 +114,7 @@ class CalculateCorrelationUseCaseTest {
         assertTrue(variableNames.contains("Night Minutes"))
         assertTrue(variableNames.contains("Day Minutes"))
         assertTrue(variableNames.contains("Steps"))
-        assertTrue(variableNames.contains("WhatApps"))
+        assertTrue(variableNames.contains("WhatsApp"))
         assertTrue(variableNames.contains("Messages"))
         assertTrue(variableNames.contains("Calls"))
         assertTrue(variableNames.contains("Signal"))
@@ -138,7 +138,7 @@ class CalculateCorrelationUseCaseTest {
                 "Steps" -> {
                     assertEquals(0.52250, result.correlationValue, delta)
                 }
-                "WhatApps" -> {
+                "WhatsApp" -> {
                     assertEquals(-0.41502, result.correlationValue, delta)
                 }
                 "Messages" -> {
@@ -164,31 +164,33 @@ class CalculateCorrelationUseCaseTest {
 
         val results: List<CorrelationResult> = calculateCorrelationUseCase()
         val delta = 0.05
+        // Reference values maximize the polyserial likelihood with fixed
+        // empirical category thresholds and rho bounded to [-0.99, 0.99].
         for (result in results) {
             when (result.variableName) {
                 "Night Minutes" -> {
-                    assertEquals(1.00000, result.correlationValue, delta)
+                    assertEquals(0.60878, result.correlationValue, delta)
                 }
                 "Day Minutes" -> {
-                    assertEquals(-0.34183, result.correlationValue, delta)
+                    assertEquals(-0.78229, result.correlationValue, delta)
                 }
                 "Steps" -> {
-                    assertEquals(0.52250, result.correlationValue, delta)
+                    assertEquals(0.99, result.correlationValue, delta)
                 }
-                "WhatApps" -> {
-                    assertEquals(-0.41502, result.correlationValue, delta)
+                "WhatsApp" -> {
+                    assertEquals(0.01467, result.correlationValue, delta)
                 }
                 "Messages" -> {
-                    assertEquals(-0.41502	, result.correlationValue, delta)
+                    assertEquals(0.77729, result.correlationValue, delta)
                 }
                 "Calls" -> {
-                    assertEquals(-0.41502, result.correlationValue, delta)
+                    assertEquals(0.99, result.correlationValue, delta)
                 }
                 "Signal" -> {
-                    assertEquals(0.41502, result.correlationValue, delta)
+                    assertEquals(0.29841, result.correlationValue, delta)
                 }
                 "Telegram" -> {
-                    assertEquals(-0.25081, result.correlationValue, delta)
+                    assertEquals(0.58654, result.correlationValue, delta)
                 }
             }
         }
@@ -353,6 +355,24 @@ class CalculateCorrelationUseCaseTest {
     }
 
     @Test
+    fun `Telegram correlation uses Telegram data instead of Signal`() = runTest {
+        val days = (1..10).map { day ->
+            DayEntity(
+                date = LocalDate.of(2025, 1, 1).plusDays(day.toLong()),
+                loneliness = day,
+                signal = day,
+                telegram = 11 - day
+            )
+        }
+        coEvery { dayRepository.getAllDays() } returns flowOf(days)
+
+        val results = calculateCorrelationUseCase().associateBy { it.variableName }
+
+        assertTrue(results.getValue("Signal").correlationValue > 0.9)
+        assertTrue(results.getValue("Telegram").correlationValue < -0.9)
+    }
+
+    @Test
     fun `Calculate correlation should handle minimum (2) data points`() = runTest {
         val testDays = listOf(
             DayEntity(
@@ -421,7 +441,7 @@ class CalculateCorrelationUseCaseTest {
     }
 
     @Test
-    fun `Calculate correlation should handle zero variance in ordinal data`() = runTest {
+    fun `Calculate correlation should handle zero variance in continuous data`() = runTest {
         val testDays = (1..5).map { dayNumber ->
             DayEntity(
                 date = LocalDate.now().plusDays(dayNumber.toLong()),
@@ -457,7 +477,7 @@ class CalculateCorrelationUseCaseTest {
             "Night Minutes",
             "Day Minutes",
             "Steps",
-            "WhatApps",
+            "WhatsApp",
             "Messages",
             "Calls",
             "Signal",

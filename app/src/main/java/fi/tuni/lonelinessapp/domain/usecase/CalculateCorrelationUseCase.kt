@@ -24,7 +24,7 @@ class CalculateCorrelationUseCase (
         val messages = days.map {it.messages?.toDouble() }
         val calls = days.map{it.calls?.toDouble() }
         val signal = days.map{it.signal?.toDouble() }
-        val telegram = days.map{it.signal?.toDouble() }
+        val telegram = days.map{it.telegram?.toDouble() }
 
         // Calculate the correlations and return the results
         val variablePairs = listOf(
@@ -120,8 +120,8 @@ class CalculateCorrelationUseCase (
         val uniqueOrdinalValues = ordinalData.distinct().sorted()
         val nCategories = uniqueOrdinalValues.size
 
-        if (nCategories < 2) {
-            return 0.0 // No variation in ordinal variable
+        if (nCategories < 2 || continuousData.all { it == continuousData.first() }) {
+            return 0.0 // No variation in one of the variables
         }
 
         // Calculate thresholds (z-scores for category boundaries)
@@ -157,92 +157,53 @@ class CalculateCorrelationUseCase (
         thresholds: List<Double>,
         uniqueOrdinalValues: List<Double>
     ): Double {
-        var currentRho = 0.5 // Initial guess for correlation
-        val tolerance = 1e-6
-        val maxIterations = 100
-        run repeatBlock@ {
-            repeat(maxIterations) {
-                val gradient = calculateGradient(continuousData, ordinalData, thresholds, uniqueOrdinalValues, currentRho)
-                val hessian = calculateHessian(continuousData, currentRho)
+        val mean = continuousData.average()
+        val std = sqrt(continuousData.variance())
+        val standardized = continuousData.map { (it - mean) / std }
+        val categories = ordinalData.map { uniqueOrdinalValues.indexOf(it) }
 
-                if (abs(hessian) < 1e-10) return@repeatBlock // Avoid division by zero
-
-                val newRho = currentRho - gradient / hessian
-                val difference = abs(newRho - currentRho)
-
-                currentRho = newRho.coerceIn(-0.99, 0.99)
-
-                if (difference < tolerance) {
-                    return@repeatBlock
-                }
+        fun logLikelihood(rho: Double): Double {
+            val scale = sqrt(1 - rho * rho)
+            return standardized.indices.sumOf { i ->
+                val category = categories[i]
+                val lower = if (category == 0) 0.0 else
+                    normalCDF((thresholds[category - 1] - rho * standardized[i]) / scale)
+                val upper = if (category == thresholds.size) 1.0 else
+                    normalCDF((thresholds[category] - rho * standardized[i]) / scale)
+                ln((upper - lower).coerceAtLeast(1e-15))
             }
         }
 
-
-        return currentRho.coerceIn(-1.0, 1.0)
-    }
-
-    private fun calculateGradient(
-        continuousData: List<Double>,
-        ordinalData: List<Double>,
-        thresholds: List<Double>,
-        uniqueOrdinalValues: List<Double>,
-        rho: Double
-    ): Double {
-        var gradient = 0.0
-        val continuousMean = continuousData.average()
-        val continuousStd = sqrt(continuousData.variance())
-
-        for (i in continuousData.indices) {
-            val x = continuousData[i]
-            val y = ordinalData[i]
-            val categoryIndex = uniqueOrdinalValues.indexOf(y)
-
-            val standardizedX = (x - continuousMean) / continuousStd
-
-            gradient += calculateGradientForObservation(standardizedX, categoryIndex, thresholds, rho)
+        // Bracket the best region before refining the bounded likelihood maximum.
+        val minRho = -0.99
+        val step = 1.98 / 100
+        val bestIndex = (0..100).maxByOrNull { logLikelihood(minRho + it * step) }!!
+        var left = minRho + (bestIndex - 1).coerceAtLeast(0) * step
+        var right = minRho + (bestIndex + 1).coerceAtMost(100) * step
+        val ratio = (sqrt(5.0) - 1) / 2
+        var a = right - ratio * (right - left)
+        var b = left + ratio * (right - left)
+        var scoreA = logLikelihood(a)
+        var scoreB = logLikelihood(b)
+        repeat(40) {
+            if (scoreA < scoreB) {
+                left = a
+                a = b
+                scoreA = scoreB
+                b = left + ratio * (right - left)
+                scoreB = logLikelihood(b)
+            } else {
+                right = b
+                b = a
+                scoreB = scoreA
+                a = right - ratio * (right - left)
+                scoreA = logLikelihood(a)
+            }
         }
-
-        return gradient
-    }
-
-    private fun calculateGradientForObservation(
-        standardizedX: Double,
-        categoryIndex: Int,
-        thresholds: List<Double>,
-        rho: Double
-    ): Double {
-        val lowerThreshold = if (categoryIndex == 0) Double.NEGATIVE_INFINITY else thresholds[categoryIndex - 1]
-        val upperThreshold = if (categoryIndex == thresholds.size) Double.POSITIVE_INFINITY else thresholds[categoryIndex]
-
-        val denominator = sqrt(1 - rho * rho)
-        val term1 = (lowerThreshold - rho * standardizedX) / denominator
-        val term2 = (upperThreshold - rho * standardizedX) / denominator
-
-        val pdf1 = normalPDF(term1)
-        val pdf2 = normalPDF(term2)
-        val cdf1 = normalCDF(term1)
-        val cdf2 = normalCDF(term2)
-
-        return if (cdf2 - cdf1 > 1e-10) {
-            (pdf1 - pdf2) / (cdf2 - cdf1) * standardizedX / denominator
-        } else {
-            0.0
-        }
-    }
-
-    private fun calculateHessian(
-        continuousData: List<Double>,
-        rho: Double
-    ): Double {
-        return -continuousData.size.toDouble() / (1 - rho * rho)
+        return (left + right) / 2
     }
 
     // Helper functions for normal distribution
-    private fun normalPDF(x: Double): Double {
-        return exp(-0.5 * x * x) / sqrt(2 * pi)
-    }
-
     private fun normalCDF(x: Double): Double {
         // Approximation of normal CDF
         return 0.5 * (1 + erf(x / sqrt(2.0)))
@@ -307,9 +268,6 @@ class CalculateCorrelationUseCase (
         val mean = this.average()
         return this.map { (it - mean) * (it - mean) }.average()
     }
-
-    // Constants
-    private val pi = 3.141592653589793
 
     // Error function approximation
     private fun erf(x: Double): Double {
