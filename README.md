@@ -72,6 +72,11 @@ Usage access is a special Android setting rather than a regular permission promp
 - Use the navigation controls to view the home and analysis screens.
 - Open **Settings** to read the in-app information, export or share a CSV file, or reset the stored data. Reset permanently deletes the app's records and cannot be undone.
 
+Correlations are exploratory, not evidence of causation. The app estimates
+polyserial correlations using observed category thresholds and bounds the
+estimate to -0.99 through 0.99. It displays zero when either variable has no
+variation; in that case a correlation cannot actually be inferred.
+
 ## Data and privacy
 
 Survey answers and measurement summaries are stored in the app's local database on the device. The app has no project server that receives this data. Measurements can include questionnaire scores, step counts, call-duration totals, phone-use durations, supported messaging-app usage durations, and Bluetooth proximity summaries; the app does not collect message or call content.
@@ -102,7 +107,26 @@ To build a release APK, run:
 ./gradlew assembleRelease
 ```
 
-The release APK is written to `app/build/outputs/apk/release/`. Release builds are not signed for distribution by this project, so configure your own signing credentials before publishing.
+The release APK is written to `app/build/outputs/apk/release/`. The release
+configuration expects a keystore at `KEYSTORE_PATH` (or `release.jks` in the
+repository root), with alias `loneliness`, and the `KEYSTORE_PASSWORD` and
+`KEY_PASSWORD` environment variables. Provide your own signing credentials;
+never commit them.
+
+### Build with Docker
+
+From the repository root, with Docker and BuildKit available:
+
+```sh
+docker build --platform linux/amd64 --output ./docker-output .
+```
+
+The build downloads the Android command-line tools, SDK Platform 36, Gradle
+and project dependencies, accepts the Android SDK licenses, runs debug unit
+tests, and exports `docker-output/app-debug.apk`. The Android SDK tools in this
+build run on Linux x86-64; other hosts need Docker's amd64 emulation. It produces a debug APK,
+not a signed release. Docker builds the app but does not run its Android UI,
+permissions, sensors, or instrumented tests; use a device or emulator for those.
 
 ## License
 

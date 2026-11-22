@@ -1,0 +1,12 @@
+**
+!app/
+!app/build.gradle.kts
+!app/proguard-rules.pro
+!app/src/
+!app/src/**
+!gradle/
+!gradle/**
+!gradlew
+!build.gradle.kts
+!settings.gradle.kts
+!gradle.properties

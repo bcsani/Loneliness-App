@@ -18,3 +18,4 @@ local.properties
 /.jdk
 /.android-sdk
 *.jks
+/docker-output/
