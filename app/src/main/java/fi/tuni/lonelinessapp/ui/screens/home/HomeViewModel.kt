@@ -44,7 +44,7 @@ class HomeViewModel(
     }
 
     fun calculateCorrelation(){
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 _isLoading.value = true
                 val results = calculateCorrelationUseCase()
