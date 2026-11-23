@@ -101,7 +101,7 @@ Run the unit tests with the Gradle wrapper:
 ./gradlew test
 ```
 
-GitHub Actions installs Android SDK Platform 36 and runs
+GitHub Actions sets up the Android command-line tools and SDK Platform 36, then runs
 `./gradlew --no-daemon testDebugUnitTest assembleDebug` with JDK 17 on pull
 requests and pushes to `main`. It does not run device or instrumented tests.
 
