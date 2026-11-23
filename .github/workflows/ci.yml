@@ -25,3 +25,11 @@ jobs:
           packages: "platforms;android-36 build-tools;36.0.0 platform-tools"
       - name: Test and build debug APK
         run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
+      - name: Upload unit test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-test-reports
+          path: app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 7
